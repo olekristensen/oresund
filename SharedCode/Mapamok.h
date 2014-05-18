@@ -55,6 +55,10 @@ public:
             glPushMatrix();
             glMatrixMode(GL_MODELVIEW);
             ofPushView();
+/*            in intrinsics you need to comment out the following line cause its broken and causing issues...i.e leaking GL state all over the place. need to be like this:
+            void Intrinsics::loadProjectionMatrix(float nearDist, float farDist, ofVec2f viewportOffset) const {
+                //glViewport(viewportOffset.x, viewportOffset.y, imageSize.width, imageSize.height);
+ */
             ofViewport(viewPort.x, viewPort.y, viewPort.width, viewPort.height, true);
             intrinsics.loadProjectionMatrix(.1, 10);
             ofxCv::applyMatrix(modelMatrix);

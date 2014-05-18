@@ -53,9 +53,11 @@ public:
         cam.setVFlip(false);
         
         //640 * 480 * 2 with a 160 pixel overlap
-        mViewPortLeft = ofRectangle(0, 0, 640, 800);
-        mViewPortRight = ofRectangle(640, -160, 640, 800);
-        mViewPort = ofRectangle(0, 0, 640, 800);
+        //Left Projector Position and Full Texture Size
+        mViewPortLeft = ofRectangle(0, 0, 1280, 1000);
+        //Right Projector Posiiton
+        mViewPortRight = ofRectangle(1280, -200, 1280, 1000);
+        mViewPort = ofRectangle(0, 0, 1280, 1000);
         mProjectors.assign(2, Projector());
 
         
