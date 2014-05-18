@@ -9,7 +9,7 @@ protected:
 	set<unsigned int> selected;
 	
 	float clickRadiusSquared;
-	
+	ofRectangle mViewPort;
 public:
 	SelectablePoints()
 	:clickRadiusSquared(0) {
@@ -17,6 +17,9 @@ public:
 	unsigned int size() {
 		return points.size();
 	}
+    void setViewPort(ofRectangle viewport){
+        mViewPort = viewport;
+    }
 	void add(const ofVec2f& v) {
 		points.push_back(DraggablePoint());
 		points.back().position = v;
@@ -58,10 +61,14 @@ public:
         }
     }
 	void draw(ofEventArgs& args) {
+        ofPushView();
+        ofViewport(mViewPort.x, mViewPort.y, mViewPort.width, mViewPort.height, false);
+        ofSetupScreenPerspective();
         ofPushStyle();
 		for(int i = 0; i < size(); i++) {
 			points[i].draw(clickRadiusSquared);
 		}
         ofPopStyle();
+        ofPopView();
 	}
 };

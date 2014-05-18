@@ -59,7 +59,8 @@ public:
         
         referencePoints.setClickRadius(8);
         referencePoints.enableControlEvents();
-//        referencePoints.enableDrawEvent();
+        referencePoints.enableDrawEvent();
+        referencePoints.setViewPort(ofGetWindowRect());
     }
     enum {
         RENDER_MODE_FACES = 0,
@@ -169,10 +170,6 @@ public:
                 ofLine(cur.position, cornerMeshImage.getVertex(i));
             }
         }
-        
-        // should be a better way to do this
-        ofEventArgs args;
-        referencePoints.draw(args);
         
         // calculating the 3d mesh
         vector<ofVec2f> imagePoints;
