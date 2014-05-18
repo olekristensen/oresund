@@ -37,7 +37,6 @@ public:
     ofRectangle mViewPortLeft;
     ofRectangle mViewPortRight;
     ofRectangle mViewPort;
-    ofFbo fooFBO;
     void setup() {
         ofSetWindowTitle("mapamok");
         ofSetVerticalSync(true);
@@ -74,8 +73,6 @@ public:
         mProjectors[1].referencePoints.setViewPort(mViewPortRight);
         mProjectors[1].referencePoints.enableControlEvents();
         mProjectors[1].referencePoints.enableDrawEvent();
-        
-        fooFBO.allocate(640, 760, GL_RGBA, 4);
     }
     enum {
         RENDER_MODE_FACES = 0,
