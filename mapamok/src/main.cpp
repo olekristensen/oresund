@@ -194,6 +194,8 @@ public:
         }
         
         if(mapamok.calibrationReady) {
+            ofPushView();
+            ofViewport(ofGetWindowRect());
             mapamok.begin();
             if(editToggle) {
                 ofSetColor(255, 128);
@@ -202,6 +204,7 @@ public:
             }
             mesh.draw();
             mapamok.end();
+            ofPopView();
         }
         
         ofDrawBitmapString(ofToString((int) ofGetFrameRate()), 10, ofGetHeight() - 40);

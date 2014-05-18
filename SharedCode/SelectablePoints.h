@@ -38,7 +38,7 @@ public:
 		bool shift = ofGetKeyPressed(OF_KEY_SHIFT);
 		bool hitAny = false;
 		for(int i = 0; i < size(); i++) {
-			bool hit = points[i].isHit(mouse, clickRadiusSquared);
+			bool hit = points[i].isHit(mouse-mViewPort.getTopLeft(), clickRadiusSquared);
 			if(hit && !hitAny) {
 				if(!points[i].selected) {
 					points[i].selected = true;
@@ -62,7 +62,7 @@ public:
     }
 	void draw(ofEventArgs& args) {
         ofPushView();
-        ofViewport(mViewPort.x, mViewPort.y, mViewPort.width, mViewPort.height, false);
+        ofViewport(mViewPort.x, mViewPort.y, mViewPort.width, mViewPort.height, true);
         ofSetupScreenPerspective();
         ofPushStyle();
 		for(int i = 0; i < size(); i++) {
