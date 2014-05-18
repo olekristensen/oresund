@@ -359,6 +359,7 @@
 		C66C6414C8B86FDB99ED3B70 /* core.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = core.hpp; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv2/core/core.hpp; sourceTree = SOURCE_ROOT; };
 		C72403EDCB7DCAEC60D1DCDD /* aiVersion.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = aiVersion.h; path = ../../../addons/ofxAssimpModelLoader/libs/assimp/include/aiVersion.h; sourceTree = SOURCE_ROOT; };
 		C76DE5C29BDBD2CAA1DD0021 /* ofxCvContourFinder.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 30; name = ofxCvContourFinder.cpp; path = ../../../addons/ofxOpenCv/src/ofxCvContourFinder.cpp; sourceTree = SOURCE_ROOT; };
+		C8777F691929298A00A0FC70 /* Projector.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Projector.h; sourceTree = "<group>"; };
 		C878437FC072E5D613F2495A /* aiTexture.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = aiTexture.h; path = ../../../addons/ofxAssimpModelLoader/libs/assimp/include/aiTexture.h; sourceTree = SOURCE_ROOT; };
 		CB6E898FB329C46EC3DEF461 /* aiMatrix4x4.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = aiMatrix4x4.h; path = ../../../addons/ofxAssimpModelLoader/libs/assimp/include/aiMatrix4x4.h; sourceTree = SOURCE_ROOT; };
 		CBDE84185E2969BA4AB209FC /* general.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = general.h; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv2/flann/general.h; sourceTree = SOURCE_ROOT; };
@@ -571,6 +572,7 @@
 				2710864C1863A94000509AE4 /* EventWatcher.h */,
 				2710864D1863A94000509AE4 /* SelectablePoints.h */,
 				278CD16E19007D9700C464A8 /* Mapamok.h */,
+				C8777F691929298A00A0FC70 /* Projector.h */,
 			);
 			name = SharedCode;
 			path = ../../SharedCode;

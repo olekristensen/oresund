@@ -7,20 +7,12 @@
 #include "ofAppGLFWWindow.h"
 #include "ofxAssimpModelLoader.h"
 #include "ofxUI.h"
-
+#include "Projector.h"
 #include "Mapamok.h"
 #include "DraggablePoints.h"
 #include "MeshUtils.h"
 
-class ReferencePoints : public DraggablePoints {
-public:
-    void draw(ofEventArgs& args) {
-        ofPushStyle();
-        ofSetColor(ofColor::red);
-        DraggablePoints::draw(args);
-        ofPopStyle();
-    }
-};
+
 
 class ofApp : public ofBaseApp {
 public:
@@ -39,11 +31,13 @@ public:
     bool saveButton = false;
     float backgroundBrightness = 0;
     bool useShader = false;
-    
+    vector<Projector> mProjectors;
     ofVboMesh mesh, cornerMesh;
     ofEasyCam cam;
-    ReferencePoints referencePoints;
-    
+    ofRectangle mViewPortLeft;
+    ofRectangle mViewPortRight;
+    ofRectangle mViewPort;
+    ofFbo fooFBO;
     void setup() {
         ofSetWindowTitle("mapamok");
         ofSetVerticalSync(true);
@@ -56,11 +50,30 @@ public:
         cam.setDistance(1);
         cam.setNearClip(.1);
         cam.setFarClip(10);
+        cam.setVFlip(false);
         
-        referencePoints.setClickRadius(8);
-        referencePoints.enableControlEvents();
-        referencePoints.enableDrawEvent();
-        referencePoints.setViewPort(ofGetWindowRect());
+        //640 * 480 * 2 with a 160 pixel overlap
+        mViewPortLeft = ofRectangle(0, 0, 640, 800);
+        mViewPortRight = ofRectangle(640, -160, 640, 800);
+        mViewPort = ofRectangle(0, 0, 640, 800);
+        mProjectors.assign(2, Projector());
+
+        
+        mProjectors[0].viewPort = mViewPortLeft;
+        mProjectors[0].referencePoints.setClickRadius(5);
+        mProjectors[0].referencePoints.setViewPort(mViewPortLeft);
+        mProjectors[0].referencePoints.enableControlEvents();
+        mProjectors[0].referencePoints.enableDrawEvent();
+
+        
+        
+        mProjectors[1].viewPort = mViewPortRight;
+        mProjectors[1].referencePoints.setClickRadius(5);
+        mProjectors[1].referencePoints.setViewPort(mViewPortRight);
+        mProjectors[1].referencePoints.enableControlEvents();
+        mProjectors[1].referencePoints.enableDrawEvent();
+        
+        fooFBO.allocate(640, 760, GL_RGBA, 4);
     }
     enum {
         RENDER_MODE_FACES = 0,
@@ -139,51 +152,52 @@ public:
         }
     }
     void drawEdit() {
-        cam.begin();
-        ofPushStyle();
-        ofSetColor(255, 128);
-        mesh.drawFaces();
-        ofPopStyle();
-        cam.end();
-        
-        ofMesh cornerMeshImage = cornerMesh;
-        // should only update this if necessary
-        project(cornerMeshImage, cam, ofGetWindowRect());
-        
-        // if this is a new mesh, create the points
-        // should use a "dirty" flag instead allowing us to reset manually
-        if(cornerMesh.getNumVertices() != referencePoints.size()) {
-            referencePoints.clear();
-            for(int i = 0; i < cornerMeshImage.getNumVertices(); i++) {
-                referencePoints.add(ofVec2f(cornerMeshImage.getVertex(i)));
+        for(int i = 0; i < mProjectors.size(); i++){
+            cam.begin(mProjectors[i].viewPort);
+            ofPushStyle();
+            ofSetColor(255, 128);
+            mesh.drawFaces();
+            ofPopStyle();
+            cam.end();
+            
+            ofMesh cornerMeshImage = cornerMesh;
+            // should only update this if necessary
+            project(cornerMeshImage, cam, mViewPort);
+            
+            // if this is a new mesh, create the points
+            // should use a "dirty" flag instead allowing us to reset manually
+            if(cornerMesh.getNumVertices() != mProjectors[i].referencePoints.size()) {
+                mProjectors[i].referencePoints.clear();
+                for(int j = 0; j < cornerMeshImage.getNumVertices(); j++) {
+                    mProjectors[i].referencePoints.add(ofVec2f(cornerMeshImage.getVertex(j)));
+                }
             }
-        }
-        
-        // if the calibration is ready, use the calibration to find the corner positions
-        
-        // otherwise, update the points
-        for(int i = 0; i < referencePoints.size(); i++) {
-            DraggablePoint& cur = referencePoints.get(i);
-            if(!cur.hit) {
-                cur.position = cornerMeshImage.getVertex(i);
-            } else {
-                ofLine(cur.position, cornerMeshImage.getVertex(i));
+            
+            // if the calibration is ready, use the calibration to find the corner positions
+            
+            // otherwise, update the points
+            for(int j = 0; j <  mProjectors[i].referencePoints.size(); j++) {
+                DraggablePoint& cur =  mProjectors[i].referencePoints.get(j);
+                if(!cur.hit) {
+                    cur.position = cornerMeshImage.getVertex(j);
+                } else {
+                    ofLine(cur.position, cornerMeshImage.getVertex(j));
+                }
             }
-        }
-        
-        // calculating the 3d mesh
-        vector<ofVec2f> imagePoints;
-        vector<ofVec3f> objectPoints;
-        for(int i = 0; i < referencePoints.size(); i++) {
-            DraggablePoint& cur = referencePoints.get(i);
-            if(cur.hit) {
-                imagePoints.push_back(cur.position);
-                objectPoints.push_back(cornerMesh.getVertex(i));
+            
+            // calculating the 3d mesh
+            vector<ofVec2f> imagePoints;
+            vector<ofVec3f> objectPoints;
+            for(int j = 0; j <  mProjectors[i].referencePoints.size(); j++) {
+                DraggablePoint& cur =  mProjectors[i].referencePoints.get(j);
+                if(cur.hit) {
+                    imagePoints.push_back(cur.position);
+                    objectPoints.push_back(cornerMesh.getVertex(j));
+                }
             }
+            // should only calculate this when the points are updated
+            mProjectors[i].mapamok.update(mProjectors[i].viewPort.width, mProjectors[i].viewPort.height, imagePoints, objectPoints);
         }
-        
-        // should only calculate this when the points are updated
-        mapamok.update(ofGetWidth(), ofGetHeight(), imagePoints, objectPoints);
     }
     void draw() {
         ofBackground(backgroundBrightness);
@@ -192,21 +206,26 @@ public:
         if(editToggle) {
             drawEdit();
         }
-        
-        if(mapamok.calibrationReady) {
-            ofPushView();
-            ofViewport(ofGetWindowRect());
-            mapamok.begin();
-            if(editToggle) {
-                ofSetColor(255, 128);
-            } else {
-                ofSetColor(255);
+        for(int i = 0; i < mProjectors.size(); i++){
+            if(mProjectors[i].mapamok.calibrationReady) {
+                mProjectors[i].mapamok.begin(mProjectors[i].viewPort);
+           
+                if(editToggle) {
+                    ofSetColor(255, 128);
+                } else {
+                    ofSetColor(255);
+                }
+                mesh.draw();
+    
+                mProjectors[i].mapamok.end();
             }
-            mesh.draw();
-            mapamok.end();
-            ofPopView();
         }
-        
+        ofPushStyle();
+        ofNoFill();
+        ofSetColor(255, 0, 255);
+        ofRect(mViewPortLeft);
+        ofRect(mViewPortRight);
+        ofPopStyle();
         ofDrawBitmapString(ofToString((int) ofGetFrameRate()), 10, ofGetHeight() - 40);
     }
     void loadModel(string filename) {
@@ -224,6 +243,17 @@ public:
         // normalize submeshes before any further processing
         for(int i = 0; i < meshes.size(); i++) {
             centerAndNormalize(meshes[i], cornerMin, cornerMax);
+        }
+        
+        
+        mesh.clearColors();
+        int numVerts = mesh.getNumVertices();
+        for(int i= 0; i < numVerts; i++){
+            if(i <= numVerts/2){
+                mesh.addColor(ofFloatColor(0, 1., 1.));
+            }else{
+                mesh.addColor(ofFloatColor(1., 0., 1.));
+            }
         }
         
         // merge
@@ -262,6 +292,6 @@ public:
 
 int main() {
     ofAppGLFWWindow window;
-    ofSetupOpenGL(&window, 1280, 720, OF_WINDOW);
+    ofSetupOpenGL(&window, 1280, 480, OF_WINDOW);
     ofRunApp(new ofApp());
 }

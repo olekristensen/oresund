@@ -48,18 +48,21 @@ public:
         modelMatrix = ofxCv::makeMatrix(rvec, tvec);
         calibrationReady = true;
     }
-    void begin() {
+    void begin(ofRectangle viewPort) {
         if(calibrationReady) {
             glPushMatrix();
             glMatrixMode(GL_PROJECTION);
             glPushMatrix();
             glMatrixMode(GL_MODELVIEW);
+            ofPushView();
+            ofViewport(viewPort.x, viewPort.y, viewPort.width, viewPort.height, true);
             intrinsics.loadProjectionMatrix(.1, 10);
             ofxCv::applyMatrix(modelMatrix);
         }
     }
     void end() {
         if(calibrationReady) {
+            ofPopView();
             glPopMatrix();
             glMatrixMode(GL_PROJECTION);
             glPopMatrix();
