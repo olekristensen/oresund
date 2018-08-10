@@ -242,6 +242,21 @@ int findNearestVertex(const vector<ofVec3f>& vertices, const ofVec3f& base) {
     return nearestIndex;
 }
 
+int findNearestVertex(const vector<glm::vec3>& vertices, const glm::vec3& base) {
+    int nearestIndex = 0;
+    float nearestDistance = 0;
+    int n = vertices.size();
+    for(int i = 0; i < n; i++) {
+        float distance = glm::distance2(base, vertices[i]);
+        if(i == 0 || distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestIndex = i;
+        }
+    }
+    return nearestIndex;
+}
+
+
 class PercentStatus {
 public:
     int i, total, ticks;
@@ -303,7 +318,7 @@ ofMesh mergeNearbyVertices(const ofMesh& mesh, float tolerance = 0) {
 }
 
 void getBoundingBox(const ofMesh& mesh, ofVec3f& cornerMin, ofVec3f& cornerMax) {
-	const vector<ofVec3f>& vertices = mesh.getVertices();
+    const vector<glm::vec3>& vertices = mesh.getVertices();
 	if(vertices.size() > 0) {
 		cornerMin = vertices[0];
 		cornerMax = vertices[0];
@@ -326,7 +341,7 @@ void centerAndNormalize(ofMesh& mesh, ofVec3f cornerMin, ofVec3f cornerMax) {
 	maxRange = MAX(maxRange, range.y);
 	maxRange = MAX(maxRange, range.z);
 	float scale = 1 / maxRange;
-	vector<ofVec3f>& vertices = mesh.getVertices();
+	vector<glm::vec3>& vertices = mesh.getVertices();
 	for(int i = 0; i < vertices.size(); i++) {
 		vertices[i] += translate;
 		vertices[i] *= scale;
@@ -344,7 +359,7 @@ ofVec3f randomVec3f(float range) {
 }
 
 void addJitter(ofMesh& mesh, float range) {
-	vector<ofVec3f>& vertices = mesh.getVertices();
+	vector<glm::vec3>& vertices = mesh.getVertices();
     int n = vertices.size();
     for(int i = 0; i < n; i++) {
         vertices[i] += randomVec3f(range);
@@ -356,8 +371,8 @@ void project(ofMesh& mesh, const ofCamera& camera, ofRectangle viewport) {
 	viewport.width /= 2;
 	viewport.height /= 2;
 	for(int i = 0; i < mesh.getNumVertices(); i++) {
-		ofVec3f& cur = mesh.getVerticesPointer()[i];
-		ofVec3f CameraXYZ = cur * modelViewProjectionMatrix;
+		glm::vec3& cur = mesh.getVerticesPointer()[i];
+        glm::vec3 CameraXYZ = modelViewProjectionMatrix.preMult(ofVec3f(cur));
 		cur.x = (CameraXYZ.x + 1.0f) * viewport.width + viewport.x;
 		cur.y = (1.0f - CameraXYZ.y) * viewport.height + viewport.y;
 		cur.z = CameraXYZ.z / 2;
@@ -369,7 +384,7 @@ void drawNormals(const ofMesh& mesh, float normalLength) {
 		const ofVec3f& start = mesh.getVertices()[i];
 		const ofVec3f& normal = mesh.getNormals()[i];
 		ofVec3f end = start + normal * normalLength;
-		ofLine(start, end);
+        ofDrawLine(start, end);
 	}
 }
 
@@ -455,7 +470,7 @@ void buildNormalsFaces(ofMesh& mesh) {
 void buildNormalsSingle(ofMesh& mesh) {
 	vector<ofIndexType>& indices = mesh.getIndices();
 	vector<bool> ready(mesh.getNumVertices());
-	vector<ofVec3f> normals(mesh.getNumVertices());
+	vector<glm::vec3> normals(mesh.getNumVertices());
 	for(int i = 0; i < indices.size(); i += 3) {
 		int i0 = indices[i + 0], i1 = indices[i + 1], i2 = indices[i + 2];
 		ofVec3f normal = getNormal(mesh.getVertices()[i0], mesh.getVertices()[i1], mesh.getVertices()[i2]);
@@ -478,7 +493,7 @@ void buildNormalsSingle(ofMesh& mesh) {
 // assumes indexed vertices and triangles
 void buildNormalsAverage(ofMesh& mesh) {
 	vector<ofIndexType>& indices = mesh.getIndices();
-	vector<ofVec3f> normals(mesh.getNumVertices());
+    vector<glm::vec3> normals(mesh.getNumVertices());
 	for(int i = 0; i < indices.size(); i += 3) {
 		int i0 = indices[i + 0], i1 = indices[i + 1], i2 = indices[i + 2];
 		ofVec3f normal = getNormal(mesh.getVertices()[i0], mesh.getVertices()[i1], mesh.getVertices()[i2]);
@@ -487,7 +502,7 @@ void buildNormalsAverage(ofMesh& mesh) {
 		normals[i2] += normal;
 	}
 	for(int i = 0; i < normals.size(); i++) {
-		normals[i].normalize();
+        glm::normalize(normals[i]);
 	}
 	mesh.addNormals(normals);
 }
@@ -495,10 +510,10 @@ void buildNormalsAverage(ofMesh& mesh) {
 // need to check that this actually works
 class IndexedPoint {
 public:
-    const ofVec3f* vertex;
+    const glm::vec3* vertex;
     const ofFloatColor* color;
-    const ofVec3f* normal;
-    const ofVec2f* texCoord;
+    const glm::vec3* normal;
+    const glm::vec2* texCoord;
     
     IndexedPoint(const ofMesh& mesh, int i) {
         vertex = mesh.getNumVertices() > 0 ? &(mesh.getVerticesPointer()[i]) : NULL;

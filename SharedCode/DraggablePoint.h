@@ -29,11 +29,11 @@ public:
 		ofSetLineWidth(2);
 		if(selected) {
 			ofSetColor(ofColor::yellow);
-			ofCircle(position, r + 4);
+            ofDrawEllipse(position, r + 4, r + 4);
             ofSetLineWidth(1);
             ofSetColor(255);
-            ofLine(position.x, 0, position.x, ofGetHeight());
-            ofLine(0, position.y, ofGetWidth(), position.y);
+            ofDrawLine(position.x, 0, position.x, ofGetHeight());
+            ofDrawLine(0, position.y, ofGetWidth(), position.y);
 		}
 		ofPopStyle();
 		ofPushStyle();
@@ -41,7 +41,7 @@ public:
         if(hit) {
             ofSetColor(ofColor::green);
         }
-		ofCircle(position, r);
+        ofDrawEllipse(position, r, r);
 		ofPopStyle();
 	}
 };

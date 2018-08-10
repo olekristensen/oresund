@@ -15,7 +15,7 @@ public:
 		string fragName = name + ".frag";
 		ofFile fragFile(fragName);
 		if(fragFile.exists()) {
-			Poco::Timestamp fragTimestamp = fragFile.getPocoFile().getLastModified();
+            std::time_t fragTimestamp = std::filesystem::last_write_time(fragFile);
 			if(fragTimestamp != lastFragTimestamp) {
 				needsReload = true;
 				lastFragTimestamp = fragTimestamp;
@@ -27,7 +27,7 @@ public:
 		string vertName = name + ".vert";
 		ofFile vertFile(vertName);
 		if(vertFile.exists()) {
-			Poco::Timestamp vertTimestamp = vertFile.getPocoFile().getLastModified();
+			std::time_t vertTimestamp = std::filesystem::last_write_time(vertFile);
 			if(vertTimestamp != lastVertTimestamp) {
 				needsReload = true;
 				lastVertTimestamp = vertTimestamp;
@@ -43,5 +43,5 @@ public:
 	}
 private:
 	string name;
-	Poco::Timestamp lastFragTimestamp, lastVertTimestamp;
+	std::time_t lastFragTimestamp, lastVertTimestamp;
 };
