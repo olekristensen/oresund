@@ -56,7 +56,7 @@ public:
     bool guiToggle = true;
     int guiColumnWidth = 250;
     
-    string title = "bridge";
+    string title = "Öresund bridge";
     
     Mapamok mapamok;
     ofxAssimpModelLoader model;
@@ -241,12 +241,19 @@ public:
             ImGui::Separator();
             
             ImGui::Checkbox("Edit", &editToggle);
-            static bool guiCameraMoves;
-            ImGui::Checkbox("Camera Moves", &guiCameraMoves);
-            if(guiCameraMoves)
-                cam.enableMouseInput();
-            else
+            if(editToggle){
+                ImGui::SameLine();
+                static bool guiCameraMoves;
+                ImGui::Checkbox("Camera", &guiCameraMoves);
+                if(guiCameraMoves)
+                    cam.enableMouseInput();
+                else
+                    cam.disableMouseInput();
+            } else {
                 cam.disableMouseInput();
+            }
+            bool guiCalibrationReady = mapamok.calibrationReady;
+            ImGui::Checkbox("Ready", &guiCalibrationReady);
             
             const char* guiRenderModeSelectionItems[] = { "Faces", "Outline", "Wireframe Full", "Wireframe Occluded", "Model" };
             ImGui::Combo("Render Mode", &renderModeSelection, guiRenderModeSelectionItems, IM_ARRAYSIZE(guiRenderModeSelectionItems));
