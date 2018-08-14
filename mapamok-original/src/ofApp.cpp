@@ -80,14 +80,14 @@ void ofApp::draw() {
 		ofPushStyle();
 		ofSetColor(magentaPrint);
 		ofSetLineWidth(8);
-		ofLine(0, 0, ofGetWidth(), ofGetHeight());
-		ofLine(ofGetWidth(), 0, 0, ofGetHeight());
+		ofDrawLine(0, 0, ofGetWidth(), ofGetHeight());
+		ofDrawLine(ofGetWidth(), 0, 0, ofGetHeight());
 		string message = "Shader failed to compile.";
 		ofVec2f center(ofGetWidth(), ofGetHeight());
 		center /= 2;
 		center.x -= message.size() * 8 / 2;
 		center.y -= 8;
-		drawHighlightString(message, center);
+		ofDrawBitmapStringHighlight(message, center);
 		ofPopStyle();
 	}
 }
@@ -182,21 +182,6 @@ void ofApp::render() {
 	ofSetColor(255);
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
 	glEnable(GL_DEPTH_TEST);
-	if(useShader) {
-		ofFile fragFile("shader.frag"), vertFile("shader.vert");
-		Poco::Timestamp fragTimestamp = fragFile.getPocoFile().getLastModified();
-		Poco::Timestamp vertTimestamp = vertFile.getPocoFile().getLastModified();
-		if(fragTimestamp != lastFragTimestamp || vertTimestamp != lastVertTimestamp) {
-			bool validShader = shader.load("shader");
-			setb("validShader", validShader);
-		}
-		lastFragTimestamp = fragTimestamp;
-		lastVertTimestamp = vertTimestamp;
-		
-		shader.begin();
-		shader.setUniform1f("elapsedTime", ofGetElapsedTimef());
-		shader.end();
-	}
 	ofColor transparentBlack(0, 0, 0, 0);
 	switch(geti("drawMode")) {
 		case 0: // faces
@@ -468,10 +453,10 @@ void ofApp::drawLabeledPoint(int label, ofVec2f position, ofColor color, ofColor
 	float h = ofGetHeight();
 	ofSetLineWidth(1.5);
 	position.x = roundf(position.x) + .5, position.y = roundf(position.y) + .5;
-	ofLine(position - ofVec2f(w,0), position + ofVec2f(w,0));
-	ofLine(position - ofVec2f(0,h), position + ofVec2f(0,h));
-	ofCircle(position, geti("selectedPointSize"));
-	drawHighlightString(ofToString(label), position + tooltipOffset, bg, fg);
+	ofDrawLine(position - ofVec2f(w,0), position + ofVec2f(w,0));
+	ofDrawLine(position - ofVec2f(0,h), position + ofVec2f(0,h));
+	ofDrawCircle(position, geti("selectedPointSize"));
+	ofDrawBitmapStringHighlight(ofToString(label), position + tooltipOffset, bg, fg);
 	glPopAttrib();
 }
 	
@@ -578,12 +563,12 @@ void ofApp::drawRenderMode() {
 			cur = Point2f(ofLerp(cur.x, mouseX, rate), ofLerp(cur.y, mouseY, rate));
 			drawLabeledPoint(choice, toOf(cur), yellowPrint, ofColor::white, ofColor::black);
 			ofSetColor(ofColor::black);
-			ofRect(toOf(cur), 1, 1);
+			ofDrawRectangle(toOf(cur), 1, 1);
 		} else if(getb("arrowing")) {
 			Point2f& cur = imagePoints[choice];
 			drawLabeledPoint(choice, toOf(cur), yellowPrint, ofColor::white, ofColor::black);
 			ofSetColor(ofColor::black);
-			ofRect(toOf(cur), 1, 1);
+			ofDrawRectangle(toOf(cur), 1, 1);
         } else {
 			// check to see if anything is selected
 			// draw hover magenta

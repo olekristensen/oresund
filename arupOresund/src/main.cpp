@@ -11,55 +11,97 @@
 #include "Mapamok.h"
 #include "DraggablePoints.h"
 #include "MeshUtils.h"
-
+#include "GLFW/glfw3.h"
+#include "ofxImGui.h"
 
 
 class ofApp : public ofBaseApp {
 public:
+    
+    // GUI
+    
+    ofxImGui::Gui imGui;
+    
     ofxUICanvas* gui;
     ofxUIRadio* renderMode;
-    
-    Mapamok mapamok;
-    
-    const float cornerRatio = .1;
-    const int cornerMinimum = 3;
-    const float mergeTolerance = .001;
-    const float selectionMergeTolerance = .01;
     
     bool editToggle = true;
     bool loadButton = false;
     bool saveButton = false;
     float backgroundBrightness = 0;
     bool useShader = false;
-    vector<Projector> mProjectors;
-    ofVboMesh mesh, cornerMesh;
+    
     ofEasyCam cam;
     ofRectangle mViewPortLeft;
     ofRectangle mViewPortRight;
     ofRectangle mViewPort;
     
+    
+    // MAPAMOK
+    
+    Mapamok mapamok;
+    
+    const float cornerRatio = 1.0;
+    // const float cornerRatio = .1;
+    const int cornerMinimum = 3;
+    const float mergeTolerance = .001;
+    const float selectionMergeTolerance = .001;
+    
+    vector<Projector> mProjectors;
+    
+    ofxAssimpModelLoader model;
+    ofVboMesh mesh, cornerMesh;
+    
+    // RENDER MODES
+    enum {
+        RENDER_MODE_FACES = 0,
+        RENDER_MODE_OUTLINE,
+        RENDER_MODE_WIREFRAME_FULL,
+        RENDER_MODE_WIREFRAME_OCCLUDED
+    };
+
     void setup() {
-        ofSetWindowTitle("mapamok");
-        ofSetVerticalSync(true);
-        setupGui();
-        if(ofFile::doesFileExist("model.dae")) {
-            loadModel("model.dae");
-        } else if(ofFile::doesFileExist("model.3ds")) {
-            loadModel("model.3ds");
+        
+        // WINDOW SETUP
+        
+        ofSetWindowTitle("Öresund");
+        
+        const int projectorWidth = 640;
+        const int projectorHeight = 480;
+        
+        int screenWidth = ofGetScreenWidth();
+        int screenHeight = ofGetScreenHeight();
+        int monitorCount;
+        
+        GLFWmonitor**  monitors = glfwGetMonitors(&monitorCount);
+        
+        if(monitorCount == 2){
+            for (int iC=0; iC < monitorCount; iC++){
+                if(iC > 0){
+                    // set to position on second screen
+                    int xM; int yM;
+                    glfwGetMonitorPos(monitors[iC], &xM, &yM);
+                    const GLFWvidmode * desktopMode = glfwGetVideoMode(monitors[iC]);
+                    ofRectangle monitorRect(xM, yM, desktopMode->width, desktopMode->height);
+                    ofSetWindowPosition(xM+100, yM+100);
+                }
+            }
+        } else {
+            ofSetWindowPosition(100, 100);
         }
-        cam.setDistance(1);
-        cam.setNearClip(.1);
-        cam.setFarClip(10);
-        cam.setVFlip(false);
+        ofSetWindowShape(projectorWidth*2, projectorHeight);
+
+        ofSetVerticalSync(true);
         
-        //640 * 480 * 2 with a 160 pixel overlap
-        //Left Projector Position and Full Texture Size
-        mViewPortLeft = ofRectangle(0, 0, 640, 480);
-        //Right Projector Posiiton
-        mViewPortRight = ofRectangle(640, 0, 640, 480);
-        mViewPort = ofRectangle(0, 0, 1280, 480);
+        // VIEWPORTS
+        
+        mViewPortLeft = ofRectangle(0, 0, projectorWidth, projectorHeight);
+        mViewPortRight = ofRectangle(projectorWidth, 0, projectorWidth, projectorHeight);
+        mViewPort = ofRectangle(0, 0, projectorWidth, projectorHeight);
+        
+        // PROJECTORS
+        
         mProjectors.assign(2, Projector());
-        
         
         mProjectors[0].viewPort = mViewPortLeft;
         mProjectors[0].referencePoints.setClickRadius(5);
@@ -67,19 +109,34 @@ public:
         mProjectors[0].referencePoints.enableControlEvents();
         mProjectors[0].referencePoints.enableDrawEvent();
         
-        
         mProjectors[1].viewPort = mViewPortRight;
         mProjectors[1].referencePoints.setClickRadius(5);
         mProjectors[1].referencePoints.setViewPort(mViewPortRight);
         mProjectors[1].referencePoints.enableControlEvents();
         mProjectors[1].referencePoints.enableDrawEvent();
+
+
+        // GUI SETUP
+        
+        setupGui();
+        
+        // LOAD MODEL
+        
+        if(ofFile::doesFileExist("model.dae")) {
+            loadModel("model.dae");
+        } else if(ofFile::doesFileExist("model.3ds")) {
+            loadModel("model.3ds");
+        }
+        
+        // CAMERA
+        
+        cam.setDistance(1);
+        cam.setNearClip(.1);
+        cam.setFarClip(10);
+        cam.setVFlip(false);
+        
     }
-    enum {
-        RENDER_MODE_FACES = 0,
-        RENDER_MODE_OUTLINE,
-        RENDER_MODE_WIREFRAME_FULL,
-        RENDER_MODE_WIREFRAME_OCCLUDED
-    };
+    
     void setupGui() {
         gui = new ofxUICanvas();
         
@@ -114,6 +171,7 @@ public:
         gui->addToggle("Use shader", &useShader);
         
         gui->autoSizeToFitWidgets();
+        
     }
     int getSelection(ofxUIRadio* radio) {
         vector<ofxUIToggle*> toggles = radio->getToggles();
@@ -124,6 +182,7 @@ public:
         }
         return -1;
     }
+    
     void render() {
         int renderModeSelection = getSelection(renderMode);
         if(renderModeSelection == RENDER_MODE_FACES) {
@@ -150,14 +209,17 @@ public:
             prepareRender(false, false, false);
         }
     }
+    
     void drawEdit() {
-        for(int i = 0; i < mProjectors.size(); i++){
+        for(int i = mProjectors.size()-1; i >= 0; i--){
             cam.begin(mProjectors[i].viewPort);
             ofPushStyle();
             ofSetColor(255, 128);
             mesh.drawFaces();
+            ofSetColor(0,0,255, 128);
             ofPopStyle();
             cam.end();
+            //mViewPort = mProjectors[i].viewPort;
             
             ofMesh cornerMeshImage = cornerMesh;
             // should only update this if necessary
@@ -168,7 +230,7 @@ public:
             if(cornerMesh.getNumVertices() != mProjectors[i].referencePoints.size()) {
                 mProjectors[i].referencePoints.clear();
                 for(int j = 0; j < cornerMeshImage.getNumVertices(); j++) {
-                    mProjectors[i].referencePoints.add(ofVec2f(cornerMeshImage.getVertex(j)));
+                    mProjectors[i].referencePoints.add(ofVec3f(cornerMeshImage.getVertex(j)));
                 }
             }
             
@@ -180,7 +242,10 @@ public:
                 if(!cur.hit) {
                     cur.position = cornerMeshImage.getVertex(j);
                 } else {
+                    ofPushMatrix();
+                    ofTranslate(mProjectors[i].viewPort.getTopLeft());
                     ofDrawLine(cur.position, cornerMeshImage.getVertex(j));
+                    ofPopMatrix();
                 }
             }
             
@@ -198,6 +263,7 @@ public:
             mProjectors[i].mapamok.update(mProjectors[i].viewPort.width, mProjectors[i].viewPort.height, imagePoints, objectPoints);
         }
     }
+    
     void draw() {
         ofBackground(backgroundBrightness);
         ofSetColor(255);
@@ -214,7 +280,8 @@ public:
                 } else {
                     ofSetColor(255);
                 }
-                mesh.draw();
+                
+                render();
                 
                 mProjectors[i].mapamok.end();
             }
@@ -227,14 +294,15 @@ public:
         ofPopStyle();
         ofDrawBitmapString(ofToString((int) ofGetFrameRate()), 10, ofGetHeight() - 40);
     }
+    
     void loadModel(string filename) {
-        ofxAssimpModelLoader model;
         model.loadModel(filename);
         vector<ofMesh> meshes = getMeshes(model);
         
         // join all the meshes
         mesh = ofVboMesh();
         mesh = joinMeshes(meshes);
+        ofLogNotice("loadModel") << "Joined meshes:\t\t " << mesh.getNumVertices() << "\t vertices" << endl;
         ofVec3f cornerMin, cornerMax;
         getBoundingBox(mesh, cornerMin, cornerMax);
         centerAndNormalize(mesh, cornerMin, cornerMax);
@@ -245,13 +313,14 @@ public:
         }
         
         
-        mesh.clearColors();
+        //mesh.clearColors();
         int numVerts = mesh.getNumVertices();
+        ofLogNotice("loadModel") << "Centered and normalised:\t " << mesh.getNumVertices() << "\t vertices" << endl;
         for(int i= 0; i < numVerts; i++){
             if(i <= numVerts/2){
-                mesh.addColor(ofFloatColor(0, 1., 1.));
+                //   mesh.addColor(ofFloatColor(0, 1., 1.));
             }else{
-                mesh.addColor(ofFloatColor(1., 0., 1.));
+                //   mesh.addColor(ofFloatColor(1., 0., 1.));
             }
         }
         
@@ -262,8 +331,11 @@ public:
         for(int i = 0; i < meshes.size(); i++) {
             ofMesh mergedMesh = mergeNearbyVertices(meshes[i], mergeTolerance);
             vector<unsigned int> cornerIndices = getRankedCorners(mergedMesh);
+            ofLogNotice("loadModel") << "Mesh " <<  i << ":\t " << cornerIndices.size() << "\t corner indices" << endl;
             int n = cornerIndices.size() * cornerRatio;
+            ofLogNotice("loadModel") << "Mesh " <<  i << ":\t " << n << "\t corner indices after ratio" << endl;
             n = MIN(MAX(n, cornerMinimum), cornerIndices.size());
+            ofLogNotice("loadModel") << "Mesh " <<  i << ":\t " << n << "\t corner indices after maxing" << endl;
             for(int j = 0; j < n; j++) {
                 int index = cornerIndices[j];
                 const ofVec3f& corner = mergedMesh.getVertices()[index];
@@ -273,12 +345,14 @@ public:
         cornerMesh = mergeNearbyVertices(cornerMesh, selectionMergeTolerance);
         cornerMesh.setMode(OF_PRIMITIVE_POINTS);
     }
+    
     void dragEvent(ofDragInfo dragInfo) {
         if(dragInfo.files.size() == 1) {
             string filename = dragInfo.files[0];
             loadModel(filename);
         }
     }
+    
     void keyPressed(int key) {
         if(key == 'f') {
             ofToggleFullscreen();
@@ -290,7 +364,12 @@ public:
 };
 
 int main() {
-    ofAppGLFWWindow window;
-    ofSetupOpenGL(&window, 1280, 480, OF_WINDOW);
+    ofGLWindowSettings windowSettings;
+    windowSettings.setGLVersion(4,1);
+    windowSettings.windowMode = OF_WINDOW;
+    windowSettings.setSize(1280*2, 1000);
+    
+    ofCreateWindow(windowSettings);
+    
     ofRunApp(new ofApp());
 }

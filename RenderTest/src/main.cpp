@@ -26,7 +26,7 @@ public:
         model.loadModel("model.dae");
         shader.setup("Outline");
         mesh = collapseModel(model);
-        mesh = convertIndices(mesh);
+        mesh = convertToIndices(mesh);
         
         mesh.setMode(OF_PRIMITIVE_TRIANGLES);
         mesh.clearColors();

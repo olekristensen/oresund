@@ -64,7 +64,6 @@ public:
         ofPushView();
         ofViewport(mViewPort.x, mViewPort.y, mViewPort.width, mViewPort.height, true);
         ofSetupScreenPerspective();
-        //ofTranslate(mViewPort.getTopLeft());
         ofPushStyle();
         ofSetColor(255, 0, 255);
 		for(int i = 0; i < size(); i++) {

@@ -50,6 +50,5 @@ public:
 	ofxCv::Intrinsics intrinsics;
 	bool calibrationReady;
 	
-	Poco::Timestamp lastFragTimestamp, lastVertTimestamp;
 	ofShader shader;
 };

@@ -35,18 +35,19 @@ public:
                                   0, 0, 1);
         int flags =
 		CV_CALIB_USE_INTRINSIC_GUESS |
-//		CV_CALIB_FIX_PRINCIPAL_POINT |
+        // CV_CALIB_FIX_PRINCIPAL_POINT |
 		CV_CALIB_FIX_ASPECT_RATIO |
 		CV_CALIB_FIX_K1 |
 		CV_CALIB_FIX_K2 |
 		CV_CALIB_FIX_K3;// |
-        //		CV_CALIB_ZERO_TANGENT_DIST);
+        // CV_CALIB_ZERO_TANGENT_DIST);
         calibrateCamera(objectPointsCv, imagePointsCv, imageSize, cameraMatrix, distCoeffs, rvecs, tvecs, flags);
         rvec = rvecs[0];
         tvec = tvecs[0];
         intrinsics.setup(cameraMatrix, imageSize);
         modelMatrix = ofxCv::makeMatrix(rvec, tvec);
         calibrationReady = true;
+        
     }
     void begin(ofRectangle viewPort) {
         if(calibrationReady) {
