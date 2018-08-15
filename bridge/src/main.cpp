@@ -1,3 +1,12 @@
+//TODO:
+
+// load model segmented
+// add fbo walls
+// add projectors and viewports
+// 
+
+
+
 // separate click radius from draw radius
 // abstract DraggablePoint into template
 // don't move model when dragging points
@@ -12,6 +21,7 @@
 #include "Mapamok.h"
 #include "DraggablePoints.h"
 #include "MeshUtils.h"
+#include "ofAutoshader.h"
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
@@ -60,7 +70,7 @@ public:
     
     Mapamok mapamok;
     ofxAssimpModelLoader model;
-
+    
     const float cornerRatio = 1.0;
     const int cornerMinimum = 3;
     const float mergeTolerance = .001;
@@ -78,6 +88,8 @@ public:
     ofEasyCam cam;
     ReferencePoints referencePoints;
     
+    ofAutoShader shader;
+    
     void setup() {
         ofSetWindowTitle(title);
         ofSetVerticalSync(true);
@@ -93,26 +105,39 @@ public:
         
         referencePoints.setClickRadius(8);
         referencePoints.enableControlEvents();
-//        referencePoints.enableDrawEvent();
+        //        referencePoints.enableDrawEvent();
+        shader.loadAuto("shaders/shader");
+        
     }
     
     enum {
         RENDER_MODE_FACES = 0,
         RENDER_MODE_OUTLINE,
         RENDER_MODE_WIREFRAME_FULL,
-        RENDER_MODE_WIREFRAME_OCCLUDED,
-        RENDER_MODE_MODEL
+        RENDER_MODE_WIREFRAME_OCCLUDED
     };
-
+    
     void render() {
+        
+        if(shaderToggle){
+            shader.begin();
+            shader.setUniform1f("elapsedTime", ofGetElapsedTimef());
+            shader.end();
+        }
+        
         if(renderModeSelection == RENDER_MODE_FACES) {
-            //            ofEnableDepthTest();
+            ofEnableDepthTest();
             ofSetColor(255, 128);
+            if(shaderToggle) shader.begin();
             mesh.drawFaces();
-            //            ofDisableDepthTest();
+            if(shaderToggle) shader.end();
+            ofDisableDepthTest();
         } else if(renderModeSelection == RENDER_MODE_WIREFRAME_FULL) {
+            if(shaderToggle) shader.begin();
             mesh.drawWireframe();
+            if(shaderToggle) shader.end();
         } else if(renderModeSelection == RENDER_MODE_OUTLINE || renderModeSelection == RENDER_MODE_WIREFRAME_OCCLUDED) {
+            if(shaderToggle) shader.begin();
             prepareRender(true, true, false);
             glEnable(GL_POLYGON_OFFSET_FILL);
             float lineWidth = ofGetStyle().lineWidth;
@@ -127,8 +152,7 @@ public:
             glDisable(GL_POLYGON_OFFSET_FILL);
             mesh.drawWireframe();
             prepareRender(false, false, false);
-        } else if(renderModeSelection == RENDER_MODE_MODEL){
-            model.draw(OF_MESH_FILL);
+            if(shaderToggle) shader.end();
         }
     }
     
@@ -255,7 +279,15 @@ public:
             bool guiCalibrationReady = mapamok.calibrationReady;
             ImGui::Checkbox("Ready", &guiCalibrationReady);
             
-            const char* guiRenderModeSelectionItems[] = { "Faces", "Outline", "Wireframe Full", "Wireframe Occluded", "Model" };
+            ImGui::PushFont(ImGuiIO().Fonts->Fonts[1]);
+            ImGui::TextUnformatted("Rendering");
+            ImGui::PopFont();
+            
+            ImGui::Separator();
+            
+            ImGui::Checkbox("Use Shader", &shaderToggle);
+            
+            const char* guiRenderModeSelectionItems[] = { "Faces", "Outline", "Wireframe Full", "Wireframe Occluded" };
             ImGui::Combo("Render Mode", &renderModeSelection, guiRenderModeSelectionItems, IM_ARRAYSIZE(guiRenderModeSelectionItems));
             
             ImGui::PushFont(ImGuiIO().Fonts->Fonts[1]);
@@ -272,7 +304,7 @@ public:
             
             gui.end();
         }
-    
+        
     }
     
     void loadModel(string filename) {
@@ -290,7 +322,7 @@ public:
         for(int i = 0; i < meshes.size(); i++) {
             centerAndNormalize(meshes[i], cornerMin, cornerMax);
         }
-
+        
         model.setScale(scale, scale, scale);
         
         // merge
@@ -339,7 +371,7 @@ public:
         
         ImGuiIO& io = ImGui::GetIO();
         io.MouseDrawCursor = false;
-
+        
         io.Fonts->Clear();
         io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Light.ttf", true).c_str(), 16);
         io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Regular.ttf", true).c_str(), 16);
@@ -408,7 +440,7 @@ public:
         style.Colors[ImGuiCol_TextSelectedBg]        = ImVec4(0.25f, 1.00f, 0.00f, 0.57f);
         style.Colors[ImGuiCol_ModalWindowDarkening]  = ImVec4(1.00f, 0.98f, 0.95f, 0.68f);
     }
-
+    
 };
 
 int main() {
