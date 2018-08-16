@@ -2,6 +2,9 @@
 
 class ofAutoShader : public ofShader {
 public:
+    
+    bool isValid = false;
+    
     void loadAuto(string name) {
         this->name = name;
         ofEventArgs args;
@@ -39,7 +42,7 @@ public:
         }
         
         if(needsReload) {
-            ofShader::load(vertName, fragName);
+            isValid = ofShader::load(vertName, fragName);
         }
     }
 private:

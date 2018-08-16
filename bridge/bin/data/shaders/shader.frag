@@ -33,8 +33,8 @@ float quasi(float interferenceAngle, vec2 point) {
 }
 
 void main() {
-	float stages = 6.;
-	float stage = 5.; //mod(elapsedTime * .6, stages);
+    float stages = 6.;
+	float stage = .5; //mod(elapsedTime * .6, stages);
 
 	if(stage == 0.) {
 		vec2 normPosition = (position.xz + position.yx) / 100.;

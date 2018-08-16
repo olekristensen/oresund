@@ -3,8 +3,8 @@
 // load model segmented
 // add fbo walls
 // add projectors and viewports
-// 
-
+// create shaders
+// make text string file format
 
 
 // separate click radius from draw radius
@@ -66,14 +66,16 @@ public:
     bool guiToggle = true;
     int guiColumnWidth = 250;
     
+    of3dPrimitive rootNode;
+
     string title = "Öresund bridge";
     
     Mapamok mapamok;
     ofxAssimpModelLoader model;
-    
-    const float cornerRatio = 1.0;
-    const int cornerMinimum = 3;
-    const float mergeTolerance = .001;
+
+    const float cornerRatio = .1;
+    const int cornerMinimum = 6;
+    const float mergeTolerance = .01;
     const float selectionMergeTolerance = .01;
     
     bool editToggle = true;
@@ -83,6 +85,9 @@ public:
     float backgroundBrightness = 0;
     bool shaderToggle = false;
     int renderModeSelection = 0;
+    
+    bool modelToggle = false;
+    bool worldToggle = false;
     
     ofVboMesh mesh, cornerMesh;
     ofEasyCam cam;
@@ -99,13 +104,12 @@ public:
         } else if(ofFile::doesFileExist("models/model.3ds")) {
             loadModel("models/model.3ds");
         }
-        cam.setDistance(1);
-        cam.setNearClip(.1);
-        cam.setFarClip(10);
-        
+        cam.setDistance(100);
+        cam.setNearClip(.01);
+        cam.setFarClip(10000);
+
         referencePoints.setClickRadius(8);
         referencePoints.enableControlEvents();
-        //        referencePoints.enableDrawEvent();
         shader.loadAuto("shaders/shader");
         
     }
@@ -116,6 +120,10 @@ public:
         RENDER_MODE_WIREFRAME_FULL,
         RENDER_MODE_WIREFRAME_OCCLUDED
     };
+    
+    void update() {
+        model.update();
+    }
     
     void render() {
         
@@ -212,10 +220,31 @@ public:
         ofBackground(backgroundBrightness);
         ofSetColor(255);
         
+        if(worldToggle) {
+            cam.begin();
+            ofPushStyle();
+            ofSetColor(255,0,255,64);
+            ofDrawGrid(1.0, 10, true);
+            ofDrawAxis(1.0);
+            ofPopStyle();
+            cam.end();
+        }
+        
         // EDITOR
         
         if(editToggle) {
             drawEdit();
+        }
+        
+        if(modelToggle) {
+            
+            cam.begin();
+            ofPushStyle();
+            ofSetColor(255,255,0,128);
+            model.drawFaces();
+            ofPopStyle();
+            cam.end();
+
         }
         
         // MAPAMOK
@@ -286,10 +315,22 @@ public:
             ImGui::Separator();
             
             ImGui::Checkbox("Use Shader", &shaderToggle);
-            
+
+            bool guiShaderValid = shader.isValid;
+            ImGui::Checkbox("Shader Valid", &guiShaderValid);
+
             const char* guiRenderModeSelectionItems[] = { "Faces", "Outline", "Wireframe Full", "Wireframe Occluded" };
             ImGui::Combo("Render Mode", &renderModeSelection, guiRenderModeSelectionItems, IM_ARRAYSIZE(guiRenderModeSelectionItems));
             
+            ImGui::PushFont(ImGuiIO().Fonts->Fonts[1]);
+            ImGui::TextUnformatted("Model");
+            ImGui::PopFont();
+            
+            ImGui::Separator();
+
+            ImGui::Checkbox("Show world", &worldToggle);
+            ImGui::Checkbox("Show model", &modelToggle);
+
             ImGui::PushFont(ImGuiIO().Fonts->Fonts[1]);
             ImGui::TextUnformatted("Interface");
             ImGui::PopFont();
@@ -308,26 +349,34 @@ public:
     }
     
     void loadModel(string filename) {
-        model.loadModel(filename, true);
+        
+        // load model, optimize and pretransform all vertices in the global space.
+        model.loadModel(filename, true, true);
+
+        // rotate the model to match the ofMeshes we get later...
+        model.setRotation(0, 180, 0, 0, 1.0);
+
+        // make sure to load to scale
+        model.setScaleNormalization(false);
+        model.calculateDimensions();
+        
         vector<ofMesh> meshes = getMeshes(model);
+        
+        auto names = model.getMeshNames();
+        for (auto name : names){
+            ofLogNotice("mesh name") << name << endl;
+        }
         
         // join all the meshes
         mesh = ofVboMesh();
         mesh = joinMeshes(meshes);
         ofVec3f cornerMin, cornerMax;
         getBoundingBox(mesh, cornerMin, cornerMax);
-        float scale = centerAndNormalize(mesh, cornerMin, cornerMax);
-        
-        // normalize submeshes before any further processing
-        for(int i = 0; i < meshes.size(); i++) {
-            centerAndNormalize(meshes[i], cornerMin, cornerMax);
-        }
-        
-        model.setScale(scale, scale, scale);
         
         // merge
         // another good metric for finding corners is if there is a single vertex touching
         // the wall of the bounding box, that point is a good control point
+        
         cornerMesh = ofVboMesh();
         for(int i = 0; i < meshes.size(); i++) {
             ofMesh mergedMesh = mergeNearbyVertices(meshes[i], mergeTolerance);
