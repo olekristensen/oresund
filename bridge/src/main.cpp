@@ -1,11 +1,10 @@
 //TODO:
 
-// load model segmented
 // add fbo walls
+// make meshes into vbo's
 // add projectors and viewports
 // create shaders
 // make text string file format
-
 
 // separate click radius from draw radius
 // abstract DraggablePoint into template
@@ -14,14 +13,15 @@
 
 #include "ofMain.h"
 #include "ofAppGLFWWindow.h"
-#include "ofxAssimpModelLoader.h"
-#include "ofxUI.h"
-#include "ofxImGui.h"
 
+#include "ofxAssimpModelLoader.h"
+#include "ofxImGui.h"
 #include "Mapamok.h"
 #include "DraggablePoints.h"
 #include "MeshUtils.h"
 #include "ofAutoshader.h"
+#include "ofxPBR.h"
+#include "ofxPBRHelper.h"
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
@@ -62,56 +62,93 @@ class ofApp : public ofBaseApp {
 public:
     
     // GUI
+    string title = "Öresund bridge";
     ofxImGui::Gui gui;
     bool guiToggle = true;
     int guiColumnWidth = 250;
+    bool showPBRHelper = false;
     
-    of3dPrimitive rootNode;
-
-    string title = "Öresund bridge";
-    
-    Mapamok mapamok;
-    ofxAssimpModelLoader model;
-
-    const float cornerRatio = .1;
-    const int cornerMinimum = 6;
-    const float mergeTolerance = .01;
-    const float selectionMergeTolerance = .01;
-    
-    bool editToggle = true;
-    bool recalculateToggle = false;
-    bool loadButton = false;
-    bool saveButton = false;
+    // STATE
+    bool editCalibration = true;
     float backgroundBrightness = 0;
     bool shaderToggle = false;
     int renderModeSelection = 0;
-    
-    bool modelToggle = false;
-    bool worldToggle = false;
-    
-    ofVboMesh mesh, cornerMesh;
-    ofEasyCam cam;
+    bool showScales = false;
+
+    // MODELS
+    ofxAssimpModelLoader calibrationModel;
+    ofxAssimpModelLoader renderModel;
+    ofxAssimp3dPrimitive * renderModelPrimitive;
+
+    // MAPAMOK
+    Mapamok mapamok;
+    const float cornerRatio = .01;
+    const int cornerMinimum = 6;
+    const float mergeTolerance = .01;
+    const float selectionMergeTolerance = .1;
+    ofVboMesh calibrationMesh, calibrationCornerMesh;
     ReferencePoints referencePoints;
     
-    ofAutoShader shader;
-    
+    ofEasyCam cam;
+
+    ofxPBRCubeMap cubemap[2];
+    ofxPBRMaterial material;
+    ofxPBRLight pbrLight;
+    ofxPBR pbr;
+
+    ofxPBRHelper pbrHelper;
+
+    ofAutoShader shader, fxaa;
+    float exposure = 1.0;
+    float gamma = 2.2;
+
+    function<void()> scene;
+
     void setup() {
+        
         ofSetWindowTitle(title);
         ofSetVerticalSync(true);
-        setupGui();
-        if(ofFile::doesFileExist("models/model.dae")) {
-            loadModel("models/model.dae");
-        } else if(ofFile::doesFileExist("models/model.3ds")) {
-            loadModel("models/model.3ds");
+
+        if(ofFile::doesFileExist("models/calibration.dae")) {
+            loadCalibrationModel("models/calibration.dae");
+        } else if(ofFile::doesFileExist("models/calibration.3ds")) {
+            loadCalibrationModel("models/calibration.3ds");
         }
-        cam.setDistance(100);
+
+        renderModelPrimitive = nullptr;
+
+        if(ofFile::doesFileExist("models/render.dae")) {
+            loadRenderModel("models/render.dae");
+        } else if(ofFile::doesFileExist("models/render.3ds")) {
+            loadRenderModel("models/render.3ds");
+        }
+
+        cam.setDistance(10);
         cam.setNearClip(.01);
         cam.setFarClip(10000);
-
+        
         referencePoints.setClickRadius(8);
         referencePoints.enableControlEvents();
-        shader.loadAuto("shaders/shader");
         
+        ofDisableArbTex();
+        
+        pbr.setup(1024);
+        
+        scene = bind(&ofApp::renderScene, this);
+
+        ofxPBRFiles::getInstance()->setup("ofxPBRAssets");
+        pbrHelper.setup(&pbr, ofxPBRFiles::getInstance()->getPath() + "/settings", true);
+        pbrHelper.addLight(&pbrLight, "light");
+        pbrHelper.addMaterial(&material, "material");
+        pbrHelper.addCubeMap(&cubemap[0], "cubeMap1");
+        pbrHelper.addCubeMap(&cubemap[1], "cubeMap2");
+        
+        string shaderPath = "shaders/postEffect/";
+        shader.loadAuto(shaderPath + "shader");
+        fxaa.loadAuto(shaderPath + "fxaa");
+
+        setupGui();
+
     }
     
     enum {
@@ -122,10 +159,47 @@ public:
     };
     
     void update() {
-        model.update();
+        calibrationModel.update();
+        renderModel.update();
+        if(renderModelPrimitive != nullptr){
+            renderModelPrimitive->update();            
+        }
+        
     }
     
-    void render() {
+    void renderScene() {
+        ofEnableDepthTest();
+        pbr.begin(&cam);
+        
+        ofSetColor(255);
+
+        material.begin(&pbr);
+        renderModelPrimitive->recursiveDraw();
+        material.end();
+        
+        /* PBR TEST SCENE
+        material.roughness = 0.0;
+        material.metallic = 0.0;
+        material.begin(&pbr);
+        ofDrawBox(0, -40, 0, 2000, 10, 2000);
+        material.end();
+        
+        ofSetColor(255,0,0);
+        for(int i=0;i<10;i++){
+            material.roughness = float(i) / 9.0;
+            for(int j=0;j<10;j++){
+                material.metallic = float(j) / 9.0;
+                material.begin(&pbr);
+                ofDrawSphere(i * 100 - 450, 0, j * 100 - 450, 35);
+                material.end();
+            }
+        }
+        */
+        pbr.end();
+        ofDisableDepthTest();
+    }
+    
+    void renderCalibration() {
         
         if(shaderToggle){
             shader.begin();
@@ -137,12 +211,12 @@ public:
             ofEnableDepthTest();
             ofSetColor(255, 128);
             if(shaderToggle) shader.begin();
-            mesh.drawFaces();
+            calibrationMesh.drawFaces();
             if(shaderToggle) shader.end();
             ofDisableDepthTest();
         } else if(renderModeSelection == RENDER_MODE_WIREFRAME_FULL) {
             if(shaderToggle) shader.begin();
-            mesh.drawWireframe();
+            calibrationMesh.drawWireframe();
             if(shaderToggle) shader.end();
         } else if(renderModeSelection == RENDER_MODE_OUTLINE || renderModeSelection == RENDER_MODE_WIREFRAME_OCCLUDED) {
             if(shaderToggle) shader.begin();
@@ -155,30 +229,44 @@ public:
                 glPolygonOffset(+lineWidth, +lineWidth);
             }
             glColorMask(false, false, false, false);
-            mesh.drawFaces();
+            calibrationMesh.drawFaces();
             glColorMask(true, true, true, true);
             glDisable(GL_POLYGON_OFFSET_FILL);
-            mesh.drawWireframe();
+            calibrationMesh.drawWireframe();
             prepareRender(false, false, false);
             if(shaderToggle) shader.end();
         }
+        
     }
     
-    void drawEdit() {
+    void drawCalibraitonEditor() {
+        
         cam.begin();
+        
+        if(showScales) {
+            ofPushStyle();
+            ofSetColor(255,0,255,64);
+            ofDrawGrid(1.0, 10, true);
+            ofDrawAxis(1.2);
+            ofPopStyle();
+        }
+
         ofPushStyle();
-        ofSetColor(255, 128);
-        mesh.drawFaces();
+        ofSetColor(255, 64);
+        ofEnableBlendMode(OF_BLENDMODE_ALPHA);
+        ofFill();
+        calibrationMesh.drawFaces();
         ofPopStyle();
+        
         cam.end();
         
-        ofMesh cornerMeshImage = cornerMesh;
+        ofMesh cornerMeshImage = calibrationCornerMesh;
         // should only update this if necessary
         project(cornerMeshImage, cam, ofGetWindowRect());
         
         // if this is a new mesh, create the points
         // should use a "dirty" flag instead allowing us to reset manually
-        if(cornerMesh.getNumVertices() != referencePoints.size()) {
+        if(calibrationCornerMesh.getNumVertices() != referencePoints.size()) {
             referencePoints.clear();
             for(int i = 0; i < cornerMeshImage.getNumVertices(); i++) {
                 referencePoints.add(ofVec2f(cornerMeshImage.getVertex(i)));
@@ -208,7 +296,7 @@ public:
             DraggablePoint& cur = referencePoints.get(i);
             if(cur.hit) {
                 imagePoints.push_back(cur.position);
-                objectPoints.push_back(cornerMesh.getVertex(i));
+                objectPoints.push_back(calibrationCornerMesh.getVertex(i));
             }
         }
         
@@ -217,47 +305,45 @@ public:
     }
     
     void draw() {
+        if(!editCalibration){
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+            
+            pbr.makeDepthMap(scene);
+            
+            glCullFace(GL_FRONT);
+        }
+
         ofBackground(backgroundBrightness);
         ofSetColor(255);
         
-        if(worldToggle) {
-            cam.begin();
-            ofPushStyle();
-            ofSetColor(255,0,255,64);
-            ofDrawGrid(1.0, 10, true);
-            ofDrawAxis(1.0);
-            ofPopStyle();
-            cam.end();
-        }
-        
         // EDITOR
         
-        if(editToggle) {
-            drawEdit();
-        }
-        
-        if(modelToggle) {
+        if(editCalibration) {
             
-            cam.begin();
-            ofPushStyle();
-            ofSetColor(255,255,0,128);
-            model.drawFaces();
-            ofPopStyle();
-            cam.end();
-
-        }
-        
-        // MAPAMOK
-        
-        if(mapamok.calibrationReady) {
-            mapamok.begin();
-            if(editToggle) {
+            drawCalibraitonEditor();
+            
+            if(mapamok.calibrationReady) {
+                mapamok.begin();
                 ofSetColor(255, 128);
-            } else {
-                ofSetColor(255);
+                renderCalibration();
+                mapamok.end();
             }
-            render();
-            mapamok.end();
+            
+        } else {
+            
+            if(mapamok.calibrationReady) {
+                mapamok.begin();
+                //pbr.drawEnvironment(&cam);
+                scene();
+                mapamok.end();
+            } else {
+                cam.begin();
+                pbr.drawEnvironment(&cam);
+                scene();
+                cam.end();
+            }
+            
         }
         
         // GUI
@@ -293,44 +379,31 @@ public:
             
             ImGui::Separator();
             
-            ImGui::Checkbox("Edit", &editToggle);
-            if(editToggle){
-                ImGui::SameLine();
-                static bool guiCameraMoves;
-                ImGui::Checkbox("Camera", &guiCameraMoves);
-                if(guiCameraMoves)
-                    cam.enableMouseInput();
-                else
-                    cam.disableMouseInput();
-            } else {
-                cam.disableMouseInput();
-            }
+            ImGui::Checkbox("Edit", &editCalibration);
+            ImGui::Checkbox("Show scales", &showScales);
             bool guiCalibrationReady = mapamok.calibrationReady;
             ImGui::Checkbox("Ready", &guiCalibrationReady);
             
+            ImGui::Checkbox("Use Shader", &shaderToggle);
+            bool guiShaderValid = shader.isValid;
+            ImGui::Checkbox("Shader Valid", &guiShaderValid);
+            
+            const char* guiRenderModeSelectionItems[] = { "Faces", "Outline", "Wireframe Full", "Wireframe Occluded" };
+            ImGui::Combo("Render Mode", &renderModeSelection, guiRenderModeSelectionItems, IM_ARRAYSIZE(guiRenderModeSelectionItems));
+
             ImGui::PushFont(ImGuiIO().Fonts->Fonts[1]);
             ImGui::TextUnformatted("Rendering");
             ImGui::PopFont();
             
             ImGui::Separator();
             
-            ImGui::Checkbox("Use Shader", &shaderToggle);
-
-            bool guiShaderValid = shader.isValid;
-            ImGui::Checkbox("Shader Valid", &guiShaderValid);
-
-            const char* guiRenderModeSelectionItems[] = { "Faces", "Outline", "Wireframe Full", "Wireframe Occluded" };
-            ImGui::Combo("Render Mode", &renderModeSelection, guiRenderModeSelectionItems, IM_ARRAYSIZE(guiRenderModeSelectionItems));
+            static bool enableCameraControl;
+            ImGui::Checkbox("Enable Camera Control", &enableCameraControl);
+            if(enableCameraControl)
+                cam.enableMouseInput();
+            else
+                cam.disableMouseInput();
             
-            ImGui::PushFont(ImGuiIO().Fonts->Fonts[1]);
-            ImGui::TextUnformatted("Model");
-            ImGui::PopFont();
-            
-            ImGui::Separator();
-
-            ImGui::Checkbox("Show world", &worldToggle);
-            ImGui::Checkbox("Show model", &modelToggle);
-
             ImGui::PushFont(ImGuiIO().Fonts->Fonts[1]);
             ImGui::TextUnformatted("Interface");
             ImGui::PopFont();
@@ -338,46 +411,52 @@ public:
             ImGui::Separator();
             static bool guiShowTest;
             ImGui::Checkbox("Show Test Window", &guiShowTest);
+            ImGui::Checkbox("Show PBR Helper", &showPBRHelper);
             if(guiShowTest)
                 ImGui::ShowTestWindow();
             
             ImGui::End();
             
+            if(showPBRHelper){
+                ImGui::Begin("ofxPBRHelper");
+                ImGui::DragFloat("exposure", &exposure, 0.1);
+                ImGui::DragFloat("gamma", &gamma, 0.1);
+                pbrHelper.drawGui();
+                ImGui::End();
+            }
+
             gui.end();
         }
         
     }
     
-    void loadModel(string filename) {
+    void loadCalibrationModel(string filename) {
         
-        // load model, optimize and pretransform all vertices in the global space.
-        model.loadModel(filename, true, true);
+        ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_VERBOSE);
 
+        calibrationModel.loadModel(filename, false, false);
+        
         // rotate the model to match the ofMeshes we get later...
-        model.setRotation(0, 180, 0, 0, 1.0);
-
+        calibrationModel.setRotation(0, 180, 0, 0, 1.0);
+        
         // make sure to load to scale
-        model.setScaleNormalization(false);
-        model.calculateDimensions();
+        calibrationModel.setScaleNormalization(false);
+        calibrationModel.calculateDimensions();
         
-        vector<ofMesh> meshes = getMeshes(model);
-        
-        auto names = model.getMeshNames();
-        for (auto name : names){
-            ofLogNotice("mesh name") << name << endl;
-        }
+        auto calibrationPrimitive = calibrationModel.getPrimitives();
+        vector<ofMesh> meshes = calibrationPrimitive->getBakedMeshesRecursive();
         
         // join all the meshes
-        mesh = ofVboMesh();
-        mesh = joinMeshes(meshes);
+        calibrationMesh = ofVboMesh();
+        calibrationMesh = joinMeshes(meshes);
         ofVec3f cornerMin, cornerMax;
-        getBoundingBox(mesh, cornerMin, cornerMax);
+        getBoundingBox(calibrationMesh, cornerMin, cornerMax);
         
         // merge
         // another good metric for finding corners is if there is a single vertex touching
         // the wall of the bounding box, that point is a good control point
         
-        cornerMesh = ofVboMesh();
+        calibrationCornerMesh = ofVboMesh();
         for(int i = 0; i < meshes.size(); i++) {
             ofMesh mergedMesh = mergeNearbyVertices(meshes[i], mergeTolerance);
             vector<unsigned int> cornerIndices = getRankedCorners(mergedMesh);
@@ -386,17 +465,34 @@ public:
             for(int j = 0; j < n; j++) {
                 int index = cornerIndices[j];
                 const ofVec3f& corner = mergedMesh.getVertices()[index];
-                cornerMesh.addVertex(corner);
+                calibrationCornerMesh.addVertex(corner);
             }
         }
-        cornerMesh = mergeNearbyVertices(cornerMesh, selectionMergeTolerance);
-        cornerMesh.setMode(OF_PRIMITIVE_POINTS);
+        calibrationCornerMesh = mergeNearbyVertices(calibrationCornerMesh, selectionMergeTolerance);
+        calibrationCornerMesh.setMode(OF_PRIMITIVE_POINTS);
     }
-    
+
+    void loadRenderModel(string filename) {
+        
+        ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_VERBOSE);
+        // load model, optimize and pretransform all vertices in the global space.
+        renderModel.loadModel(filename, false, false);
+        
+        // rotate the model to match the ofMeshes we get later...
+        renderModel.setRotation(0, 180, 0, 0, 1.0);
+        
+        // make sure to load to scale
+        renderModel.setScaleNormalization(false);
+        renderModel.calculateDimensions();
+        
+        renderModelPrimitive = renderModel.getPrimitives();
+        
+    }
+
     void dragEvent(ofDragInfo dragInfo) {
         if(dragInfo.files.size() == 1) {
             string filename = dragInfo.files[0];
-            loadModel(filename);
+            loadCalibrationModel(filename);
         }
     }
     
@@ -493,7 +589,10 @@ public:
 };
 
 int main() {
-    ofAppGLFWWindow window;
-    ofSetupOpenGL(&window, 1280, 720, OF_WINDOW);
+    //TODO: windows for projections
+    ofGLWindowSettings settings;
+    settings.setGLVersion(4, 1);
+    settings.setSize(1280,720);
+    ofCreateWindow(settings);
     ofRunApp(new ofApp());
 }

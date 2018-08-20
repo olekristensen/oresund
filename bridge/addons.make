@@ -1,6 +1,7 @@
 ofxAssimpModelLoader
 ofxCv
 ofxImGui
+ofxJSON
 ofxOpenCv
-ofxUI
-ofxXmlSettings
+ofxPBR
+ofxPBRHelper
