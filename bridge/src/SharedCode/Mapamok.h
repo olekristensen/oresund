@@ -13,6 +13,13 @@ public:
     bool calibrationReady;
     cv::Size2i imageSize;
     
+    bool bCV_CALIB_FIX_PRINCIPAL_POINT = false;
+    bool bCV_CALIB_FIX_ASPECT_RATIO = true;
+    bool bCV_CALIB_FIX_K1 = true;
+    bool bCV_CALIB_FIX_K2 = true;
+    bool bCV_CALIB_FIX_K3 = true;
+    bool bCV_CALIB_ZERO_TANGENT_DIST = false;
+    
     void update(int width, int height, vector<ofVec2f>& imagePoints, vector<ofVec3f>& objectPoints) {
         int n = imagePoints.size();
         const static int minPoints = 6;
@@ -37,14 +44,15 @@ public:
                                   f, 0, c.x,
                                   0, f, c.y,
                                   0, 0, 1);
-        int flags =
-        CV_CALIB_USE_INTRINSIC_GUESS |
-        //		CV_CALIB_FIX_PRINCIPAL_POINT |
-        CV_CALIB_FIX_ASPECT_RATIO |
-        CV_CALIB_FIX_K1 |
-        CV_CALIB_FIX_K2 |
-        CV_CALIB_FIX_K3;// |
-        //		CV_CALIB_ZERO_TANGENT_DIST);
+        int flags = CV_CALIB_USE_INTRINSIC_GUESS;
+
+        if (bCV_CALIB_FIX_PRINCIPAL_POINT) flags |= CV_CALIB_FIX_PRINCIPAL_POINT;
+        if (bCV_CALIB_FIX_ASPECT_RATIO) flags |= CV_CALIB_FIX_ASPECT_RATIO;
+        if (bCV_CALIB_FIX_K1) flags |= CV_CALIB_FIX_K1;
+        if (bCV_CALIB_FIX_K2) flags |= CV_CALIB_FIX_K2;
+        if (bCV_CALIB_FIX_K3) flags |= CV_CALIB_FIX_K3;
+        if (bCV_CALIB_ZERO_TANGENT_DIST) flags |= CV_CALIB_ZERO_TANGENT_DIST;
+
         calibrateCamera(objectPointsCv, imagePointsCv, imageSize, cameraMatrix, distCoeffs, rvecs, tvecs, flags);
         rvec = rvecs[0];
         tvec = tvecs[0];
@@ -54,20 +62,20 @@ public:
     }
     void begin() {
         if(calibrationReady) {
-            glPushMatrix();
-            glMatrixMode(GL_PROJECTION);
-            glPushMatrix();
-            glMatrixMode(GL_MODELVIEW);
-            intrinsics.loadProjectionMatrix(.1, 10);
+            ofPushMatrix();
+            ofMatrixMode(OF_MATRIX_PROJECTION);
+            ofPushMatrix();
+            ofMatrixMode(OF_MATRIX_MODELVIEW);
+            intrinsics.loadProjectionMatrix(.1, 7000);
             ofxCv::applyMatrix(modelMatrix);
         }
     }
     void end() {
         if(calibrationReady) {
-            glPopMatrix();
-            glMatrixMode(GL_PROJECTION);
-            glPopMatrix();
-            glMatrixMode(GL_MODELVIEW);
+            ofPopMatrix();
+            ofMatrixMode(OF_MATRIX_PROJECTION);
+            ofPopMatrix();
+            ofMatrixMode(OF_MATRIX_MODELVIEW);
         }
     }
     void save(string filePath){

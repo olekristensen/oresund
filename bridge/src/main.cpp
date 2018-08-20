@@ -11,6 +11,15 @@
 // don't move model when dragging points
 // only select one point at a time.
 
+/*****
+ 
+ Mapamok has a problem -
+ it does not work in openGL 4.1 :-(
+ 
+ ****/
+
+
+
 #include "ofMain.h"
 #include "ofAppGLFWWindow.h"
 
@@ -82,10 +91,10 @@ public:
 
     // MAPAMOK
     Mapamok mapamok;
-    const float cornerRatio = .01;
+    const float cornerRatio = .1;
     const int cornerMinimum = 6;
-    const float mergeTolerance = .01;
-    const float selectionMergeTolerance = .1;
+    const float mergeTolerance = .001;
+    const float selectionMergeTolerance = .5;
     ofVboMesh calibrationMesh, calibrationCornerMesh;
     ReferencePoints referencePoints;
     
@@ -95,10 +104,13 @@ public:
     ofxPBRMaterial material;
     ofxPBRLight pbrLight;
     ofxPBR pbr;
+    
+    ofFbo firstPass, secondPass;
+    ofFbo::Settings defaultFboSettings;
 
     ofxPBRHelper pbrHelper;
 
-    ofAutoShader shader, fxaa;
+    ofAutoShader shader, tonemap, fxaa;
     float exposure = 1.0;
     float gamma = 2.2;
 
@@ -108,6 +120,17 @@ public:
         
         ofSetWindowTitle(title);
         ofSetVerticalSync(true);
+        ofDisableArbTex();
+
+        defaultFboSettings.textureTarget = GL_TEXTURE_2D;
+        defaultFboSettings.useDepth = true;
+        defaultFboSettings.depthStencilAsTexture = true;
+        defaultFboSettings.useStencil = true;
+        defaultFboSettings.minFilter = GL_LINEAR;
+        defaultFboSettings.maxFilter = GL_LINEAR;
+        defaultFboSettings.wrapModeHorizontal = GL_CLAMP_TO_EDGE;
+        defaultFboSettings.wrapModeVertical = GL_CLAMP_TO_EDGE;
+        resizeFbos();
 
         if(ofFile::doesFileExist("models/calibration.dae")) {
             loadCalibrationModel("models/calibration.dae");
@@ -130,8 +153,6 @@ public:
         referencePoints.setClickRadius(8);
         referencePoints.enableControlEvents();
         
-        ofDisableArbTex();
-        
         pbr.setup(1024);
         
         scene = bind(&ofApp::renderScene, this);
@@ -145,6 +166,7 @@ public:
         
         string shaderPath = "shaders/postEffect/";
         shader.loadAuto(shaderPath + "shader");
+        tonemap.loadAuto(shaderPath + "tonemap");
         fxaa.loadAuto(shaderPath + "fxaa");
 
         setupGui();
@@ -308,10 +330,13 @@ public:
         if(!editCalibration){
             glEnable(GL_CULL_FACE);
             glCullFace(GL_BACK);
-            
             pbr.makeDepthMap(scene);
             
+            ofDisableAlphaBlending();
+            ofEnableDepthTest();
+            
             glCullFace(GL_FRONT);
+            
         }
 
         ofBackground(backgroundBrightness);
@@ -332,6 +357,11 @@ public:
             
         } else {
             
+            
+            firstPass.begin();
+            firstPass.activateAllDrawBuffers();
+            ofClear(0);
+
             if(mapamok.calibrationReady) {
                 mapamok.begin();
                 //pbr.drawEnvironment(&cam);
@@ -343,6 +373,30 @@ public:
                 scene();
                 cam.end();
             }
+
+            firstPass.end();
+            glDisable(GL_CULL_FACE);
+            
+            ofDisableDepthTest();
+            ofEnableAlphaBlending();
+            
+            // post effect
+            
+            secondPass.begin();
+            ofClear(0);
+            tonemap.begin();
+            tonemap.setUniformTexture("image", firstPass.getTexture(), 0);
+            tonemap.setUniform1f("exposure", exposure);
+            tonemap.setUniform1f("gamma", gamma);
+            firstPass.draw(0, 0);
+            tonemap.end();
+            secondPass.end();
+            
+            fxaa.begin();
+            fxaa.setUniformTexture("image", secondPass.getTexture(), 0);
+            fxaa.setUniform2f("texel", 1.0 / float(secondPass.getWidth()), 1.0 / float(secondPass.getHeight()));
+            secondPass.draw(0, 0);
+            fxaa.end();
             
         }
         
@@ -380,10 +434,16 @@ public:
             ImGui::Separator();
             
             ImGui::Checkbox("Edit", &editCalibration);
-            ImGui::Checkbox("Show scales", &showScales);
             bool guiCalibrationReady = mapamok.calibrationReady;
             ImGui::Checkbox("Ready", &guiCalibrationReady);
-            
+            ImGui::Checkbox("Show scales", &showScales);
+            ImGui::Checkbox("Fix principal point", &mapamok.bCV_CALIB_FIX_PRINCIPAL_POINT);
+            ImGui::Checkbox("Fix aspect ratio", &mapamok.bCV_CALIB_FIX_ASPECT_RATIO);
+            ImGui::Checkbox("Fix K1", &mapamok.bCV_CALIB_FIX_K1);
+            ImGui::Checkbox("Fix K2", &mapamok.bCV_CALIB_FIX_K2);
+            ImGui::Checkbox("Fix K3", &mapamok.bCV_CALIB_FIX_K3);
+            ImGui::Checkbox("Zero tangent dist", &mapamok.bCV_CALIB_ZERO_TANGENT_DIST);
+
             ImGui::Checkbox("Use Shader", &shaderToggle);
             bool guiShaderValid = shader.isValid;
             ImGui::Checkbox("Shader Valid", &guiShaderValid);
@@ -459,6 +519,7 @@ public:
         calibrationCornerMesh = ofVboMesh();
         for(int i = 0; i < meshes.size(); i++) {
             ofMesh mergedMesh = mergeNearbyVertices(meshes[i], mergeTolerance);
+            if(mergedMesh.getVertices().size() > cornerMinimum){
             vector<unsigned int> cornerIndices = getRankedCorners(mergedMesh);
             int n = cornerIndices.size() * cornerRatio;
             n = MIN(MAX(n, cornerMinimum), cornerIndices.size());
@@ -466,6 +527,7 @@ public:
                 int index = cornerIndices[j];
                 const ofVec3f& corner = mergedMesh.getVertices()[index];
                 calibrationCornerMesh.addVertex(corner);
+            }
             }
         }
         calibrationCornerMesh = mergeNearbyVertices(calibrationCornerMesh, selectionMergeTolerance);
@@ -488,6 +550,24 @@ public:
         renderModelPrimitive = renderModel.getPrimitives();
         
     }
+    
+    void resizeFbos(){
+        ofFbo::Settings firstPassSettings;
+        firstPassSettings = defaultFboSettings;
+        firstPassSettings.width = ofGetWidth();
+        firstPassSettings.height = ofGetHeight();
+        firstPassSettings.internalformat = GL_RGBA32F;
+        firstPassSettings.colorFormats.push_back(GL_RGBA32F);
+        firstPass.allocate(firstPassSettings);
+        
+        ofFbo::Settings secondPassSettings;
+        secondPassSettings = defaultFboSettings;
+        secondPassSettings.width = ofGetWidth();
+        secondPassSettings.height = ofGetHeight();
+        secondPassSettings.internalformat = GL_RGB;
+        secondPassSettings.colorFormats.push_back(GL_RGB);
+        secondPass.allocate(secondPassSettings);
+    }
 
     void dragEvent(ofDragInfo dragInfo) {
         if(dragInfo.files.size() == 1) {
@@ -509,6 +589,10 @@ public:
         if(key == 'l') {
             mapamok.load("calibrations/test");
         }
+    }
+    
+    void windowResized(int w, int h){
+        resizeFbos();
     }
     
     void setupGui(){
