@@ -11,14 +11,6 @@
 // don't move model when dragging points
 // only select one point at a time.
 
-/*****
- 
- Mapamok has a problem -
- it does not work in openGL 4.1 :-(
- 
- ****/
-
-
 
 #include "ofMain.h"
 #include "ofAppGLFWWindow.h"
