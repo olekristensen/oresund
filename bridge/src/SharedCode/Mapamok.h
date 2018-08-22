@@ -10,7 +10,7 @@ public:
     vector<vector<cv::Point3f> > objectPointsCv = vector<vector<cv::Point3f> >(1);
     vector<vector<cv::Point2f> > imagePointsCv = vector<vector<cv::Point2f> >(1);
     ofxCv::Intrinsics intrinsics;
-    bool calibrationReady;
+    bool calibrationReady = false;
     cv::Size2i imageSize;
     
     bool bCV_CALIB_FIX_PRINCIPAL_POINT = false;
@@ -60,18 +60,21 @@ public:
         modelMatrix = ofxCv::makeMatrix(rvec, tvec);
         calibrationReady = true;
     }
-    void begin() {
+    void begin(ofRectangle viewPort) {
         if(calibrationReady) {
             ofPushMatrix();
             ofMatrixMode(OF_MATRIX_PROJECTION);
             ofPushMatrix();
             ofMatrixMode(OF_MATRIX_MODELVIEW);
+            ofPushView();
+            ofViewport(viewPort.x, viewPort.y, viewPort.width, viewPort.height, true);
             intrinsics.loadProjectionMatrix(.1, 7000);
             ofxCv::applyMatrix(modelMatrix);
         }
     }
     void end() {
         if(calibrationReady) {
+            ofPopView();
             ofPopMatrix();
             ofMatrixMode(OF_MATRIX_PROJECTION);
             ofPopMatrix();

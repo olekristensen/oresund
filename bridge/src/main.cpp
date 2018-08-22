@@ -20,21 +20,12 @@
 #include "Mapamok.h"
 #include "DraggablePoints.h"
 #include "MeshUtils.h"
+#include "Projector.h"
 #include "ofAutoshader.h"
 #include "ofxPBR.h"
 #include "ofxPBRHelper.h"
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
-
-class ReferencePoints : public DraggablePoints {
-public:
-    void draw(ofEventArgs& args) {
-        ofPushStyle();
-        ofSetColor(ofColor::red);
-        DraggablePoints::draw(args);
-        ofPopStyle();
-    }
-};
 
 class GuiTheme : public ofxImGui::BaseTheme
 {
@@ -75,45 +66,72 @@ public:
     bool shaderToggle = false;
     int renderModeSelection = 0;
     bool showScales = false;
-
+    
     // MODELS
     ofxAssimpModelLoader calibrationModel;
     ofxAssimpModelLoader renderModel;
     ofxAssimp3dPrimitive * renderModelPrimitive;
-
-    // MAPAMOK
-    Mapamok mapamok;
+    
+    // CALIBRATION
     const float cornerRatio = .1;
     const int cornerMinimum = 6;
     const float mergeTolerance = .001;
     const float selectionMergeTolerance = .5;
     ofVboMesh calibrationMesh, calibrationCornerMesh;
-    ReferencePoints referencePoints;
-    
+
     ofEasyCam cam;
 
+    // PROJECTORS
+    glm::vec2 projectionResolution = {1280, 720};
+    
+    map<string, Projector> mProjectors;
+    ofRectangle mViewPortLeft;
+    ofRectangle mViewPortRight;
+    ofRectangle mViewPortPerspective;
+    ofRectangle mViewPort;
+    
+    // PBR
+    
     ofxPBRCubeMap cubemap[2];
     ofxPBRMaterial material;
     ofxPBRLight pbrLight;
     ofxPBR pbr;
     
-    ofFbo firstPass, secondPass;
     ofFbo::Settings defaultFboSettings;
-
+    
     ofxPBRHelper pbrHelper;
-
+    
     ofAutoShader shader, tonemap, fxaa;
     float exposure = 1.0;
     float gamma = 2.2;
-
+    
     function<void()> scene;
-
+    
     void setup() {
         
         ofSetWindowTitle(title);
         ofSetVerticalSync(true);
         ofDisableArbTex();
-
+        
+        if(ofFile::doesFileExist("models/calibration.dae")) {
+            loadCalibrationModel("models/calibration.dae");
+        } else if(ofFile::doesFileExist("models/calibration.3ds")) {
+            loadCalibrationModel("models/calibration.3ds");
+        }
+        
+        renderModelPrimitive = nullptr;
+        
+        if(ofFile::doesFileExist("models/render.dae")) {
+            loadRenderModel("models/render.dae");
+        } else if(ofFile::doesFileExist("models/render.3ds")) {
+            loadRenderModel("models/render.3ds");
+        }
+        
+        cam.setDistance(10);
+        cam.setNearClip(.01);
+        cam.setFarClip(10000);
+        cam.setVFlip(false); // new, and nessecary?
+        
         defaultFboSettings.textureTarget = GL_TEXTURE_2D;
         defaultFboSettings.useDepth = true;
         defaultFboSettings.depthStencilAsTexture = true;
@@ -122,33 +140,23 @@ public:
         defaultFboSettings.maxFilter = GL_LINEAR;
         defaultFboSettings.wrapModeHorizontal = GL_CLAMP_TO_EDGE;
         defaultFboSettings.wrapModeVertical = GL_CLAMP_TO_EDGE;
-        resizeFbos();
-
-        if(ofFile::doesFileExist("models/calibration.dae")) {
-            loadCalibrationModel("models/calibration.dae");
-        } else if(ofFile::doesFileExist("models/calibration.3ds")) {
-            loadCalibrationModel("models/calibration.3ds");
-        }
-
-        renderModelPrimitive = nullptr;
-
-        if(ofFile::doesFileExist("models/render.dae")) {
-            loadRenderModel("models/render.dae");
-        } else if(ofFile::doesFileExist("models/render.3ds")) {
-            loadRenderModel("models/render.3ds");
-        }
-
-        cam.setDistance(10);
-        cam.setNearClip(.01);
-        cam.setFarClip(10000);
         
-        referencePoints.setClickRadius(8);
-        referencePoints.enableControlEvents();
+        mViewPort = ofRectangle(0, 0, projectionResolution.x, projectionResolution.y);
+
+        mProjectors.insert(make_pair("perspective", Projector(
+                                                              ofRectangle(0,0,ofGetWidth(), ofGetHeight()),
+                                                              defaultFboSettings)));
+        mProjectors.insert(make_pair("left", Projector(
+                                                       ofRectangle(0, 0, projectionResolution.x, projectionResolution.y),
+                                                       defaultFboSettings)));
+        mProjectors.insert(make_pair("right", Projector(
+                                                        ofRectangle(projectionResolution.x, 0, projectionResolution.x, projectionResolution.y),
+                                                        defaultFboSettings)));
         
         pbr.setup(1024);
         
         scene = bind(&ofApp::renderScene, this);
-
+        
         ofxPBRFiles::getInstance()->setup("ofxPBRAssets");
         pbrHelper.setup(&pbr, ofxPBRFiles::getInstance()->getPath() + "/settings", true);
         pbrHelper.addLight(&pbrLight, "light");
@@ -160,9 +168,15 @@ public:
         shader.loadAuto(shaderPath + "shader");
         tonemap.loadAuto(shaderPath + "tonemap");
         fxaa.loadAuto(shaderPath + "fxaa");
-
+        
         setupGui();
+        
+        for(auto projector : mProjectors){
+            //projector.second.referencePoints.enableControlEvents();
+            projector.second.referencePoints.enableDrawEvent();
+        }
 
+        
     }
     
     enum {
@@ -176,7 +190,7 @@ public:
         calibrationModel.update();
         renderModel.update();
         if(renderModelPrimitive != nullptr){
-            renderModelPrimitive->update();            
+            renderModelPrimitive->update();
         }
         
     }
@@ -186,29 +200,29 @@ public:
         pbr.begin(&cam);
         
         ofSetColor(255);
-
+        
         material.begin(&pbr);
         renderModelPrimitive->recursiveDraw();
         material.end();
         
         /* PBR TEST SCENE
-        material.roughness = 0.0;
-        material.metallic = 0.0;
-        material.begin(&pbr);
-        ofDrawBox(0, -40, 0, 2000, 10, 2000);
-        material.end();
-        
-        ofSetColor(255,0,0);
-        for(int i=0;i<10;i++){
-            material.roughness = float(i) / 9.0;
-            for(int j=0;j<10;j++){
-                material.metallic = float(j) / 9.0;
-                material.begin(&pbr);
-                ofDrawSphere(i * 100 - 450, 0, j * 100 - 450, 35);
-                material.end();
-            }
-        }
-        */
+         material.roughness = 0.0;
+         material.metallic = 0.0;
+         material.begin(&pbr);
+         ofDrawBox(0, -40, 0, 2000, 10, 2000);
+         material.end();
+         
+         ofSetColor(255,0,0);
+         for(int i=0;i<10;i++){
+         material.roughness = float(i) / 9.0;
+         for(int j=0;j<10;j++){
+         material.metallic = float(j) / 9.0;
+         material.begin(&pbr);
+         ofDrawSphere(i * 100 - 450, 0, j * 100 - 450, 35);
+         material.end();
+         }
+         }
+         */
         pbr.end();
         ofDisableDepthTest();
     }
@@ -253,73 +267,93 @@ public:
         
     }
     
-    void drawCalibraitonEditor() {
+    void drawCalibrationEditor() {
         
-        cam.begin();
-        
-        if(showScales) {
-            ofPushStyle();
-            ofSetColor(255,0,255,64);
-            ofDrawGrid(1.0, 10, true);
-            ofDrawAxis(1.2);
-            ofPopStyle();
-        }
+        for (auto projector : mProjectors){
+            cam.begin(projector.second.viewPort);
 
-        ofPushStyle();
-        ofSetColor(255, 64);
-        ofEnableBlendMode(OF_BLENDMODE_ALPHA);
-        ofFill();
-        calibrationMesh.drawFaces();
-        ofPopStyle();
-        
-        cam.end();
-        
-        ofMesh cornerMeshImage = calibrationCornerMesh;
-        // should only update this if necessary
-        project(cornerMeshImage, cam, ofGetWindowRect());
-        
-        // if this is a new mesh, create the points
-        // should use a "dirty" flag instead allowing us to reset manually
-        if(calibrationCornerMesh.getNumVertices() != referencePoints.size()) {
-            referencePoints.clear();
-            for(int i = 0; i < cornerMeshImage.getNumVertices(); i++) {
-                referencePoints.add(ofVec2f(cornerMeshImage.getVertex(i)));
+            if(showScales) {
+                ofPushStyle();
+                ofSetColor(255,0,255,64);
+                ofDrawGrid(1.0, 10, true);
+                ofDrawAxis(1.2);
+                ofPopStyle();
             }
+
+            ofPushStyle();
+            ofSetColor(255, 32);
+            ofEnableBlendMode(OF_BLENDMODE_ALPHA);
+            ofFill();
+            calibrationMesh.drawFaces();
+            ofPopStyle();
+
+            cam.end();
+
+            ofMesh cornerMeshImage = calibrationCornerMesh;
+            // should only update this if necessary
+            project(cornerMeshImage, cam, projector.second.viewPort - projector.second.viewPort.getPosition());
+
+            // if this is a new mesh, create the points
+            // should use a "dirty" flag instead allowing us to reset manually
+            if(calibrationCornerMesh.getNumVertices() != projector.second.referencePoints.size()) {
+                projector.second.referencePoints.clear();
+                for(int i = 0; i < cornerMeshImage.getNumVertices(); i++) {
+                    projector.second.referencePoints.add(ofVec2f(cornerMeshImage.getVertex(i)));
+                }
+            }
+            
+            // if the calibration is ready, use the calibration to find the corner positions
+
+            // otherwise, update the points
+            for(int i = 0; i < projector.second.referencePoints.size(); i++) {
+                DraggablePoint& cur = projector.second.referencePoints.get(i);
+                if(!cur.hit) {
+                    cur.position = cornerMeshImage.getVertex(i);
+                } else {
+                    ofDrawLine(cur.position, cornerMeshImage.getVertex(i));
+                }
+            }
+
+            // calculating the 3d mesh
+            vector<ofVec2f> imagePoints;
+            vector<ofVec3f> objectPoints;
+            for(int j = 0; j <  projector.second.referencePoints.size(); j++) {
+                DraggablePoint& cur =  projector.second.referencePoints.get(j);
+                if(cur.hit) {
+                    imagePoints.push_back(cur.position);
+                    objectPoints.push_back(calibrationCornerMesh.getVertex(j));
+                }
+            }
+            // should only calculate this when the points are updated
+            projector.second.mapamok.update(projector.second.viewPort.width, projector.second.viewPort.height, imagePoints, objectPoints);
+
         }
         
-        // if the calibration is ready, use the calibration to find the corner positions
-        
-        // otherwise, update the points
-        for(int i = 0; i < referencePoints.size(); i++) {
-            DraggablePoint& cur = referencePoints.get(i);
-            if(!cur.hit) {
-                cur.position = cornerMeshImage.getVertex(i);
-            } else {
-                ofDrawLine(cur.position, cornerMeshImage.getVertex(i));
-            }
-        }
-        
-        // should be a better way to do this
-        ofEventArgs args;
-        referencePoints.draw(args);
-        
-        // calculating the 3d mesh
-        vector<ofVec2f> imagePoints;
-        vector<ofVec3f> objectPoints;
-        for(int i = 0; i < referencePoints.size(); i++) {
-            DraggablePoint& cur = referencePoints.get(i);
-            if(cur.hit) {
-                imagePoints.push_back(cur.position);
-                objectPoints.push_back(calibrationCornerMesh.getVertex(i));
-            }
-        }
-        
-        // should only calculate this when the points are updated
-        mapamok.update(ofGetWidth(), ofGetHeight(), imagePoints, objectPoints);
     }
     
     void draw() {
-        if(!editCalibration){
+        
+        ofBackground(backgroundBrightness);
+        ofSetColor(255);
+        
+        // EDITOR
+        
+        if(editCalibration) {
+            
+            drawCalibrationEditor();
+            
+            
+            for (auto projector : mProjectors){
+                if(projector.second.mapamok.calibrationReady){
+                    projector.second.mapamok.begin(projector.second.viewPort);
+                    ofSetColor(255, 128);
+                    renderCalibration();
+                    projector.second.mapamok.end();
+                }
+            }
+            
+        } else {
+
             glEnable(GL_CULL_FACE);
             glCullFace(GL_BACK);
             pbr.makeDepthMap(scene);
@@ -328,68 +362,51 @@ public:
             ofEnableDepthTest();
             
             glCullFace(GL_FRONT);
-            
-        }
 
-        ofBackground(backgroundBrightness);
-        ofSetColor(255);
-        
-        // EDITOR
-        
-        if(editCalibration) {
-            
-            drawCalibraitonEditor();
-            
-            if(mapamok.calibrationReady) {
-                mapamok.begin();
-                ofSetColor(255, 128);
-                renderCalibration();
-                mapamok.end();
+            for (auto projector : mProjectors){
+                
+                projector.second.firstPass.begin();
+                projector.second.firstPass.activateAllDrawBuffers();
+                ofClear(0);
+
+                if(projector.second.mapamok.calibrationReady){
+                    projector.second.mapamok.begin(projector.second.viewPort);
+                    scene();
+                    projector.second.mapamok.end();
+                } else {
+                    cam.begin(projector.second.viewPort);
+                    pbr.drawEnvironment(&cam);
+                    scene();
+                    cam.end();
+                }
+                
+                projector.second.firstPass.end();
+                
+                glDisable(GL_CULL_FACE);
+                
+                ofDisableDepthTest();
+                ofEnableAlphaBlending();
+                
+                // post effect
+                
+                projector.second.secondPass.begin();
+                ofClear(0);
+                tonemap.begin();
+                tonemap.setUniformTexture("image", projector.second.firstPass.getTexture(), 0);
+                tonemap.setUniform1f("exposure", exposure);
+                tonemap.setUniform1f("gamma", gamma);
+                projector.second.firstPass.draw(0, 0);
+                tonemap.end();
+                projector.second.secondPass.end();
+                
+                fxaa.begin();
+                fxaa.setUniformTexture("image", projector.second.secondPass.getTexture(), 0);
+                fxaa.setUniform2f("texel", 1.0 / float(projector.second.secondPass.getWidth()), 1.0 / float(projector.second.secondPass.getHeight()));
+                projector.second.secondPass.draw(projector.second.viewPort);
+                fxaa.end();
+                
             }
-            
-        } else {
-            
-            
-            firstPass.begin();
-            firstPass.activateAllDrawBuffers();
-            ofClear(0);
 
-            if(mapamok.calibrationReady) {
-                mapamok.begin();
-                //pbr.drawEnvironment(&cam);
-                scene();
-                mapamok.end();
-            } else {
-                cam.begin();
-                pbr.drawEnvironment(&cam);
-                scene();
-                cam.end();
-            }
-
-            firstPass.end();
-            glDisable(GL_CULL_FACE);
-            
-            ofDisableDepthTest();
-            ofEnableAlphaBlending();
-            
-            // post effect
-            
-            secondPass.begin();
-            ofClear(0);
-            tonemap.begin();
-            tonemap.setUniformTexture("image", firstPass.getTexture(), 0);
-            tonemap.setUniform1f("exposure", exposure);
-            tonemap.setUniform1f("gamma", gamma);
-            firstPass.draw(0, 0);
-            tonemap.end();
-            secondPass.end();
-            
-            fxaa.begin();
-            fxaa.setUniformTexture("image", secondPass.getTexture(), 0);
-            fxaa.setUniform2f("texel", 1.0 / float(secondPass.getWidth()), 1.0 / float(secondPass.getHeight()));
-            secondPass.draw(0, 0);
-            fxaa.end();
-            
         }
         
         // GUI
@@ -426,23 +443,23 @@ public:
             ImGui::Separator();
             
             ImGui::Checkbox("Edit", &editCalibration);
-            bool guiCalibrationReady = mapamok.calibrationReady;
-            ImGui::Checkbox("Ready", &guiCalibrationReady);
+//            bool guiCalibrationReady = mapamok.calibrationReady;
+//            ImGui::Checkbox("Ready", &guiCalibrationReady);
             ImGui::Checkbox("Show scales", &showScales);
-            ImGui::Checkbox("Fix principal point", &mapamok.bCV_CALIB_FIX_PRINCIPAL_POINT);
-            ImGui::Checkbox("Fix aspect ratio", &mapamok.bCV_CALIB_FIX_ASPECT_RATIO);
-            ImGui::Checkbox("Fix K1", &mapamok.bCV_CALIB_FIX_K1);
-            ImGui::Checkbox("Fix K2", &mapamok.bCV_CALIB_FIX_K2);
-            ImGui::Checkbox("Fix K3", &mapamok.bCV_CALIB_FIX_K3);
-            ImGui::Checkbox("Zero tangent dist", &mapamok.bCV_CALIB_ZERO_TANGENT_DIST);
-
+//            ImGui::Checkbox("Fix principal point", &mapamok.bCV_CALIB_FIX_PRINCIPAL_POINT);
+//            ImGui::Checkbox("Fix aspect ratio", &mapamok.bCV_CALIB_FIX_ASPECT_RATIO);
+//            ImGui::Checkbox("Fix K1", &mapamok.bCV_CALIB_FIX_K1);
+//            ImGui::Checkbox("Fix K2", &mapamok.bCV_CALIB_FIX_K2);
+//            ImGui::Checkbox("Fix K3", &mapamok.bCV_CALIB_FIX_K3);
+//            ImGui::Checkbox("Zero tangent dist", &mapamok.bCV_CALIB_ZERO_TANGENT_DIST);
+            
             ImGui::Checkbox("Use Shader", &shaderToggle);
             bool guiShaderValid = shader.isValid;
             ImGui::Checkbox("Shader Valid", &guiShaderValid);
             
             const char* guiRenderModeSelectionItems[] = { "Faces", "Outline", "Wireframe Full", "Wireframe Occluded" };
             ImGui::Combo("Render Mode", &renderModeSelection, guiRenderModeSelectionItems, IM_ARRAYSIZE(guiRenderModeSelectionItems));
-
+            
             ImGui::PushFont(ImGuiIO().Fonts->Fonts[1]);
             ImGui::TextUnformatted("Rendering");
             ImGui::PopFont();
@@ -476,7 +493,7 @@ public:
                 pbrHelper.drawGui();
                 ImGui::End();
             }
-
+            
             gui.end();
         }
         
@@ -485,7 +502,7 @@ public:
     void loadCalibrationModel(string filename) {
         
         ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_VERBOSE);
-
+        
         calibrationModel.loadModel(filename, false, false);
         
         // rotate the model to match the ofMeshes we get later...
@@ -512,20 +529,20 @@ public:
         for(int i = 0; i < meshes.size(); i++) {
             ofMesh mergedMesh = mergeNearbyVertices(meshes[i], mergeTolerance);
             if(mergedMesh.getVertices().size() > cornerMinimum){
-            vector<unsigned int> cornerIndices = getRankedCorners(mergedMesh);
-            int n = cornerIndices.size() * cornerRatio;
-            n = MIN(MAX(n, cornerMinimum), cornerIndices.size());
-            for(int j = 0; j < n; j++) {
-                int index = cornerIndices[j];
-                const ofVec3f& corner = mergedMesh.getVertices()[index];
-                calibrationCornerMesh.addVertex(corner);
-            }
+                vector<unsigned int> cornerIndices = getRankedCorners(mergedMesh);
+                int n = cornerIndices.size() * cornerRatio;
+                n = MIN(MAX(n, cornerMinimum), cornerIndices.size());
+                for(int j = 0; j < n; j++) {
+                    int index = cornerIndices[j];
+                    const ofVec3f& corner = mergedMesh.getVertices()[index];
+                    calibrationCornerMesh.addVertex(corner);
+                }
             }
         }
         calibrationCornerMesh = mergeNearbyVertices(calibrationCornerMesh, selectionMergeTolerance);
         calibrationCornerMesh.setMode(OF_PRIMITIVE_POINTS);
     }
-
+    
     void loadRenderModel(string filename) {
         
         ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_VERBOSE);
@@ -543,24 +560,6 @@ public:
         
     }
     
-    void resizeFbos(){
-        ofFbo::Settings firstPassSettings;
-        firstPassSettings = defaultFboSettings;
-        firstPassSettings.width = ofGetWidth();
-        firstPassSettings.height = ofGetHeight();
-        firstPassSettings.internalformat = GL_RGBA32F;
-        firstPassSettings.colorFormats.push_back(GL_RGBA32F);
-        firstPass.allocate(firstPassSettings);
-        
-        ofFbo::Settings secondPassSettings;
-        secondPassSettings = defaultFboSettings;
-        secondPassSettings.width = ofGetWidth();
-        secondPassSettings.height = ofGetHeight();
-        secondPassSettings.internalformat = GL_RGB;
-        secondPassSettings.colorFormats.push_back(GL_RGB);
-        secondPass.allocate(secondPassSettings);
-    }
-
     void dragEvent(ofDragInfo dragInfo) {
         if(dragInfo.files.size() == 1) {
             string filename = dragInfo.files[0];
@@ -576,19 +575,23 @@ public:
             guiToggle = !guiToggle;
         }
         if(key == 's') {
-            mapamok.save("calibrations/test");
+            for(auto projector : mProjectors){
+                projector.second.mapamok.save("calibrations/" + projector.first);
+            }
         }
         if(key == 'l') {
-            mapamok.load("calibrations/test");
+            for(auto projector : mProjectors){
+                projector.second.mapamok.load("calibrations/" + projector.first);
+            }
         }
     }
     
     void windowResized(int w, int h){
-        resizeFbos();
+        mProjectors.at("perspective").viewPort.set(0, 0, w, h);
+        mProjectors.at("perspective").resizeFbos();
     }
     
     void setupGui(){
-        
         
         ImGuiIO& io = ImGui::GetIO();
         io.MouseDrawCursor = false;

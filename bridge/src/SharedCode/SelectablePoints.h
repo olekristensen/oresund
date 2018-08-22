@@ -9,7 +9,8 @@ protected:
 	set<unsigned int> selected;
 	
 	float clickRadiusSquared;
-	
+    ofRectangle mViewPort;
+
 public:
 	SelectablePoints()
 	:clickRadiusSquared(0) {
@@ -21,6 +22,11 @@ public:
 		points.push_back(DraggablePoint());
 		points.back().position = v;
 	}
+    
+    void setViewPort(ofRectangle viewport){
+        mViewPort = viewport;
+    }
+
     DraggablePoint& get(int i) {
         return points[i];
     }
@@ -35,7 +41,7 @@ public:
 		bool shift = ofGetKeyPressed(OF_KEY_SHIFT);
 		bool hitAny = false;
 		for(int i = 0; i < size(); i++) {
-			bool hit = points[i].isHit(mouse, clickRadiusSquared);
+            bool hit = points[i].isHit(mouse-mViewPort.getTopLeft(), clickRadiusSquared);
 			if(hit && !hitAny) {
 				if(!points[i].selected) {
 					points[i].selected = true;
@@ -58,10 +64,16 @@ public:
         }
     }
 	void draw(ofEventArgs& args) {
+        ofPushView();
+        ofViewport(mViewPort.x, mViewPort.y, mViewPort.width, mViewPort.height, true);
+        ofSetupScreenPerspective();
+        //ofTranslate(mViewPort.getTopLeft());
         ofPushStyle();
-		for(int i = 0; i < size(); i++) {
-			points[i].draw(clickRadiusSquared);
-		}
+        ofSetColor(255, 0, 255);
+        for(int i = 0; i < size(); i++) {
+            points[i].draw(clickRadiusSquared);
+        }
         ofPopStyle();
+        ofPopView();
 	}
 };
