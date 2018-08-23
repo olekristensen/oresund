@@ -18,15 +18,13 @@ public:
 	unsigned int size() {
 		return points.size();
 	}
+    void setViewPort(ofRectangle viewport){
+        mViewPort = viewport;
+    }
 	void add(const ofVec2f& v) {
 		points.push_back(DraggablePoint());
 		points.back().position = v;
 	}
-    
-    void setViewPort(ofRectangle viewport){
-        mViewPort = viewport;
-    }
-
     DraggablePoint& get(int i) {
         return points[i];
     }
