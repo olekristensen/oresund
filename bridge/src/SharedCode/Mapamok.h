@@ -12,6 +12,8 @@ public:
     ofxCv::Intrinsics intrinsics;
     bool calibrationReady = false;
     cv::Size2i imageSize;
+    float nearClip = .1;
+    float farClip = 7000.0;
     
     bool bCV_CALIB_FIX_PRINCIPAL_POINT = false;
     bool bCV_CALIB_FIX_ASPECT_RATIO = true;
@@ -68,7 +70,7 @@ public:
             ofMatrixMode(OF_MATRIX_MODELVIEW);
             ofPushView();
             ofViewport(viewPort.x, viewPort.y, viewPort.width, viewPort.height, true);
-            intrinsics.loadProjectionMatrix(.1, 7000);
+            intrinsics.loadProjectionMatrix(nearClip, farClip);
             ofxCv::applyMatrix(modelMatrix);
         }
     }

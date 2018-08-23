@@ -72,7 +72,8 @@ public:
     ofxAssimpModelLoader calibrationModel;
     ofxAssimpModelLoader renderModel;
     ofxAssimp3dPrimitive * renderModelPrimitive;
-    
+    ofxAssimp3dPrimitive * calibrationModelPrimitive;
+
     // CALIBRATION
     const float cornerRatio = .1;
     const int cornerMinimum = 6;
@@ -183,8 +184,8 @@ public:
         setupGui();
         
         for(auto projector : mProjectors){
-            //projector.second.referencePoints.enableControlEvents();
-            //projector.second.referencePoints.enableDrawEvent();
+            projector.second->referencePoints.enableControlEvents();
+            projector.second->referencePoints.enableDrawEvent();
             projector.second->cam.setDistance(10);
             projector.second->cam.setNearClip(.01);
             projector.second->cam.setFarClip(10000);
@@ -259,12 +260,12 @@ public:
             ofEnableDepthTest();
             ofSetColor(255, 128);
             if(shaderToggle) shader.begin();
-            calibrationMesh.drawFaces();
+            calibrationModelPrimitive->recursiveDraw(OF_MESH_FILL);
             if(shaderToggle) shader.end();
             ofDisableDepthTest();
         } else if(renderModeSelection == RENDER_MODE_WIREFRAME_FULL) {
             if(shaderToggle) shader.begin();
-            calibrationMesh.drawWireframe();
+            calibrationModelPrimitive->recursiveDraw(OF_MESH_WIREFRAME);
             if(shaderToggle) shader.end();
         } else if(renderModeSelection == RENDER_MODE_OUTLINE || renderModeSelection == RENDER_MODE_WIREFRAME_OCCLUDED) {
             if(shaderToggle) shader.begin();
@@ -277,10 +278,10 @@ public:
                 glPolygonOffset(+lineWidth, +lineWidth);
             }
             glColorMask(false, false, false, false);
-            calibrationMesh.drawFaces();
+            calibrationModelPrimitive->recursiveDraw(OF_MESH_FILL);
             glColorMask(true, true, true, true);
             glDisable(GL_POLYGON_OFFSET_FILL);
-            calibrationMesh.drawWireframe();
+            calibrationModelPrimitive->recursiveDraw(OF_MESH_WIREFRAME);
             prepareRender(false, false, false);
             if(shaderToggle) shader.end();
         }
@@ -303,8 +304,10 @@ public:
             ofPushStyle();
             ofSetColor(255, 32);
             ofEnableBlendMode(OF_BLENDMODE_ALPHA);
+            ofDisableDepthTest();
             ofFill();
-            calibrationMesh.drawFaces();
+            calibrationModelPrimitive->recursiveDraw();
+            ofEnableDepthTest();
             ofPopStyle();
             
             projector.second->cam.end();
@@ -364,6 +367,10 @@ public:
             drawCalibrationEditor();
             
             for (auto projector : mProjectors){
+                
+                projector.second->referencePoints.enableControlEvents();
+                projector.second->referencePoints.enableDrawEvent();
+
                 if(projector.second->mapamok.calibrationReady){
                     projector.second->mapamok.begin(projector.second->viewPort);
                     ofSetColor(255, 128);
@@ -382,6 +389,9 @@ public:
             
             for (auto projector : mProjectors){
             
+                projector.second->referencePoints.disableControlEvents();
+                projector.second->referencePoints.disableDrawEvent();
+
                 ofDisableAlphaBlending();
                 ofEnableDepthTest();
 
@@ -393,7 +403,7 @@ public:
                 ofClear(0);
                 
                 if(projector.second->mapamok.calibrationReady){
-                    projector.second->mapamok.begin(projector.second->viewPort - projector.second->viewPort.getPosition()); //TOOD: not tested
+                    projector.second->mapamok.begin(projector.second->viewPort - projector.second->viewPort.getPosition());
                     cam = &projector.second->cam;
                     scene();
                     projector.second->mapamok.end();
@@ -423,11 +433,15 @@ public:
                 tonemap.end();
                 projector.second->secondPass.end();
 
+                projector.second->output.begin();
                 fxaa.begin();
                 fxaa.setUniformTexture("image", projector.second->secondPass.getTexture(), 0);
-                fxaa.setUniform2f("texel", 1.0 / float(projector.second->secondPass.getWidth()), 1.0 / float(projector.second->secondPass.getHeight()));
-                projector.second->secondPass.draw(projector.second->viewPort);
+                fxaa.setUniform2f("texel", 1.25 / float(projector.second->secondPass.getWidth()), 1.25 / float(projector.second->secondPass.getHeight()));
+                projector.second->secondPass.draw(0,0);
                 fxaa.end();
+                projector.second->output.end();
+                
+                projector.second->output.draw(projector.second->viewPort);
 
             }
             
@@ -553,8 +567,8 @@ public:
         calibrationModel.setScaleNormalization(false);
         calibrationModel.calculateDimensions();
         
-        auto calibrationPrimitive = calibrationModel.getPrimitives();
-        vector<ofMesh> meshes = calibrationPrimitive->getBakedMeshesRecursive();
+        calibrationModelPrimitive = calibrationModel.getPrimitives();
+        vector<ofMesh> meshes = calibrationModelPrimitive->getBakedMeshesRecursive();
         
         // join all the meshes
         calibrationMesh = ofVboMesh();
