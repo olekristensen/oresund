@@ -16,8 +16,6 @@ xcuserdata/
 
 .svn/
 obj/
-bin/
 build/
-!data/
 
 ofxCv.wiki/

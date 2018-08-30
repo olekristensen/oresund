@@ -1,0 +1,11 @@
+Info,  T0: Load /Users/ole/CloudStation/Development/openFrameworks/0.10.0/git/stable/apps/oresund/bridge/bin/data/models/render.dae
+Debug, T0: Assimp 4.0.216127495 amd64 gcc shared singlethreaded
+Info,  T0: Found a matching importer for this file format: Collada Importer.
+Info,  T0: Import root directory is '/Users/ole/CloudStation/Development/openFrameworks/0.10.0/git/stable/apps/oresund/bridge/bin/data/models/'
+Debug, T0: Collada schema version is 1.4.n
+Info,  T0: Entering post processing pipeline
+Debug, T0: FlipUVsProcess begin
+Debug, T0: FlipUVsProcess finished
+Debug, T0: TriangulateProcess begin
+Debug, T0: TriangulateProcess finished. There was nothing to be done.
+Info,  T0: Leaving post processing pipeline
