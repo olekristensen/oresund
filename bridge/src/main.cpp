@@ -61,6 +61,14 @@ public:
     bool showPBRHelper = false;
     ofTrueTypeFont guiFont;
     
+    ImFont* font0;
+    ImFont* font1;
+    ImFont* font2;
+    ImFont* font3;
+    ImFont* font4;
+    ImFont* font5;
+    
+    
     // STATE
     bool editCalibration = true;
     float backgroundBrightness = 0;
@@ -606,25 +614,24 @@ public:
             window_flags |= ImGuiWindowFlags_NoResize;
             window_flags |= ImGuiWindowFlags_NoMove;
             window_flags |= ImGuiWindowFlags_NoCollapse;
-            window_flags |= ImGuiWindowFlags_ShowBorders;
             
             ImGui::SetNextWindowPos(ofVec2f(0,0));
             ImGui::SetNextWindowSize(ofVec2f(guiColumnWidth,ofGetHeight()));
             ImGui::Begin("Main###Debug", NULL, window_flags);
             
             // Title
-            ImGui::PushFont(ImGuiIO().Fonts->Fonts[2]);
+            //ImGui::PushFont(font2);
             ImGui::TextUnformatted(title.c_str());
-            ImGui::PopFont();
+            //ImGui::PopFont();
             
             ImGui::TextUnformatted("den frie vilje");
             ImGui::Text("FPS %.3f", ofGetFrameRate());
             
             ImGui::Separator();
             
-            ImGui::PushFont(ImGuiIO().Fonts->Fonts[1]);
+            //ImGui::PushFont(font1);
             ImGui::TextUnformatted("Calibration");
-            ImGui::PopFont();
+            //ImGui::PopFont();
             
             ImGui::Separator();
             
@@ -663,9 +670,9 @@ public:
                 allocateViewFbo();
             }
             
-            ImGui::PushFont(ImGuiIO().Fonts->Fonts[1]);
+            //ImGui::PushFont(font1);
             ImGui::TextUnformatted("Interface");
-            ImGui::PopFont();
+            //ImGui::PopFont();
             
             ImGui::Separator();
             
@@ -797,19 +804,22 @@ public:
     
     void setupGui(){
         
+        
+        gui.setup();
+        
+        /*
+
         ImGuiIO& io = ImGui::GetIO();
         io.MouseDrawCursor = false;
         
-        io.Fonts->Clear();
-        io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Light.ttf", true).c_str(), 16);
-        io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Regular.ttf", true).c_str(), 16);
-        io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Light.ttf", true).c_str(), 32);
-        io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Regular.ttf", true).c_str(), 11);
-        io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Bold.ttf", true).c_str(), 11);
+        //io.Fonts->Clear();
+        font0 = io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Light.ttf", true).c_str(), 16);
+        font1 = io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Regular.ttf", true).c_str(), 16);
+        font2 = io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Light.ttf", true).c_str(), 32);
+        font3 = io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Regular.ttf", true).c_str(), 11);
+        font4 = io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Bold.ttf", true).c_str(), 11);
         io.Fonts->Build();
-        
-        gui.setup(new GuiTheme());
-        
+
         ImGuiStyle & style = ImGui::GetStyle();
         
         style.WindowPadding            = ImVec2(15, 15);
@@ -842,7 +852,6 @@ public:
         style.Colors[ImGuiCol_ScrollbarGrab]         = ImVec4(0.00f, 0.00f, 0.00f, 0.21f);
         style.Colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(0.00f, 0.00f, 0.00f, 0.32f);
         style.Colors[ImGuiCol_ScrollbarGrabActive]   = ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
-        style.Colors[ImGuiCol_ComboBg]               = ImVec4(1.00f, 0.98f, 1.00f, 1.00f);
         style.Colors[ImGuiCol_CheckMark]             = ImVec4(0.00f, 0.00f, 0.00f, 0.19f);
         style.Colors[ImGuiCol_SliderGrab]            = ImVec4(0.00f, 0.00f, 0.00f, 0.14f);
         style.Colors[ImGuiCol_SliderGrabActive]      = ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
@@ -858,15 +867,13 @@ public:
         style.Colors[ImGuiCol_ResizeGrip]            = ImVec4(0.00f, 0.00f, 0.00f, 0.04f);
         style.Colors[ImGuiCol_ResizeGripHovered]     = ImVec4(0.25f, 1.00f, 0.00f, 0.78f);
         style.Colors[ImGuiCol_ResizeGripActive]      = ImVec4(0.25f, 1.00f, 0.00f, 1.00f);
-        style.Colors[ImGuiCol_CloseButton]           = ImVec4(0.40f, 0.39f, 0.38f, 0.16f);
-        style.Colors[ImGuiCol_CloseButtonHovered]    = ImVec4(0.40f, 0.39f, 0.38f, 0.39f);
-        style.Colors[ImGuiCol_CloseButtonActive]     = ImVec4(0.40f, 0.39f, 0.38f, 1.00f);
         style.Colors[ImGuiCol_PlotLines]             = ImVec4(0.40f, 0.39f, 0.38f, 0.63f);
         style.Colors[ImGuiCol_PlotLinesHovered]      = ImVec4(0.25f, 1.00f, 0.00f, 1.00f);
         style.Colors[ImGuiCol_PlotHistogram]         = ImVec4(0.40f, 0.39f, 0.38f, 0.63f);
         style.Colors[ImGuiCol_PlotHistogramHovered]  = ImVec4(0.25f, 1.00f, 0.00f, 1.00f);
         style.Colors[ImGuiCol_TextSelectedBg]        = ImVec4(0.25f, 1.00f, 0.00f, 0.57f);
         style.Colors[ImGuiCol_ModalWindowDarkening]  = ImVec4(1.00f, 0.98f, 0.95f, 0.68f);
+         */
     }
     
 };

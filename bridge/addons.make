@@ -1,6 +1,5 @@
 ofxAssimpModelLoader
 ofxCv
 ofxImGui
-ofxJSON
 ofxOpenCv
 ofxPBR
