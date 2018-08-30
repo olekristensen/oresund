@@ -4,7 +4,8 @@ example-pulse/
 *.layout
 *.mode*v3
 *.pbxuser
-*.app*
+*.app/*
+*.app
 *.DS_*
 *.xcworkspacedata
 xcuserdata/
