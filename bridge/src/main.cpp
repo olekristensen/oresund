@@ -67,18 +67,23 @@ public:
     bool shaderToggle = false;
     int renderModeSelection = 0;
     bool showScales = false;
+    int textureIndexForSpaceModel = 0;
     
     // MODELS
-    ofxAssimpModelLoader calibrationModel;
-    ofxAssimpModelLoader renderModel;
-    ofxAssimp3dPrimitive * renderModelPrimitive;
-    ofxAssimp3dPrimitive * calibrationModelPrimitive;
-
+    ofxAssimpModelLoader spaceModel;
+    ofxAssimpModelLoader fullModel;
+    ofxAssimp3dPrimitive * fullModelPrimitive = nullptr;
+    ofxAssimp3dPrimitive * spaceModelPrimitive = nullptr;
+    ofxAssimp3dPrimitive * wallModelNode = nullptr;
+    ofxAssimp3dPrimitive * trussModelNode = nullptr;
+    ofxAssimp3dPrimitive * pylonsModelNode = nullptr;
+    ofxAssimp3dPrimitive * deckModelNode = nullptr;
+    
     // CALIBRATION
-    const float cornerRatio = .1;
+    const float cornerRatio = 1.0;
     const int cornerMinimum = 6;
     const float mergeTolerance = .001;
-    const float selectionMergeTolerance = .5;
+    const float selectionMergeTolerance = .001;
     ofVboMesh calibrationMesh, calibrationCornerMesh;
     
     // PROJECTORS
@@ -101,14 +106,22 @@ public:
     ofEasyCam mCamRight;
     ofEasyCam mCamPerspective;
 
+    // VIEW
+    
+    ofxAssimp3dPrimitive * viewNode;
+    ofCamera viewCamera;
+    ofFbo viewFbo;
+    ofRectangle viewRectangle;
+    float viewResolution = 200;
+
     // PBR
     
     ofxPBRCubeMap cubemap[2];
-    ofxPBRMaterial material;
+    vector<ofxPBRMaterial> materials;
     ofxPBRLight pbrLight;
     ofxPBR pbr;
     
-    ofEasyCam * cam;
+    ofCamera * cam;
     
     ofFbo::Settings defaultFboSettings;
     
@@ -120,26 +133,44 @@ public:
     
     function<void()> scene;
     
+    void allocateViewFbo() {
+        auto viewFboSettings = defaultFboSettings;
+        viewRectangle.x = 0;
+        viewRectangle.y = 0;
+        ofVec3f viewCornerMin;
+        ofVec3f viewCornerMax;
+        getBoundingBox(viewNode->getBakedMesh(), viewCornerMin, viewCornerMax);
+        viewRectangle.width =fabs(viewCornerMax.z - viewCornerMin.z);
+        viewRectangle.height =fabs(viewCornerMax.y - viewCornerMin.y);
+        viewFboSettings.width = round(fabs(viewRectangle.width) * viewResolution);
+        viewFboSettings.height = round(fabs(viewRectangle.height) * viewResolution);
+        viewFbo.allocate(viewFboSettings);
+    }
+    
     void setup() {
         
         ofSetWindowTitle(title);
         ofSetVerticalSync(true);
         ofDisableArbTex();
         guiFont.load("fonts/OpenSans-Light.ttf", 16);
-        
-        if(ofFile::doesFileExist("models/calibration.dae")) {
-            loadCalibrationModel("models/calibration.dae");
-        } else if(ofFile::doesFileExist("models/calibration.3ds")) {
-            loadCalibrationModel("models/calibration.3ds");
+
+        spaceModelPrimitive = nullptr;
+
+        if(ofFile::doesFileExist("models/space.dae")) {
+            loadSpaceModel("models/space.dae");
+        } else if(ofFile::doesFileExist("models/space.3ds")) {
+            loadSpaceModel("models/space.3ds");
         }
         
-        renderModelPrimitive = nullptr;
+        fullModelPrimitive = nullptr;
         
-        if(ofFile::doesFileExist("models/render.dae")) {
-            loadRenderModel("models/render.dae");
-        } else if(ofFile::doesFileExist("models/render.3ds")) {
-            loadRenderModel("models/render.3ds");
+        if(ofFile::doesFileExist("models/full.dae")) {
+            loadFullModel("models/full.dae");
+        } else if(ofFile::doesFileExist("models/full.3ds")) {
+            loadFullModel("models/full.3ds");
         }
+        
+        materials.resize(fullModelPrimitive->textureNames.size());
         
         defaultFboSettings.textureTarget = GL_TEXTURE_2D;
         defaultFboSettings.useDepth = true;
@@ -172,26 +203,31 @@ public:
         ofxPBRFiles::getInstance()->setup("ofxPBRAssets");
         pbrHelper.setup(&pbr, ofxPBRFiles::getInstance()->getPath() + "/settings", true);
         pbrHelper.addLight(&pbrLight, "light");
-        pbrHelper.addMaterial(&material, "material");
+        int materialNo = 1;
+        for(auto & material : materials){
+            pbrHelper.addMaterial(&material, string("material" + ofToString(materialNo++)).c_str());
+        }
         pbrHelper.addCubeMap(&cubemap[0], "cubeMap1");
         pbrHelper.addCubeMap(&cubemap[1], "cubeMap2");
         
         string shaderPath = "shaders/postEffect/";
-        shader.loadAuto(shaderPath + "shader");
         tonemap.loadAuto(shaderPath + "tonemap");
         fxaa.loadAuto(shaderPath + "fxaa");
-        
+        shader.loadAuto("shaders/shader");
+        shader.bindDefaults();
+
         setupGui();
         
         for(auto projector : mProjectors){
             projector.second->referencePoints.enableControlEvents();
             projector.second->referencePoints.enableDrawEvent();
             projector.second->cam.setDistance(10);
-            projector.second->cam.setNearClip(.01);
+            projector.second->cam.setNearClip(.1);
             projector.second->cam.setFarClip(10000);
-            //projector.second.cam.setVFlip(false); // new, and nessecary?
+            projector.second->cam.setVFlip(false);
         }
         
+        allocateViewFbo();
         
     }
     
@@ -203,28 +239,88 @@ public:
     };
     
     void update() {
-        calibrationModel.update();
-        renderModel.update();
-        if(renderModelPrimitive != nullptr){
-            renderModelPrimitive->update();
+        spaceModel.update();
+        fullModel.update();
+        if(fullModelPrimitive != nullptr){
+            fullModelPrimitive->update();
         }
         
     }
     
+    void renderPrimitiveWithMaterialsRecursive(ofxAssimp3dPrimitive* primitive, vector<ofxPBRMaterial> & materials, ofPolyRenderMode renderType = OF_MESH_FILL){
+        if(primitive->textureIndex >= 0) materials[primitive->textureIndex].begin(&pbr);
+        primitive->of3dPrimitive::draw(renderType);
+        if(primitive->textureIndex >= 0) materials[primitive->textureIndex].end();
+        for(auto c : primitive->getChildren()) {
+            renderPrimitiveWithMaterialsRecursive(c, materials, renderType);
+        }
+    }
+    
+    ofxAssimp3dPrimitive * getFirstPrimitiveWithTextureIndex(ofxAssimp3dPrimitive* primitive, int textureIndex){
+        if(primitive->textureIndex == textureIndex)
+            return primitive;
+        else {
+            for(auto c : primitive->getChildren()) {
+                ofxAssimp3dPrimitive * retP = getFirstPrimitiveWithTextureIndex(c, textureIndex);
+                if(retP != nullptr){
+                    return retP;
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    vector<ofxAssimp3dPrimitive*> getPrimitivesWithTextureIndex(ofxAssimp3dPrimitive* primitive, int textureIndex){
+        vector<ofxAssimp3dPrimitive*> retVec;
+        if(primitive->textureIndex == textureIndex){
+            retVec.push_back(primitive);
+            return retVec;
+        } else {
+            for(auto c : primitive->getChildren()) {
+                auto childVec = getPrimitivesWithTextureIndex(c, textureIndex);
+                if(childVec.size() > 0){
+                    for(auto child : childVec){
+                        retVec.push_back(child);
+                    }
+                }
+            }
+        }
+        return retVec;
+    }
+
+    ofxAssimp3dPrimitive * getFirstPrimitiveWithTextureNameContaining(ofxAssimp3dPrimitive* primitive, string str){
+        int textureIndex = 0;
+        for(auto name : primitive->textureNames){
+            if(ofStringTimesInString(name, str) > 0){
+                break;
+            }
+            textureIndex++;
+        }
+        
+        if(primitive->textureIndex == textureIndex)
+            return primitive;
+        else {
+            for(auto c : primitive->getChildren()) {
+                ofxAssimp3dPrimitive * retP = getFirstPrimitiveWithTextureIndex(c, textureIndex);
+                if(retP != nullptr){
+                    return retP;
+                }
+            }
+        }
+        return nullptr;
+    }
+
     void renderScene() {
         ofEnableDepthTest();
         ofDisableArbTex();
 
-    
         pbr.begin(cam);
         
-        ofSetColor(255);
+        ofSetColor(255,255);
+        renderPrimitiveWithMaterialsRecursive(fullModelPrimitive, materials);
         
-        material.begin(&pbr);
-        renderModelPrimitive->recursiveDraw();
-        material.end();
-        
-        /* PBR TEST SCENE
+/*
+        // PBR TEST SCENE
          material.roughness = 0.0;
          material.metallic = 0.0;
          material.begin(&pbr);
@@ -241,7 +337,7 @@ public:
          material.end();
          }
          }
-         */
+        */
         pbr.end();
         ofEnableArbTex();
 
@@ -260,12 +356,12 @@ public:
             ofEnableDepthTest();
             ofSetColor(255, 128);
             if(shaderToggle) shader.begin();
-            calibrationModelPrimitive->recursiveDraw(OF_MESH_FILL);
+            spaceModelPrimitive->recursiveDraw(OF_MESH_FILL);
             if(shaderToggle) shader.end();
             ofDisableDepthTest();
         } else if(renderModeSelection == RENDER_MODE_WIREFRAME_FULL) {
             if(shaderToggle) shader.begin();
-            calibrationModelPrimitive->recursiveDraw(OF_MESH_WIREFRAME);
+            spaceModelPrimitive->recursiveDraw(OF_MESH_WIREFRAME);
             if(shaderToggle) shader.end();
         } else if(renderModeSelection == RENDER_MODE_OUTLINE || renderModeSelection == RENDER_MODE_WIREFRAME_OCCLUDED) {
             if(shaderToggle) shader.begin();
@@ -278,10 +374,10 @@ public:
                 glPolygonOffset(+lineWidth, +lineWidth);
             }
             glColorMask(false, false, false, false);
-            calibrationModelPrimitive->recursiveDraw(OF_MESH_FILL);
+            spaceModelPrimitive->recursiveDraw(OF_MESH_FILL);
             glColorMask(true, true, true, true);
             glDisable(GL_POLYGON_OFFSET_FILL);
-            calibrationModelPrimitive->recursiveDraw(OF_MESH_WIREFRAME);
+            spaceModelPrimitive->recursiveDraw(OF_MESH_WIREFRAME);
             prepareRender(false, false, false);
             if(shaderToggle) shader.end();
         }
@@ -306,7 +402,36 @@ public:
             ofEnableBlendMode(OF_BLENDMODE_ALPHA);
             ofDisableDepthTest();
             ofFill();
-            calibrationModelPrimitive->recursiveDraw();
+            spaceModelPrimitive->recursiveDraw();
+            ofEnableDepthTest();
+
+            ofPushMatrix();
+            //viewNode->transformGL();
+            ofScale((viewRectangle.getHeight()/viewFbo.getHeight()));
+            ofRotateYDeg(90.0);
+            viewFbo.draw(0,0);
+            //viewNode->restoreTransformGL();
+            ofPopMatrix();
+
+            for(int mIndex = 0 ; mIndex < spaceModelPrimitive->textureNames.size(); mIndex++){
+                ofColor c;
+                c.setHsb(360.0*mIndex/spaceModelPrimitive->textureNames.size(), 255, 255);
+                ofPushStyle();
+                ofSetColor(c);
+                auto primitives = getPrimitivesWithTextureIndex(spaceModelPrimitive, mIndex);
+                for(auto p : primitives){
+                    if(mIndex == textureIndexForSpaceModel){
+                        shader.begin();
+                        shader.setUniform1f("elapsedTime", ofGetElapsedTimef());
+                    }
+                    p->recursiveDraw();
+                    if(mIndex == textureIndexForSpaceModel){
+                        shader.end();
+                    }
+                }
+                ofPopStyle();
+            }
+            
             ofEnableDepthTest();
             ofPopStyle();
             
@@ -356,7 +481,20 @@ public:
     
     void draw() {
         
-        ofBackground(backgroundBrightness);
+        
+        viewFbo.begin();
+        ofScale(1.0/viewFbo.getWidth());
+        ofClear(0,128,255, 255);
+        ofPushStyle();
+        ofPushMatrix();
+        ofScale(1.0, guiFont.getSize());
+        guiFont.drawString("View", 0.10, 0.10);
+        ofPopMatrix();
+        ofPopStyle();
+        viewFbo.end();
+        
+        ofBackground(0);
+        
         ofSetColor(255);
         
         if(editCalibration) {
@@ -398,13 +536,13 @@ public:
                 glEnable(GL_CULL_FACE);
                 glCullFace(GL_FRONT);
 
-                projector.second->firstPass.begin();
-                projector.second->firstPass.activateAllDrawBuffers();
+                projector.second->renderPass.begin();
+                projector.second->renderPass.activateAllDrawBuffers();
                 ofClear(0);
                 
                 if(projector.second->mapamok.calibrationReady){
                     projector.second->mapamok.begin(projector.second->viewPort - projector.second->viewPort.getPosition());
-                    cam = &projector.second->cam;
+                    cam = &projector.second->mapamok.cam;
                     scene();
                     projector.second->mapamok.end();
                 } else {
@@ -415,7 +553,7 @@ public:
                     projector.second->cam.end();
                 }
                 
-                projector.second->firstPass.end();
+                projector.second->renderPass.end();
                 
                 glDisable(GL_CULL_FACE);
 
@@ -423,31 +561,33 @@ public:
                 ofEnableAlphaBlending();
                 
                 // post effect
-                projector.second->secondPass.begin();
+                projector.second->tonemapPass.begin();
                 ofClear(0);
                 tonemap.begin();
-                tonemap.setUniformTexture("image", projector.second->firstPass.getTexture(), 0);
+                tonemap.setUniformTexture("image", projector.second->renderPass.getTexture(), 0);
                 tonemap.setUniform1f("exposure", exposure);
                 tonemap.setUniform1f("gamma", gamma);
-                projector.second->firstPass.draw(0, 0);
+                projector.second->renderPass.draw(0, 0);
                 tonemap.end();
-                projector.second->secondPass.end();
-
+                projector.second->tonemapPass.end();
+                
                 projector.second->output.begin();
                 fxaa.begin();
-                fxaa.setUniformTexture("image", projector.second->secondPass.getTexture(), 0);
-                fxaa.setUniform2f("texel", 1.25 / float(projector.second->secondPass.getWidth()), 1.25 / float(projector.second->secondPass.getHeight()));
-                projector.second->secondPass.draw(0,0);
+                fxaa.setUniformTexture("image", projector.second->tonemapPass.getTexture(), 0);
+                fxaa.setUniform2f("texel", 1.25 / float(projector.second->tonemapPass.getWidth()), 1.25 / float(projector.second->tonemapPass.getHeight()));
+                projector.second->tonemapPass.draw(0,0);
                 fxaa.end();
-                projector.second->output.end();
-                
-                projector.second->output.draw(projector.second->viewPort);
 
+                projector.second->output.end();
+
+                ofPushStyle();
+                projector.second->output.draw(projector.second->viewPort);
+                ofPopStyle();
             }
             
         }
         
-        // draw frames
+        // draw frames and labels
         for (auto projector : mProjectors){
             ofPushStyle();
             ofSetColor(255,255,255,255);
@@ -492,6 +632,16 @@ public:
             
             ImGui::Separator();
             
+            for(auto & projector : mProjectors){
+                ImGui::TextUnformatted(projector.first.c_str());
+                if(ImGui::Button("Load")){
+                    projector.second->mapamok.load("calibrations/" + projector.first);
+                } ImGui::SameLine();
+                if(ImGui::Button("Save")){
+                    projector.second->mapamok.save("calibrations/" + projector.first);
+                }
+            }
+            
             ImGui::Checkbox("Edit", &editCalibration);
             //            bool guiCalibrationReady = mapamok.calibrationReady;
             //            ImGui::Checkbox("Ready", &guiCalibrationReady);
@@ -507,11 +657,18 @@ public:
             bool guiShaderValid = shader.isValid;
             ImGui::Checkbox("Shader Valid", &guiShaderValid);
             
+            ImGui::SliderInt("Texture", &textureIndexForSpaceModel, 0, spaceModelPrimitive->textureNames.size()-1);
+            ImGui::TextUnformatted(ofSplitString(spaceModelPrimitive->textureNames[textureIndexForSpaceModel], "/").back().c_str());
+            
             const char* guiRenderModeSelectionItems[] = { "Faces", "Outline", "Wireframe Full", "Wireframe Occluded" };
             ImGui::Combo("Render Mode", &renderModeSelection, guiRenderModeSelectionItems, IM_ARRAYSIZE(guiRenderModeSelectionItems));
             
+            if(ImGui::SliderFloat("Resolution", &viewResolution, 1.0, 300.0)){
+                allocateViewFbo();
+            }
+            
             ImGui::PushFont(ImGuiIO().Fonts->Fonts[1]);
-            ImGui::TextUnformatted("Rendering");
+            ImGui::TextUnformatted("Interface");
             ImGui::PopFont();
             
             ImGui::Separator();
@@ -528,11 +685,6 @@ public:
                 }
             }
             
-            ImGui::PushFont(ImGuiIO().Fonts->Fonts[1]);
-            ImGui::TextUnformatted("Interface");
-            ImGui::PopFont();
-            
-            ImGui::Separator();
             static bool guiShowTest;
             ImGui::Checkbox("Show Test Window", &guiShowTest);
             ImGui::Checkbox("Show PBR Helper", &showPBRHelper);
@@ -554,21 +706,32 @@ public:
         
     }
     
-    void loadCalibrationModel(string filename) {
+    void loadSpaceModel(string filename) {
         
-        ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_VERBOSE);
+        ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_NOTICE);
         
-        calibrationModel.loadModel(filename, false, false);
+        spaceModel.loadModel(filename, false, false);
         
         // rotate the model to match the ofMeshes we get later...
-        calibrationModel.setRotation(0, 180, 0, 0, 1.0);
+        spaceModel.setRotation(0, 180, 0, 0, 1.0);
         
         // make sure to load to scale
-        calibrationModel.setScaleNormalization(false);
-        calibrationModel.calculateDimensions();
+        spaceModel.setScaleNormalization(false);
+        spaceModel.calculateDimensions();
         
-        calibrationModelPrimitive = calibrationModel.getPrimitives();
-        vector<ofMesh> meshes = calibrationModelPrimitive->getBakedMeshesRecursive();
+        spaceModelPrimitive = spaceModel.getPrimitives();
+        vector<ofMesh> meshes = spaceModelPrimitive->getBakedMeshesRecursive();
+        
+        auto calibrationPrimitive = getFirstPrimitiveWithTextureNameContaining(spaceModelPrimitive, "room.calibration");
+        
+        wallModelNode = getFirstPrimitiveWithTextureNameContaining(spaceModelPrimitive, "room.walls");
+        deckModelNode = getFirstPrimitiveWithTextureNameContaining(spaceModelPrimitive, "approach.deck");
+        trussModelNode = getFirstPrimitiveWithTextureNameContaining(spaceModelPrimitive, "room.truss");
+        viewNode = getFirstPrimitiveWithTextureNameContaining(spaceModelPrimitive, "room.view");
+        
+        meshes = calibrationPrimitive->getBakedMeshesRecursive();
+        
+        calibrationPrimitive->clearParent();
         
         // join all the meshes
         calibrationMesh = ofVboMesh();
@@ -598,27 +761,27 @@ public:
         calibrationCornerMesh.setMode(OF_PRIMITIVE_POINTS);
     }
     
-    void loadRenderModel(string filename) {
+    void loadFullModel(string filename) {
         
-        ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_VERBOSE);
+        ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_NOTICE);
         // load model, optimize and pretransform all vertices in the global space.
-        renderModel.loadModel(filename, false, false);
+        fullModel.loadModel(filename, false, false);
         
         // rotate the model to match the ofMeshes we get later...
-        renderModel.setRotation(0, 180, 0, 0, 1.0);
+        fullModel.setRotation(0, 180, 0, 0, 1.0);
         
         // make sure to load to scale
-        renderModel.setScaleNormalization(false);
-        renderModel.calculateDimensions();
+        fullModel.setScaleNormalization(false);
+        fullModel.calculateDimensions();
         
-        renderModelPrimitive = renderModel.getPrimitives();
+        fullModelPrimitive = fullModel.getPrimitives();
         
     }
     
     void dragEvent(ofDragInfo dragInfo) {
         if(dragInfo.files.size() == 1) {
             string filename = dragInfo.files[0];
-            loadCalibrationModel(filename);
+            loadSpaceModel(filename);
         }
     }
     
@@ -628,16 +791,6 @@ public:
         }
         if(key == '\t') {
             guiToggle = !guiToggle;
-        }
-        if(key == 's') {
-            for(auto projector : mProjectors){
-                projector.second->mapamok.save("calibrations/" + projector.first);
-            }
-        }
-        if(key == 'l') {
-            for(auto projector : mProjectors){
-                projector.second->mapamok.load("calibrations/" + projector.first);
-            }
         }
     }
     

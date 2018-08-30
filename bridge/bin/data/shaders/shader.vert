@@ -1,17 +1,29 @@
-#version 120
+#version 150
 
-varying vec3 position, normal;
-varying float randomOffset;
+uniform mat4 projectionMatrix;
+uniform mat4 modelViewMatrix;
+uniform mat4 textureMatrix;
+uniform mat4 modelViewProjectionMatrix;
+uniform mat4 inverseProjectionMatrix;
+
+in vec4  position;
+in vec4  color;
+in vec3  normal;
+in vec2  texcoord;
+
+in float randomOffset;
+
+out vec2 texCoordVarying;
+out vec3 positionVarying;
+out vec3 normalVarying;
 
 float rand(vec2 co){
     return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
 
 void main() {
-	gl_FrontColor = gl_Color;
-	gl_TexCoord[0] = gl_MultiTexCoord0;
-	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-	position = gl_Vertex.xyz;
-    normal = gl_Normal.xyz;
-	randomOffset = rand(gl_Vertex.xy + gl_Vertex.yz);
+	gl_Position = modelViewProjectionMatrix * position;
+	positionVarying = position.xyz;
+    normalVarying = normal.xyz;
+	//randomOffset = rand(position.xy + position.yz);
 }

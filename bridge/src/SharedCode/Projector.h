@@ -20,7 +20,7 @@ public:
     Mapamok mapamok;
     DraggablePoints referencePoints;
     
-    ofFbo firstPass, secondPass, output;
+    ofFbo renderPass, tonemapPass, output;
     ofFbo::Settings & defaultFboSettings;
     
     Projector(ofRectangle viewPort, ofFbo::Settings & defaultFboSettings)
@@ -37,8 +37,9 @@ public:
         firstPassSettings.width = viewPort.getWidth();
         firstPassSettings.height = viewPort.getHeight();
         firstPassSettings.internalformat = GL_RGBA32F;
+        firstPassSettings.numSamples = 8;
         firstPassSettings.colorFormats.push_back(GL_RGBA32F);
-        firstPass.allocate(firstPassSettings);
+        renderPass.allocate(firstPassSettings);
         
         ofFbo::Settings secondPassSettings;
         secondPassSettings = defaultFboSettings;
@@ -46,7 +47,7 @@ public:
         secondPassSettings.height = viewPort.getHeight();
         secondPassSettings.internalformat = GL_RGB;
         secondPassSettings.colorFormats.push_back(GL_RGB);
-        secondPass.allocate(secondPassSettings);
+        tonemapPass.allocate(secondPassSettings);
 
         ofFbo::Settings outputSettings;
         outputSettings = defaultFboSettings;

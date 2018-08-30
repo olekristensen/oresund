@@ -7,13 +7,16 @@ class Mapamok {
 public:
     cv::Mat rvec, tvec;
     ofMatrix4x4 modelMatrix;
+    ofMatrix4x4 modelViewMatrix;
     vector<vector<cv::Point3f> > objectPointsCv = vector<vector<cv::Point3f> >(1);
     vector<vector<cv::Point2f> > imagePointsCv = vector<vector<cv::Point2f> >(1);
     ofxCv::Intrinsics intrinsics;
     bool calibrationReady = false;
     cv::Size2i imageSize;
     float nearClip = .1;
-    float farClip = 7000.0;
+    float farClip = 10000.0;
+    
+    ofCamera cam;
     
     bool bCV_CALIB_FIX_PRINCIPAL_POINT = false;
     bool bCV_CALIB_FIX_ASPECT_RATIO = true;
@@ -60,6 +63,13 @@ public:
         tvec = tvecs[0];
         intrinsics.setup(cameraMatrix, imageSize);
         modelMatrix = ofxCv::makeMatrix(rvec, tvec);
+        cam.setupPerspective();
+        cam.setNearClip(nearClip);
+        cam.setFarClip(farClip);
+        cam.setPosition(glm::vec3(0,0,0));
+        cam.lookAt(glm::vec3(0,0,1), glm::vec3(0,-1,0));
+        cam.setPosition(modelMatrix.getTranslation());
+        cam.setOrientation(modelMatrix.getRotate());
         calibrationReady = true;
     }
     void begin(ofRectangle viewPort) {
@@ -84,7 +94,7 @@ public:
         }
     }
     void save(string filePath){
-        
+        if(calibrationReady){
         string dirName = filePath + "/";
         ofDirectory dir(dirName);
         dir.create();
@@ -99,6 +109,9 @@ public:
         
         cv::Point2d fov = intrinsics.getFov();
         fs << "fov" << fov;
+            
+        cv::Size2f sensorSize = intrinsics.getSensorSize();
+        fs << "sensorSize" << sensorSize;
         
         cv::Point2d principalPoint = intrinsics.getPrincipalPoint();
         fs << "principalPoint" << principalPoint;
@@ -127,12 +140,15 @@ public:
 
         fs << "objectPoints" << cv::Mat(objectPointsCv[0]);
         fs << "imagePoints" << cv::Mat(imagePointsCv[0]);
+        }
 
     }
     void load(string filePath){
 
         cv::FileStorage fs(ofToDataPath(filePath + "/calibration-advanced.yml", true), cv::FileStorage::READ);
         
+        if(fs.isOpened()){
+            
         cv::Mat objPointsMat, imgPointsMat;
         fs["objectPoints"] >> objPointsMat;
         fs["imagePoints"] >> imgPointsMat;
@@ -178,6 +194,7 @@ public:
         modelMatrix = ofxCv::makeMatrix(rvec, tvec);
         
         calibrationReady = true;
-        
+        }
+
     }
 };
