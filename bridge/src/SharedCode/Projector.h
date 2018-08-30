@@ -1,3 +1,5 @@
+#pragma once
+
 //
 //  Projector.h
 //  mapamok
@@ -6,8 +8,6 @@
 //
 //
 
-
-#pragma once
 #include "ofMain.h"
 #include "Mapamok.h"
 #include "DraggablePoints.h"
@@ -65,6 +65,5 @@ public:
     }
     
     ofEasyCam cam;
-    
 
 };
