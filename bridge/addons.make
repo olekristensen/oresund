@@ -4,4 +4,3 @@ ofxImGui
 ofxJSON
 ofxOpenCv
 ofxPBR
-ofxPBRHelper

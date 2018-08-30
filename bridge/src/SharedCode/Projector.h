@@ -32,10 +32,14 @@ public:
     }
 
     void resizeFbos(){
+        
+        int height = fmaxf(8,viewPort.getHeight());
+        int width = fmaxf(8,viewPort.getWidth());
+        
         ofFbo::Settings firstPassSettings;
         firstPassSettings = defaultFboSettings;
-        firstPassSettings.width = viewPort.getWidth();
-        firstPassSettings.height = viewPort.getHeight();
+        firstPassSettings.width = width;
+        firstPassSettings.height = height;
         firstPassSettings.internalformat = GL_RGBA32F;
         firstPassSettings.numSamples = 8;
         firstPassSettings.colorFormats.push_back(GL_RGBA32F);
@@ -43,16 +47,16 @@ public:
         
         ofFbo::Settings secondPassSettings;
         secondPassSettings = defaultFboSettings;
-        secondPassSettings.width = viewPort.getWidth();
-        secondPassSettings.height = viewPort.getHeight();
+        secondPassSettings.width = width;
+        secondPassSettings.height = height;
         secondPassSettings.internalformat = GL_RGB;
         secondPassSettings.colorFormats.push_back(GL_RGB);
         tonemapPass.allocate(secondPassSettings);
 
         ofFbo::Settings outputSettings;
         outputSettings = defaultFboSettings;
-        outputSettings.width = viewPort.getWidth();
-        outputSettings.height = viewPort.getHeight();
+        outputSettings.width = width;
+        outputSettings.height = height;
         outputSettings.internalformat = GL_RGB;
         outputSettings.colorFormats.push_back(GL_RGB);
         output.allocate(outputSettings);

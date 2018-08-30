@@ -23,7 +23,7 @@
 #include "Projector.h"
 #include "ofAutoshader.h"
 #include "ofxPBR.h"
-#include "ofxPBRHelper.h"
+//#include "ofxPBRHelper.h"
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
@@ -116,7 +116,7 @@ public:
 
     // PBR
     
-    ofxPBRCubeMap cubemap[2];
+    ofxPBRCubeMap cubeMap;
     vector<ofxPBRMaterial> materials;
     ofxPBRLight pbrLight;
     ofxPBR pbr;
@@ -125,7 +125,7 @@ public:
     
     ofFbo::Settings defaultFboSettings;
     
-    ofxPBRHelper pbrHelper;
+    //ofxPBRHelper pbrHelper;
     
     ofAutoShader shader, tonemap, fxaa;
     float exposure = 1.0;
@@ -149,11 +149,14 @@ public:
     
     void setup() {
         
+        // WINDOW
         ofSetWindowTitle(title);
         ofSetVerticalSync(true);
-        ofDisableArbTex();
+        //ofDisableArbTex();
         guiFont.load("fonts/OpenSans-Light.ttf", 16);
 
+        // MODELS
+        
         spaceModelPrimitive = nullptr;
 
         if(ofFile::doesFileExist("models/space.dae")) {
@@ -170,7 +173,7 @@ public:
             loadFullModel("models/full.3ds");
         }
         
-        materials.resize(fullModelPrimitive->textureNames.size());
+        // FBOs
         
         defaultFboSettings.textureTarget = GL_TEXTURE_2D;
         defaultFboSettings.useDepth = true;
@@ -180,6 +183,10 @@ public:
         defaultFboSettings.maxFilter = GL_LINEAR;
         defaultFboSettings.wrapModeHorizontal = GL_CLAMP_TO_EDGE;
         defaultFboSettings.wrapModeVertical = GL_CLAMP_TO_EDGE;
+        
+        allocateViewFbo();
+
+        // PROJECTORS
         
         mViewPort = ofRectangle(0, 0, projectionResolution.x, projectionResolution.y);
         
@@ -195,29 +202,7 @@ public:
                                                  defaultFboSettings);
         
         mProjectors.insert(make_pair("right", mProjectorRight));
-        
-        pbr.setup(1024*4);
-        
-        scene = bind(&ofApp::renderScene, this);
-        
-        ofxPBRFiles::getInstance()->setup("ofxPBRAssets");
-        pbrHelper.setup(&pbr, ofxPBRFiles::getInstance()->getPath() + "/settings", true);
-        pbrHelper.addLight(&pbrLight, "light");
-        int materialNo = 1;
-        for(auto & material : materials){
-            pbrHelper.addMaterial(&material, string("material" + ofToString(materialNo++)).c_str());
-        }
-        pbrHelper.addCubeMap(&cubemap[0], "cubeMap1");
-        pbrHelper.addCubeMap(&cubemap[1], "cubeMap2");
-        
-        string shaderPath = "shaders/postEffect/";
-        tonemap.loadAuto(shaderPath + "tonemap");
-        fxaa.loadAuto(shaderPath + "fxaa");
-        shader.loadAuto("shaders/shader");
-        shader.bindDefaults();
 
-        setupGui();
-        
         for(auto projector : mProjectors){
             projector.second->referencePoints.enableControlEvents();
             projector.second->referencePoints.enableDrawEvent();
@@ -226,8 +211,37 @@ public:
             projector.second->cam.setFarClip(10000);
             projector.second->cam.setVFlip(false);
         }
+
+        string shaderPath = "shaders/postEffect/";
+        tonemap.loadAuto(shaderPath + "tonemap");
+        fxaa.loadAuto(shaderPath + "fxaa");
+        shader.loadAuto("shaders/shader");
+        shader.bindDefaults();
         
-        allocateViewFbo();
+        //PBR
+        
+        cam = &mProjectorLeft->cam;
+        
+        scene = bind(&ofApp::renderScene, this);
+        
+        pbr.setup(scene, cam, 1024*4);
+        
+        materials.resize(fullModelPrimitive->textureNames.size());
+        
+        int materialIndex = 0;
+        for (auto & material : materials){
+            material.baseColor.set(0.95, 1.0, 1.0);
+            material.metallic = ofMap(materialIndex++, 0, materials.size(), 0.0, 1.0);
+            material.roughness = 0.2;
+        }
+
+        cubeMap.load("ofxPBRAssets/panoramas/Barce_Rooftop_C_3k.hdr", 1024, true, "ofxPBRAssets/cubemapCache");
+        cubeMap.setEnvLevel(0.1);
+        
+        pbr.setCubeMap(&cubeMap);
+        pbr.setDrawEnvironment(true);
+
+        setupGui();
         
     }
     
@@ -311,36 +325,18 @@ public:
     }
 
     void renderScene() {
+        
+        
         ofEnableDepthTest();
-        ofDisableArbTex();
-
-        pbr.begin(cam);
-        
-        ofSetColor(255,255);
-        renderPrimitiveWithMaterialsRecursive(fullModelPrimitive, materials);
-        
-/*
-        // PBR TEST SCENE
-         material.roughness = 0.0;
-         material.metallic = 0.0;
-         material.begin(&pbr);
-         ofDrawBox(0, -40, 0, 2000, 10, 2000);
-         material.end();
-         
-         ofSetColor(255,0,0);
-         for(int i=0;i<10;i++){
-         material.roughness = float(i) / 9.0;
-         for(int j=0;j<10;j++){
-         material.metallic = float(j) / 9.0;
-         material.begin(&pbr);
-         ofDrawSphere(i * 100 - 450, 0, j * 100 - 450, 35);
-         material.end();
-         }
-         }
-        */
-        pbr.end();
-        ofEnableArbTex();
-
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+        pbr.beginDefaultRenderer();
+        {
+            ofSetColor(255,255);
+            renderPrimitiveWithMaterialsRecursive(fullModelPrimitive, materials);
+        }
+        pbr.endDefaultRenderer();
+        glDisable(GL_CULL_FACE);
         ofDisableDepthTest();
     }
     
@@ -521,9 +517,8 @@ public:
             
             // RENDERING
             
-            glEnable(GL_CULL_FACE);
-            glCullFace(GL_BACK);
-            pbr.makeDepthMap(scene);
+            
+            pbr.updateDepthMaps();
             
             for (auto projector : mProjectors){
             
@@ -543,13 +538,14 @@ public:
                 if(projector.second->mapamok.calibrationReady){
                     projector.second->mapamok.begin(projector.second->viewPort - projector.second->viewPort.getPosition());
                     cam = &projector.second->mapamok.cam;
-                    scene();
+                    pbr.setCamera(cam);
+                    pbr.renderScene();
                     projector.second->mapamok.end();
                 } else {
                     projector.second->cam.begin(projector.second->viewPort - projector.second->viewPort.getPosition());
-                    pbr.drawEnvironment(&(projector.second->cam));
                     cam = &projector.second->cam;
-                    scene();
+                    pbr.setCamera(cam);
+                    pbr.renderScene();
                     projector.second->cam.end();
                 }
                 
@@ -687,9 +683,9 @@ public:
             
             static bool guiShowTest;
             ImGui::Checkbox("Show Test Window", &guiShowTest);
-            ImGui::Checkbox("Show PBR Helper", &showPBRHelper);
             if(guiShowTest)
                 ImGui::ShowTestWindow();
+            ImGui::Checkbox("Show PBR Helper", &showPBRHelper);
             
             ImGui::End();
             
@@ -697,10 +693,10 @@ public:
                 ImGui::Begin("ofxPBRHelper");
                 ImGui::DragFloat("exposure", &exposure, 0.1);
                 ImGui::DragFloat("gamma", &gamma, 0.1);
-                pbrHelper.drawGui();
+                //pbrHelper.drawGui();
                 ImGui::End();
             }
-            
+  
             gui.end();
         }
         
