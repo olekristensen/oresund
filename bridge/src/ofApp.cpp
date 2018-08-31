@@ -572,10 +572,10 @@ bool ofApp::imGui()
                 for(auto & projector : mProjectors){
                     ImGui::TextUnformatted(projector.first.c_str());
                     if(ImGui::Button("Load")){
-                        projector.second->mapamok.load("calibrations/" + projector.first);
+                        projector.second->load("calibrations/" + projector.first);
                     } ImGui::SameLine();
                     if(ImGui::Button("Save")){
-                        projector.second->mapamok.save("calibrations/" + projector.first);
+                        projector.second->save("calibrations/" + projector.first);
                     }
                 }
 

@@ -65,10 +65,12 @@ public:
     }
     
     void load(string filePath) {
+        mapamok.load(filePath);
         //TODO: reference points persistence
     }
     
     void save(string filePath) {
+        mapamok.save(filePath);
         //TODO: reference points persistence
     }
     
