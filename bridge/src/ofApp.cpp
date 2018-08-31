@@ -188,6 +188,8 @@ void ofApp::drawCalibrationEditor() {
     for (auto projector : mProjectors){
         projector.second->cam.begin(projector.second->viewPort);
         
+        // Scales
+        
         if(pCalibrationShowScales) {
             ofPushStyle();
             ofSetColor(255,0,255,64);
@@ -195,6 +197,8 @@ void ofApp::drawCalibrationEditor() {
             ofDrawAxis(1.2);
             ofPopStyle();
         }
+        
+        // Transparent Model
         
         ofPushStyle();
         ofSetColor(255, 32);
@@ -204,6 +208,8 @@ void ofApp::drawCalibrationEditor() {
         spaceModelPrimitive->recursiveDraw();
         ofEnableDepthTest();
         
+        // ViewFbo
+
         ofPushMatrix();
         //viewNode->transformGL();
         ofScale((viewRectangle.getHeight()/viewFbo.getHeight()));
@@ -212,7 +218,8 @@ void ofApp::drawCalibrationEditor() {
         //viewNode->restoreTransformGL();
         ofPopMatrix();
         
-        // Highlighting
+        // Coloured Model with Highlighting
+        
         for(int mIndex = 0 ; mIndex < spaceModelPrimitive->textureNames.size(); mIndex++){
             ofColor c;
             c.setHsb(360.0*mIndex/spaceModelPrimitive->textureNames.size(), 255, 255);
@@ -233,6 +240,7 @@ void ofApp::drawCalibrationEditor() {
         }
         
         // Camera Frustrums
+        
         if(projector.first == "perspective"){
             for (auto p : mProjectors) {
                 if(p.first != "perspective"){
@@ -248,6 +256,8 @@ void ofApp::drawCalibrationEditor() {
         ofPopStyle();
         
         projector.second->cam.end();
+        
+        // UPDATE CALIBRATION
         
         ofMesh cornerMeshImage = calibrationCornerMesh;
         // should only update this if necessary
@@ -292,7 +302,6 @@ void ofApp::drawCalibrationEditor() {
 }
 
 void ofApp::draw() {
-    
     
     ofBackground(0);
     
