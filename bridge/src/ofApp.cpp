@@ -212,6 +212,7 @@ void ofApp::drawCalibrationEditor() {
         //viewNode->restoreTransformGL();
         ofPopMatrix();
         
+        // Highlighting
         for(int mIndex = 0 ; mIndex < spaceModelPrimitive->textureNames.size(); mIndex++){
             ofColor c;
             c.setHsb(360.0*mIndex/spaceModelPrimitive->textureNames.size(), 255, 255);
@@ -229,6 +230,18 @@ void ofApp::drawCalibrationEditor() {
                 }
             }
             ofPopStyle();
+        }
+        
+        // Camera Frustrums
+        if(projector.first == "perspective"){
+            for (auto p : mProjectors) {
+                if(p.first != "perspective"){
+                    ofPushStyle();
+                    ofSetColor(255, 255, 0);
+                    p.second->cam.drawFrustum(p.second->viewPort);
+                    ofPopStyle();
+                }
+            }
         }
         
         ofEnableDepthTest();

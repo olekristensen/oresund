@@ -64,6 +64,14 @@ public:
         cam.setControlArea(viewPort);
     }
     
+    void load(string filePath) {
+        //TODO: reference points persistence
+    }
+    
+    void save(string filePath) {
+        //TODO: reference points persistence
+    }
+    
     ofEasyCam cam;
 
 };
