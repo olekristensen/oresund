@@ -53,16 +53,20 @@ public:
     
     ofTrueTypeFont guiFont;
     
-    ofParameter<int> pCalibrationRenderMode{ "RenderMode", static_cast<int>(CalibrationRenderMode::Faces) };
-    ofParameterGroup pgCalibration{ "Calibration", pCalibrationRenderMode };
+    // PARAMETERS
+    
+    ofParameter<bool> pCalibrationEdit {"Edit", true};
+    ofParameter<bool> pCalibrationShowScales {"Show Scales", true};
+    ofParameter<int> pCalibrationHighlightIndex{ "Highlight", 0, 0, 0 };
+    ofParameter<int> pCalibrationRenderMode{ "Render Mode", static_cast<int>(CalibrationRenderMode::Faces) };
+    ofParameterGroup pgCalibration{ "Calibration", pCalibrationEdit, pCalibrationShowScales, pCalibrationHighlightIndex, pCalibrationRenderMode };
+
+    ofParameter<float> pPbrExposure{ "Exposure", 1.0f, 0.0f, 20.0f };
+    ofParameter<float> pPbrGamma{ "Gamma", 2.2f, 0.0f, 5.0f };
+    ofParameterGroup pgPbr{ "PBR", pPbrExposure, pPbrGamma };
 
     // STATE
-    bool editCalibration = true;
-    float backgroundBrightness = 0;
     bool shaderToggle = false;
-    int renderModeSelection = 0;
-    bool showScales = false;
-    int textureIndexForSpaceModel = 0;
     
     // MODELS
     ofxAssimpModelLoader spaceModel;
@@ -121,8 +125,6 @@ public:
     ofFbo::Settings defaultFboSettings;
     
     ofAutoShader shader, tonemap, fxaa;
-    float exposure = 1.0;
-    float gamma = 2.2;
     
     function<void()> scene;
 

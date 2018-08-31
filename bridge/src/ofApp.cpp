@@ -188,7 +188,7 @@ void ofApp::drawCalibrationEditor() {
     for (auto projector : mProjectors){
         projector.second->cam.begin(projector.second->viewPort);
         
-        if(showScales) {
+        if(pCalibrationShowScales) {
             ofPushStyle();
             ofSetColor(255,0,255,64);
             ofDrawGrid(1.0, 10, true);
@@ -219,12 +219,12 @@ void ofApp::drawCalibrationEditor() {
             ofSetColor(c);
             auto primitives = getPrimitivesWithTextureIndex(spaceModelPrimitive, mIndex);
             for(auto p : primitives){
-                if(mIndex == textureIndexForSpaceModel){
+                if(mIndex == pCalibrationHighlightIndex){
                     shader.begin();
                     shader.setUniform1f("elapsedTime", ofGetElapsedTimef());
                 }
                 p->recursiveDraw();
-                if(mIndex == textureIndexForSpaceModel){
+                if(mIndex == pCalibrationHighlightIndex){
                     shader.end();
                 }
             }
@@ -285,7 +285,7 @@ void ofApp::draw() {
     
     ofSetColor(255);
     
-    if(editCalibration) {
+    if(pCalibrationEdit) {
         
         // EDITOR
         
@@ -363,8 +363,8 @@ void ofApp::draw() {
             ofClear(0);
             tonemap.begin();
             tonemap.setUniformTexture("image", projector.second->renderPass.getTexture(), 0);
-            tonemap.setUniform1f("exposure", exposure);
-            tonemap.setUniform1f("gamma", gamma);
+            tonemap.setUniform1f("exposure", pPbrExposure);
+            tonemap.setUniform1f("gamma", pPbrGamma);
             projector.second->renderPass.draw(0, 0);
             tonemap.end();
             projector.second->tonemapPass.end();
@@ -516,46 +516,15 @@ bool ofApp::imGui()
     {
         
         ImGuiWindowFlags window_flags = 0;
-        window_flags |= ImGuiWindowFlags_NoTitleBar;
-        window_flags |= ImGuiWindowFlags_NoResize;
-        window_flags |= ImGuiWindowFlags_NoMove;
         window_flags |= ImGuiWindowFlags_NoCollapse;
         
-        ImGui::SetNextWindowPos(ofVec2f(0,0));
-        ImGui::SetNextWindowSize(ofVec2f(guiColumnWidth,ofGetHeight()));
-        
-        if (ofxImGui::BeginWindow("Main###Debug", mainSettings, window_flags)){
-            
-            // Title
-            //ImGui::PushFont(font2);
-            ImGui::TextUnformatted(title.c_str());
-            //ImGui::PopFont();
+        if (ofxImGui::BeginWindow(title.c_str(), mainSettings, window_flags)){
             
             ImGui::TextUnformatted("den frie vilje");
             ImGui::Text("FPS %.3f", ofGetFrameRate());
             
             ImGui::Separator();
             
-            //ImGui::PushFont(font1);
-            ImGui::TextUnformatted("Calibration");
-            //ImGui::PopFont();
-            
-            ImGui::Separator();
-            
-            for(auto & projector : mProjectors){
-                ImGui::TextUnformatted(projector.first.c_str());
-                if(ImGui::Button("Load")){
-                    projector.second->mapamok.load("calibrations/" + projector.first);
-                } ImGui::SameLine();
-                if(ImGui::Button("Save")){
-                    projector.second->mapamok.save("calibrations/" + projector.first);
-                }
-            }
-            
-            ImGui::Checkbox("Edit", &editCalibration);
-            //            bool guiCalibrationReady = mapamok.calibrationReady;
-            //            ImGui::Checkbox("Ready", &guiCalibrationReady);
-            ImGui::Checkbox("Show scales", &showScales);
             //            ImGui::Checkbox("Fix principal point", &mapamok.bCV_CALIB_FIX_PRINCIPAL_POINT);
             //            ImGui::Checkbox("Fix aspect ratio", &mapamok.bCV_CALIB_FIX_ASPECT_RATIO);
             //            ImGui::Checkbox("Fix K1", &mapamok.bCV_CALIB_FIX_K1);
@@ -567,9 +536,6 @@ bool ofApp::imGui()
             bool guiShaderValid = shader.isValid;
             ImGui::Checkbox("Shader Valid", &guiShaderValid);
             
-            ImGui::SliderInt("Texture", &textureIndexForSpaceModel, 0, spaceModelPrimitive->textureNames.size()-1);
-            ImGui::TextUnformatted(ofSplitString(spaceModelPrimitive->textureNames[textureIndexForSpaceModel], "/").back().c_str());
-            
             if(ImGui::SliderFloat("Resolution", &viewResolution, 1.0, 300.0)){
                 allocateViewFbo();
             }
@@ -580,39 +546,47 @@ bool ofApp::imGui()
             
             ImGui::Separator();
             
-            static bool enableCameraControl;
-            ImGui::Checkbox("Enable Camera Control", &enableCameraControl);
-            if(enableCameraControl){
-                for(auto projector : mProjectors){
-                    projector.second->cam.enableMouseInput();
-                }
-            } else {
-                for(auto projector : mProjectors){
-                    projector.second->cam.disableMouseInput();
-                }
-            }
-            
             static bool guiShowTest;
             ImGui::Checkbox("Show Test Window", &guiShowTest);
             if(guiShowTest)
                 ImGui::ShowTestWindow();
-            
-            ImGui::Begin("ofxPBRHelper");
-            ImGui::DragFloat("exposure", &exposure, 0.1);
-            ImGui::DragFloat("gamma", &gamma, 0.1);
-            //pbrHelper.drawGui();
-            ImGui::End();
-            
+
             if (ofxImGui::BeginTree(this->pgCalibration, mainSettings))
             {
-                
+                ofxImGui::AddParameter(pCalibrationEdit);
+                ofxImGui::AddParameter(pCalibrationShowScales);
+
+                for(auto & projector : mProjectors){
+                    ImGui::TextUnformatted(projector.first.c_str());
+                    if(ImGui::Button("Load")){
+                        projector.second->mapamok.load("calibrations/" + projector.first);
+                    } ImGui::SameLine();
+                    if(ImGui::Button("Save")){
+                        projector.second->mapamok.save("calibrations/" + projector.first);
+                    }
+                }
+
                 static const vector<string> labels = { "Faces", "Outline", "Wireframe full", "Wireframe occluded" };
                 
-                ofxImGui::AddRadio(this->pCalibrationRenderMode, labels, 4);
+                ofxImGui::AddCombo(this->pCalibrationRenderMode, labels);
+                
+                vector<string> objectNames;
+                for(auto str :spaceModelPrimitive->textureNames){
+                    string objectName = ofSplitString(str, "/").back();
+                    auto objectNameComponents = ofSplitString(objectName, ".");
+                    objectNameComponents.pop_back();
+                    objectName = ofJoinString(objectNameComponents, ".");
+                    objectNames.push_back(objectName);
+                }
+                
+                ofxImGui::AddCombo(this->pCalibrationHighlightIndex, objectNames);
                 
                 ofxImGui::EndTree(mainSettings);
             }
 
+            ofxImGui::AddGroup(pgPbr, mainSettings);
+            
+            
         }
         
         
