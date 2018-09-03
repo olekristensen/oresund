@@ -66,12 +66,12 @@ public:
     
     void load(string filePath) {
         mapamok.load(filePath);
-        //TODO: reference points persistence
+        referencePoints.load(filePath);
     }
     
     void save(string filePath) {
         mapamok.save(filePath);
-        //TODO: reference points persistence
+        referencePoints.save(filePath);
     }
     
     ofEasyCam cam;

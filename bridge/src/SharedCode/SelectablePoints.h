@@ -10,6 +10,7 @@ protected:
 	
 	float clickRadiusSquared;
     ofRectangle mViewPort;
+    ofEasyCam * cam = nullptr;
 
 public:
 	SelectablePoints()
@@ -31,14 +32,20 @@ public:
     void clear() {
         points.clear();
         selected.clear();
+        if(cam != nullptr) cam->enableMouseInput();
     }
 	void setClickRadius(float clickRadius) {
 		this->clickRadiusSquared = clickRadius * clickRadius;
 	}
+    
+    void setCamera(ofEasyCam * c){
+        cam = c;
+    }
+    
 	void mousePressed(ofMouseEventArgs& mouse) {
 		bool shift = ofGetKeyPressed(OF_KEY_SHIFT);
 		bool hitAny = false;
-		for(int i = 0; i < size(); i++) {
+        for(int i = 0; i < size(); i++) {
             bool hit = points[i].isHit(mouse-mViewPort.getTopLeft(), clickRadiusSquared);
 			if(hit && !hitAny) {
 				if(!points[i].selected) {
@@ -51,6 +58,13 @@ public:
 				selected.erase(i);
 			}
 		}
+        if(cam != nullptr){
+            if(selected.size() == 0){
+                cam->enableMouseInput();
+            } else {
+                cam->disableMouseInput();
+            }
+        }
 	}
     virtual void keyPressed(ofKeyEventArgs& key) {
         if(key.key == OF_KEY_DEL || key.key == OF_KEY_BACKSPACE) {
@@ -74,4 +88,31 @@ public:
         ofPopStyle();
         ofPopView();
 	}
+    void save(string filePath){
+        //TODO: reference points persistence
+
+        string savePath = ofToDataPath(filePath + "/reference-points.json", true);
+        
+        ofJson j;
+        int index = 0;
+        for(auto p : points){
+            j["points"][index]["x"] = p.position.x;
+            j["points"][index]["y"] = p.position.y;
+            j["points"][index]["hit"] = p.hit;
+            index++;
+        }
+        ofSaveJson(std::filesystem::path(savePath), j);
+    }
+    void load(string filePath){
+
+        string loadPath = ofToDataPath(filePath + "/reference-points.json", true);
+        ofJson j = ofLoadJson(loadPath);
+        clear();
+        int index = 0;
+        for(auto p : j["points"]){
+            add(ofVec2f(p["x"], p["y"]));
+            points.back().hit = p["hit"];
+        }
+
+    }
 };

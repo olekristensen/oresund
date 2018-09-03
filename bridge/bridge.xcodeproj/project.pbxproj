@@ -295,6 +295,7 @@
 		7F664367213827EB00FB39C3 /* ofApp.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ofApp.cpp; sourceTree = "<group>"; };
 		7F664368213827EB00FB39C3 /* ofApp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ofApp.h; sourceTree = "<group>"; };
 		7F66436A2138299500FB39C3 /* ofxAssimp3dPrimitiveHelpers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ofxAssimp3dPrimitiveHelpers.h; sourceTree = "<group>"; };
+		7F66436B213D694000FB39C3 /* calibrations */ = {isa = PBXFileReference; lastKnownFileType = folder; name = calibrations; path = bin/data/calibrations; sourceTree = "<group>"; };
 		7FE21D852137DB7C003EBC59 /* ofxPBRDirectionalShadow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxPBRDirectionalShadow.h; sourceTree = "<group>"; };
 		7FE21D862137DB7C003EBC59 /* ofxPBRDirectionalShadow.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ofxPBRDirectionalShadow.cpp; sourceTree = "<group>"; };
 		7FE21D872137DB7C003EBC59 /* ofxPBRShadow.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ofxPBRShadow.cpp; sourceTree = "<group>"; };
@@ -1637,6 +1638,7 @@
 		E4B69B4A0A3A1720003C02F2 = {
 			isa = PBXGroup;
 			children = (
+				7F66436B213D694000FB39C3 /* calibrations */,
 				7F1C9454212B1FEB008E0976 /* shaders */,
 				E4B6FCAD0C3E899E008CF71C /* openFrameworks-Info.plist */,
 				E4EB6923138AFD0F00A09F29 /* Project.xcconfig */,

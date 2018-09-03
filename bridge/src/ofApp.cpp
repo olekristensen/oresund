@@ -81,6 +81,7 @@ void ofApp::setup() {
         projector.second->cam.setNearClip(.1);
         projector.second->cam.setFarClip(10000);
         projector.second->cam.setVFlip(false);
+        projector.second->referencePoints.setCamera(&projector.second->cam);
     }
     
     string shaderPath = "shaders/postEffect/";
@@ -585,6 +586,9 @@ bool ofApp::imGui()
                     } ImGui::SameLine();
                     if(ImGui::Button("Save")){
                         projector.second->save("calibrations/" + projector.first);
+                    }ImGui::SameLine();
+                    if(ImGui::Button("Clear")){
+                        projector.second->referencePoints.clear();
                     }
                 }
 
