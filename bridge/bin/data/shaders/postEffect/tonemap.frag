@@ -50,13 +50,12 @@ vec3 toneMap(vec3 color, float exposure, float gamma){
     return c;
 }
 
-
 void main() {
     
-    float bayer = n2rand(texCoordVarying) / 127.;
     vec4 color = texture(image, texCoordVarying);
     vec4 tonemappedColor = vec4(toneMap(color.rgb, exposure, gamma), color.a);
-    tonemappedColor += bayer;
+    float noise = n2rand(texCoordVarying) / 127.;
+    tonemappedColor += noise;
     fragColor=tonemappedColor;
 
     /*
