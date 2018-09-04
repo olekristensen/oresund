@@ -32,6 +32,11 @@ public:
     void update();
     void draw();
     
+    void drawProjectorRight(ofEventArgs & args);
+    void drawProjectorLeft(ofEventArgs & args);
+    
+    void drawProjection(shared_ptr<Projector> & projector);
+    
     void keyPressed(int key);
     void windowResized(int w, int h);
     

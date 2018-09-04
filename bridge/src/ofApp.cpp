@@ -269,7 +269,6 @@ void ofApp::drawCalibrationEditor() {
 void ofApp::draw() {
     
     ofBackground(0);
-    
     ofSetColor(255);
     
     if(pCalibrationEdit) {
@@ -408,9 +407,7 @@ void ofApp::draw() {
         ofPopStyle();
     }
     
-    
     // GUI
-    
     ofEnableBlendMode(OF_BLENDMODE_ALPHA);
     ofFill();
     
