@@ -107,7 +107,7 @@ void ofApp::setup() {
         material.roughness = 0.2;
     }
     
-    cubeMap.load("ofxPBRAssets/panoramas/DH-AO-03.hdr", 1024*2, true, "ofxPBRAssets/cubemapCache");
+    cubeMap.load("ofxPBRAssets/panoramas/DH-AO-03.hdr", 1024, true, "ofxPBRAssets/cubemapCache");
     cubeMap.setEnvLevel(0.2);
     
     pbr.setCubeMap(&cubeMap);
