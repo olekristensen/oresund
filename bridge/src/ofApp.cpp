@@ -5,9 +5,9 @@
 //  Created by ole kristensen on 30/08/2018.
 //
 
-#include "ofApp.h"
-#include "ofxAssimp3dPrimitiveHelpers.h"
-#include "MeshUtils.h"
+#include "ofApp.hpp"
+#include "ofxAssimp3dPrimitiveHelpers.hpp"
+#include "MeshUtils.hpp"
 
 void ofApp::allocateViewFbo() {
     auto viewFboSettings = defaultFboSettings;
@@ -50,8 +50,8 @@ void ofApp::setup() {
     defaultFboSettings.useDepth = true;
     defaultFboSettings.depthStencilAsTexture = true;
     defaultFboSettings.useStencil = true;
-    defaultFboSettings.minFilter = GL_LINEAR;
-    defaultFboSettings.maxFilter = GL_LINEAR;
+    defaultFboSettings.minFilter = GL_NEAREST;
+    defaultFboSettings.maxFilter = GL_NEAREST;
     defaultFboSettings.wrapModeHorizontal = GL_CLAMP_TO_EDGE;
     defaultFboSettings.wrapModeVertical = GL_CLAMP_TO_EDGE;
     
@@ -107,23 +107,24 @@ void ofApp::setup() {
         material.roughness = 0.2;
     }
     
-    cubeMap.load("ofxPBRAssets/panoramas/Barce_Rooftop_C_3k.hdr", 1024, true, "ofxPBRAssets/cubemapCache");
-    cubeMap.setEnvLevel(0.1);
+    cubeMap.load("ofxPBRAssets/panoramas/DH-AO-03.hdr", 1024*2, true, "ofxPBRAssets/cubemapCache");
+    cubeMap.setEnvLevel(0.2);
     
     pbr.setCubeMap(&cubeMap);
     pbr.setDrawEnvironment(true);
     
     gui.setup();
     
+    
 }
 
 void ofApp::update() {
+    cubeMap.setEnvLevel(pPbrEnvLevel);
     spaceModel.update();
     fullModel.update();
     if(fullModelPrimitive != nullptr){
         fullModelPrimitive->update();
     }
-    
 }
 
 void ofApp::renderScene() {
@@ -259,44 +260,7 @@ void ofApp::drawCalibrationEditor() {
         projector.second->cam.end();
         
         // UPDATE CALIBRATION
-        
-        ofMesh cornerMeshImage = calibrationCornerMesh;
-        // should only update this if necessary
-        project(cornerMeshImage, projector.second->cam, projector.second->viewPort - projector.second->viewPort.getPosition());
-        
-        // if this is a new mesh, create the points
-        // should use a "dirty" flag instead allowing us to reset manually
-        if(calibrationCornerMesh.getNumVertices() != projector.second->referencePoints.size()) {
-            projector.second->referencePoints.clear();
-            for(int i = 0; i < cornerMeshImage.getNumVertices(); i++) {
-                projector.second->referencePoints.add(ofVec2f(cornerMeshImage.getVertex(i)));
-            }
-        }
-        
-        // if the calibration is ready, use the calibration to find the corner positions
-        
-        // otherwise, update the points
-        for(int i = 0; i < projector.second->referencePoints.size(); i++) {
-            DraggablePoint& cur = projector.second->referencePoints.get(i);
-            if(!cur.hit) {
-                cur.position = cornerMeshImage.getVertex(i);
-            } else {
-                ofDrawLine(cur.position, cornerMeshImage.getVertex(i));
-            }
-        }
-        
-        // calculating the 3d mesh
-        vector<ofVec2f> imagePoints;
-        vector<ofVec3f> objectPoints;
-        for(int j = 0; j <  projector.second->referencePoints.size(); j++) {
-            DraggablePoint& cur =  projector.second->referencePoints.get(j);
-            if(cur.hit) {
-                imagePoints.push_back(cur.position);
-                objectPoints.push_back(calibrationCornerMesh.getVertex(j));
-            }
-        }
-        // should only calculate this when the points are updated
-        projector.second->mapamok.update(projector.second->viewPort.width, projector.second->viewPort.height, imagePoints, objectPoints);
+        projector.second->update(calibrationCornerMesh);
         
     }
     
@@ -346,6 +310,7 @@ void ofApp::draw() {
         viewFbo.end();
         
         for (auto projector : mProjectors){
+            if(projector.first != "perspective"){
             
             projector.second->referencePoints.disableControlEvents();
             projector.second->referencePoints.disableDrawEvent();
@@ -384,8 +349,31 @@ void ofApp::draw() {
             // post effect
             projector.second->tonemapPass.begin();
             ofClear(0);
+
+            ofDisableArbTex();
+            const unsigned char pattern[] = {
+                0, 32,  8, 40,  2, 34, 10, 42,   /* 8x8 Bayer ordered dithering  */
+                48, 16, 56, 24, 50, 18, 58, 26,  /* pattern.  Each input pixel   */
+                12, 44,  4, 36, 14, 46,  6, 38,  /* is scaled to the 0..63 range */
+                60, 28, 52, 20, 62, 30, 54, 22,  /* before looking in this table */
+                3, 35, 11, 43,  1, 33,  9, 41,   /* to determine the action.     */
+                51, 19, 59, 27, 49, 17, 57, 25,
+                15, 47,  7, 39, 13, 45,  5, 37,
+                63, 31, 55, 23, 61, 29, 53, 21 };
+            
+            ofPixels ditherPixels;
+            ditherPixels.setFromPixels(&pattern[0], 8, 8, OF_PIXELS_GRAY);
+            
+            ofTexture ditherTexture;
+            ditherTexture.allocate(ditherPixels.getWidth(), ditherPixels.getHeight(), GL_R8);
+            ditherTexture.loadData(ditherPixels);
+            ditherTexture.setTextureWrap(GL_REPEAT, GL_REPEAT);
+            ditherTexture.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+
+            ofEnableArbTex();
             tonemap.begin();
             tonemap.setUniformTexture("image", projector.second->renderPass.getTexture(), 0);
+            tonemap.setUniformTexture("dither", ditherTexture, 1);
             tonemap.setUniform1f("exposure", pPbrExposure);
             tonemap.setUniform1f("gamma", pPbrGamma);
             projector.second->renderPass.draw(0, 0);
@@ -403,7 +391,9 @@ void ofApp::draw() {
             ofPushStyle();
             projector.second->output.draw(projector.second->viewPort);
             ofPopStyle();
+
         }
+    }
         
     }
     
@@ -517,6 +507,17 @@ void ofApp::loadFullModel(string filename) {
     
 }
 
+void ofApp::save(string name){
+    ofJson j;
+    ofSerialize(j, pgMain);
+    ofSaveJson("settings/" + name + ".json", j);
+}
+
+void ofApp::load(string name){
+    ofJson j = ofLoadJson("settings/" + name + ".json");
+    ofDeserialize(j, pgMain);
+}
+
 void ofApp::keyPressed(int key) {
     if(key == 'f') {
         ofToggleFullscreen();
@@ -555,6 +556,13 @@ bool ofApp::imGui()
             //            ImGui::Checkbox("Fix K3", &mapamok.bCV_CALIB_FIX_K3);
             //            ImGui::Checkbox("Zero tangent dist", &mapamok.bCV_CALIB_ZERO_TANGENT_DIST);
             
+            if(ImGui::Button("Load")){
+                load("default");
+            } ImGui::SameLine();
+            if(ImGui::Button("Save")){
+                save("default");
+            }
+
             ImGui::Checkbox("Use Shader", &shaderToggle);
             bool guiShaderValid = shader.isValid;
             ImGui::Checkbox("Shader Valid", &guiShaderValid);

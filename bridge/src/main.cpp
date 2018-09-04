@@ -14,7 +14,7 @@
 
 #include "ofMain.h"
 #include "ofAppGLFWWindow.h"
-#include "ofApp.h"
+#include "ofApp.hpp"
 
 int main() {
     //TODO: windows for projections
