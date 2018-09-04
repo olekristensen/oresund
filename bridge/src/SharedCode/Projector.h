@@ -1,3 +1,5 @@
+#pragma once
+
 //
 //  Projector.h
 //  mapamok
@@ -6,8 +8,6 @@
 //
 //
 
-
-#pragma once
 #include "ofMain.h"
 #include "Mapamok.h"
 #include "DraggablePoints.h"
@@ -64,7 +64,16 @@ public:
         cam.setControlArea(viewPort);
     }
     
-    ofEasyCam cam;
+    void load(string filePath) {
+        mapamok.load(filePath);
+        referencePoints.load(filePath);
+    }
     
+    void save(string filePath) {
+        mapamok.save(filePath);
+        referencePoints.save(filePath);
+    }
+    
+    ofEasyCam cam;
 
 };
