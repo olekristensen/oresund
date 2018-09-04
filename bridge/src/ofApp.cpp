@@ -261,8 +261,98 @@ void ofApp::drawCalibrationEditor() {
         
         // UPDATE CALIBRATION
         projector.second->update(calibrationCornerMesh);
-        
     }
+}
+
+void ofApp::drawProjectorLeft(ofEventArgs & args) {
+    drawProjection(mProjectorLeft);
+}
+
+void ofApp::drawProjectorRight(ofEventArgs & args) {
+    drawProjection(mProjectorRight);
+}
+
+void ofApp::drawProjection(shared_ptr<Projector> & projector) {
+    
+    ofPushStyle();
+    ofSetColor(255);
+    
+    glDisable(GL_CULL_FACE);
+    ofEnableArbTex();
+    ofEnableAlphaBlending();
+    projector->output.draw(ofGetCurrentViewport());
+    ofPopStyle();
+    
+    //cout<<ofGetCurrentViewport()<<endl;
+    /*pbr.updateDepthMaps();
+    
+    viewFbo.begin();
+    ofScale(1.0/viewFbo.getWidth());
+    ofClear(0,128,255, 255);
+    ofPushStyle();
+    ofPushMatrix();
+    ofScale(1.0, guiFont.getSize());
+    guiFont.drawString("View", 0.10, 0.10);
+    ofPopMatrix();
+    ofPopStyle();
+    viewFbo.end();
+    
+    projector->referencePoints.disableControlEvents();
+    projector->referencePoints.disableDrawEvent();
+    
+    ofDisableAlphaBlending();
+    ofEnableDepthTest();
+    
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
+    
+    projector->renderPass.begin();
+    projector->renderPass.activateAllDrawBuffers();
+    ofClear(0);
+    
+    if(projector->mapamok.calibrationReady){
+        projector->mapamok.begin(ofGetCurrentViewport());
+        cam = &projector->mapamok.cam;
+        pbr.setCamera(cam);
+        pbr.renderScene();
+        projector->mapamok.end();
+    } else {
+        projector->cam.begin(ofGetCurrentViewport());
+        cam = &projector->cam;
+        pbr.setCamera(cam);
+        pbr.renderScene();
+        projector->cam.end();
+    }
+    
+    projector->renderPass.end();
+    
+    glDisable(GL_CULL_FACE);
+    
+    ofDisableDepthTest();
+    ofEnableAlphaBlending();
+    
+    // post effect
+    projector->tonemapPass.begin();
+    ofClear(0);
+    tonemap.begin();
+    tonemap.setUniformTexture("image", projector->renderPass.getTexture(), 0);
+    tonemap.setUniform1f("exposure", pPbrExposure);
+    tonemap.setUniform1f("gamma", pPbrGamma);
+    projector->renderPass.draw(0, 0);
+    tonemap.end();
+    projector->tonemapPass.end();
+    
+    projector->output.begin();
+    fxaa.begin();
+    fxaa.setUniformTexture("image", projector->tonemapPass.getTexture(), 0);
+    fxaa.setUniform2f("texel", 1.25 / float(projector->tonemapPass.getWidth()), 1.25 / float(projector->tonemapPass.getHeight()));
+    projector->tonemapPass.draw(0,0);
+    fxaa.end();
+    projector->output.end();
+    
+    ofPushStyle();
+    projector->output.draw(ofGetCurrentViewport());
+    ofPopStyle();*/
     
 }
 

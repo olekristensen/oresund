@@ -113,6 +113,10 @@ public:
     ofEasyCam mCamRight;
     ofEasyCam mCamPerspective;
     
+    void drawProjectorRight(ofEventArgs & args);
+    void drawProjectorLeft(ofEventArgs & args);
+    void drawProjection(shared_ptr<Projector> & projector);
+    
     // VIEW
     
     ofxAssimp3dPrimitive * viewNode;
