@@ -54,8 +54,8 @@ void main() {
     
     vec4 color = texture(image, texCoordVarying);
     vec4 tonemappedColor = vec4(toneMap(color.rgb, exposure, gamma), color.a);
-    float noise = n2rand(texCoordVarying) / 127.;
-    tonemappedColor += noise;
+    float triangularNoise = n2rand(texCoordVarying) / 64.;
+    tonemappedColor += triangularNoise;
     fragColor=tonemappedColor;
 
     /*
