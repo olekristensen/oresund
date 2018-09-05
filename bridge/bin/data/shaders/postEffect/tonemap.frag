@@ -53,7 +53,7 @@ vec3 toneMap(vec3 color, float exposure, float gamma){
 
 void main() {
     
-    float bayer = n2rand(texCoordVarying) / 127.;
+    float bayer = n2rand(texCoordVarying) / 64.;
     vec4 color = texture(image, texCoordVarying);
     vec4 tonemappedColor = vec4(toneMap(color.rgb, exposure, gamma), color.a);
     tonemappedColor += bayer;
