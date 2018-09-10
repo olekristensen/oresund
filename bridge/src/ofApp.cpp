@@ -9,18 +9,32 @@
 #include "ofxAssimp3dPrimitiveHelpers.hpp"
 #include "MeshUtils.hpp"
 
-void ofApp::allocateViewFbo() {
-    auto viewFboSettings = defaultFboSettings;
-    viewRectangle.x = 0;
-    viewRectangle.y = 0;
+void ofApp::setupViewPlane() {
+    
     ofVec3f viewCornerMin;
     ofVec3f viewCornerMax;
+    
+    auto viewFboSettings = defaultFboSettings;
+    
     getBoundingBox(viewNode->getBakedMesh(), viewCornerMin, viewCornerMax);
-    viewRectangle.width =fabs(viewCornerMax.z - viewCornerMin.z);
-    viewRectangle.height =fabs(viewCornerMax.y - viewCornerMin.y);
-    viewFboSettings.width = round(fabs(viewRectangle.width) * viewResolution);
-    viewFboSettings.height = round(fabs(viewRectangle.height) * viewResolution);
+    viewPlane.setWidth(fabs(viewCornerMax.z - viewCornerMin.z));
+    viewPlane.setHeight(fabs(viewCornerMax.y - viewCornerMin.y));
+    viewPlane.setGlobalOrientation(ofQuaternion(90, ofVec3f(0,1,0)));
+    viewPlane.setPosition(0, viewPlane.getHeight()/2.0, -viewPlane.getWidth()/2.0);
+    
+    viewPlane.setParent(world.origin);
+    
+    viewFboSettings.width = floor(viewPlane.getWidth() * viewResolution);
+    viewFboSettings.height = floor(viewPlane.getHeight() * viewResolution);
     viewFbo.allocate(viewFboSettings);
+    
+    viewCamera.setParent(world.origin);
+    
+    viewCamera.setScale(1,1,1);
+    viewCamera.setNearClip(0.1);
+    viewCamera.setFarClip(10000);
+    viewCamera.lookAt(toOf(viewPlane.getGlobalPosition()) * toOf(viewPlane.getGlobalTransformMatrix()));
+    viewCamera.setupPerspective();
 }
 
 void ofApp::setup() {
@@ -55,40 +69,47 @@ void ofApp::setup() {
     defaultFboSettings.wrapModeHorizontal = GL_CLAMP_TO_EDGE;
     defaultFboSettings.wrapModeVertical = GL_CLAMP_TO_EDGE;
     
-    allocateViewFbo();
+    setupViewPlane();
     
-    // PROJECTORS
-    
-    mViewPort = ofRectangle(0, 0, projectionResolution.x, projectionResolution.y);
-    
-    mProjectorPerspective = make_shared<Projector>(ofRectangle(0,projectionResolution.y,ofGetWidth(), ofGetHeight()-projectionResolution.y),
-                                                   defaultFboSettings);
-    mProjectors.insert(make_pair("perspective", mProjectorPerspective));
-    
-    mProjectorLeft = make_shared<Projector>(ofRectangle(0, 0, projectionResolution.x, projectionResolution.y),
-                                            defaultFboSettings);
-    mProjectors.insert(make_pair("left", mProjectorLeft));
-    
-    mProjectorRight = make_shared<Projector>(ofRectangle(projectionResolution.x, 0, projectionResolution.x, projectionResolution.y),
-                                             defaultFboSettings);
-    
-    mProjectors.insert(make_pair("right", mProjectorRight));
-    
-    for(auto projector : mProjectors){
-        projector.second->referencePoints.enableControlEvents();
-        projector.second->referencePoints.enableDrawEvent();
-        projector.second->cam.setDistance(10);
-        projector.second->cam.setNearClip(.1);
-        projector.second->cam.setFarClip(10000);
-        projector.second->cam.setVFlip(false);
-        projector.second->referencePoints.setCamera(&projector.second->cam);
-    }
+    // SHADERS
     
     string shaderPath = "shaders/postEffect/";
     tonemap.loadAuto(shaderPath + "tonemap");
     fxaa.loadAuto(shaderPath + "fxaa");
     shader.loadAuto("shaders/shader");
     shader.bindDefaults();
+    
+    // PROJECTORS
+    
+    mViewPort = ofRectangle(0, 0, projectionResolution.x, projectionResolution.y);
+    
+    mProjectorPerspective = make_shared<Projector>(ofRectangle(0,projectionResolution.y,ofGetWidth(), ofGetHeight()-projectionResolution.y),
+                                                   defaultFboSettings, shader, tonemap, fxaa);
+    mProjectors.insert(make_pair("perspective", mProjectorPerspective));
+    
+    mProjectorLeft = make_shared<Projector>(ofRectangle(0, 0, projectionResolution.x, projectionResolution.y),
+                                            defaultFboSettings, shader, tonemap, fxaa);
+    mProjectors.insert(make_pair("left", mProjectorLeft));
+    
+    mProjectorRight = make_shared<Projector>(ofRectangle(projectionResolution.x, 0, projectionResolution.x, projectionResolution.y),
+                                             defaultFboSettings, shader, tonemap, fxaa);
+    
+    mProjectors.insert(make_pair("right", mProjectorRight));
+    
+    for(auto projector : mProjectors){
+        projector.second->referencePoints.enableControlEvents();
+        //projector.second->referencePoints.enableDrawEvent();
+        projector.second->cam.setDistance(10);
+        projector.second->cam.setNearClip(.1);
+        projector.second->cam.setFarClip(10000);
+        projector.second->cam.setVFlip(false);
+        projector.second->referencePoints.setCamera(&projector.second->cam);
+        projector.second->pg.setName(projector.first);
+        projector.second->pg.add(projector.second->pgCalibration);
+        pgProjectors.add(projector.second->pg);
+    }
+    pgProjectors.setName("Projectors");
+    pgGlobal.add(pgProjectors);
     
     //PBR
     
@@ -113,6 +134,12 @@ void ofApp::setup() {
     pbr.setCubeMap(&cubeMap);
     pbr.setDrawEnvironment(true);
     
+    // SCENES
+    
+    for( auto s : scenes) {
+        s->setupScene(&pgGlobal, &world, &scenes);
+    }
+    
     gui.setup();
     
     
@@ -120,15 +147,29 @@ void ofApp::setup() {
 
 void ofApp::update() {
     cubeMap.setEnvLevel(pPbrEnvLevel);
+    cubeMap.setExposure(pPbrEnvExposure);
+    cubeMap.setRotation(pPbrEnvRotation);
+    
     spaceModel.update();
     fullModel.update();
     if(fullModelPrimitive != nullptr){
         fullModelPrimitive->update();
     }
+    for (auto projector : mProjectors){
+        projector.second->update(calibrationCornerMesh);
+        if(projector.first == "perspective"){
+            projector.second->referencePoints.disableDrawEvent();
+            projector.second->referencePoints.disableControlEvents();
+        }
+    }
+    tonemap.begin();
+    tonemap.setUniform1f("time", ofGetElapsedTimef());
+    tonemap.setUniform1f("exposure", pPbrExposure);
+    tonemap.setUniform1f("gamma", pPbrGamma);
+    tonemap.end();
 }
 
 void ofApp::renderScene() {
-    
     
     ofEnableDepthTest();
     glEnable(GL_CULL_FACE);
@@ -141,127 +182,6 @@ void ofApp::renderScene() {
     pbr.endDefaultRenderer();
     glDisable(GL_CULL_FACE);
     ofDisableDepthTest();
-}
-
-void ofApp::renderCalibration() {
-    
-    if(shaderToggle){
-        shader.begin();
-        shader.setUniform1f("elapsedTime", ofGetElapsedTimef());
-        shader.end();
-    }
-    
-    auto calibrationRenderMode = static_cast<CalibrationRenderMode>(this->pCalibrationRenderMode.get());
-    
-    if(calibrationRenderMode == CalibrationRenderMode::Faces) {
-        ofEnableDepthTest();
-        ofSetColor(255, 128);
-        if(shaderToggle) shader.begin();
-        spaceModelPrimitive->recursiveDraw(OF_MESH_FILL);
-        if(shaderToggle) shader.end();
-        ofDisableDepthTest();
-    } else if(calibrationRenderMode == CalibrationRenderMode::WireframeFull) {
-        if(shaderToggle) shader.begin();
-        spaceModelPrimitive->recursiveDraw(OF_MESH_WIREFRAME);
-        if(shaderToggle) shader.end();
-    } else if(calibrationRenderMode == CalibrationRenderMode::Outline || calibrationRenderMode == CalibrationRenderMode::WireframeOccluded) {
-        if(shaderToggle) shader.begin();
-        prepareRender(true, true, false);
-        glEnable(GL_POLYGON_OFFSET_FILL);
-        float lineWidth = ofGetStyle().lineWidth;
-        if(calibrationRenderMode == CalibrationRenderMode::Outline) {
-            glPolygonOffset(-lineWidth, -lineWidth);
-        } else if(calibrationRenderMode == CalibrationRenderMode::WireframeOccluded) {
-            glPolygonOffset(+lineWidth, +lineWidth);
-        }
-        glColorMask(false, false, false, false);
-        spaceModelPrimitive->recursiveDraw(OF_MESH_FILL);
-        glColorMask(true, true, true, true);
-        glDisable(GL_POLYGON_OFFSET_FILL);
-        spaceModelPrimitive->recursiveDraw(OF_MESH_WIREFRAME);
-        prepareRender(false, false, false);
-        if(shaderToggle) shader.end();
-    }
-    
-}
-
-void ofApp::drawCalibrationEditor() {
-    
-    for (auto projector : mProjectors){
-        projector.second->cam.begin(projector.second->viewPort);
-        
-        // Scales
-        
-        if(pCalibrationShowScales) {
-            ofPushStyle();
-            ofSetColor(255,0,255,64);
-            ofDrawGrid(1.0, 10, true);
-            ofDrawAxis(1.2);
-            ofPopStyle();
-        }
-        
-        // Transparent Model
-        
-        ofPushStyle();
-        ofSetColor(255, 32);
-        ofEnableBlendMode(OF_BLENDMODE_ALPHA);
-        ofDisableDepthTest();
-        ofFill();
-        spaceModelPrimitive->recursiveDraw();
-        ofEnableDepthTest();
-        
-        // ViewFbo
-
-        ofPushMatrix();
-        //viewNode->transformGL();
-        ofScale((viewRectangle.getHeight()/viewFbo.getHeight()));
-        ofRotateYDeg(90.0);
-        viewFbo.draw(0,0);
-        //viewNode->restoreTransformGL();
-        ofPopMatrix();
-        
-        // Coloured Model with Highlighting
-        
-        for(int mIndex = 0 ; mIndex < spaceModelPrimitive->textureNames.size(); mIndex++){
-            ofColor c;
-            c.setHsb(360.0*mIndex/spaceModelPrimitive->textureNames.size(), 255, 255);
-            ofPushStyle();
-            ofSetColor(c);
-            auto primitives = getPrimitivesWithTextureIndex(spaceModelPrimitive, mIndex);
-            for(auto p : primitives){
-                if(mIndex == pCalibrationHighlightIndex){
-                    shader.begin();
-                    shader.setUniform1f("elapsedTime", ofGetElapsedTimef());
-                }
-                p->recursiveDraw();
-                if(mIndex == pCalibrationHighlightIndex){
-                    shader.end();
-                }
-            }
-            ofPopStyle();
-        }
-        
-        // Camera Frustrums
-        
-        if(projector.first == "perspective"){
-            for (auto p : mProjectors) {
-                if(p.first != "perspective"){
-                    ofPushStyle();
-                    ofSetColor(255, 255, 0);
-                    p.second->cam.drawFrustum(p.second->viewPort);
-                    ofPopStyle();
-                }
-            }
-        }
-        
-        ofEnableDepthTest();
-        ofPopStyle();
-        
-        projector.second->cam.end();
-        
-        // UPDATE CALIBRATION
-        projector.second->update(calibrationCornerMesh);
-    }
 }
 
 void ofApp::drawProjectorLeft(ofEventArgs & args) {
@@ -283,126 +203,69 @@ void ofApp::drawProjection(shared_ptr<Projector> & projector) {
     projector->output.draw(ofGetCurrentViewport());
     ofPopStyle();
     
-    //cout<<ofGetCurrentViewport()<<endl;
-    /*pbr.updateDepthMaps();
-    
-    viewFbo.begin();
-    ofScale(1.0/viewFbo.getWidth());
-    ofClear(0,128,255, 255);
+}
+
+void ofApp::drawView() {
     ofPushStyle();
-    ofPushMatrix();
-    ofScale(1.0, guiFont.getSize());
-    guiFont.drawString("View", 0.10, 0.10);
-    ofPopMatrix();
+    ofPushView();
+    ofPushMatrix();{
+        glDisable(GL_CULL_FACE);
+        
+        viewCamera.setGlobalPosition(3, 2, -2+sin(ofGetElapsedTimef()));
+        float width = viewPlane.getWidth();
+        float height = viewPlane.getHeight();
+        ofVec3f windowTopLeft(0.0,
+                              height,
+                              0.0);
+        //windowTopLeft = windowTopLeft * viewPlane.getLocalTransformMatrix();
+        ofVec3f windowBottomLeft(0.0,
+                                 0.0,
+                                 0.0f);
+        //windowBottomLeft = windowBottomLeft * viewPlane.getLocalTransformMatrix();
+        ofVec3f  windowBottomRight(0.0,
+                                   0.0,
+                                   -width);
+        //windowBottomRight = windowBottomRight * viewPlane.getLocalTransformMatrix();
+        // To setup off axis view portal we need to be in the plane's matrix. All window coordinates of the camera are relative to the plane.
+        viewPlane.ofPlanePrimitive::transformGL();
+        viewCamera.setupOffAxisViewPortal(windowTopLeft , windowBottomLeft, windowBottomRight );
+        viewPlane.ofPlanePrimitive::restoreTransformGL();
+        viewCamera.setFarClip(10000);
+        viewCamera.setNearClip(.1);
+        viewCamera.setVFlip(false);
+        
+        viewFbo.begin(); {
+            viewFbo.activateAllDrawBuffers();
+            ofClear(0, 255);
+            viewCamera.begin();
+            ofSetColor(255,0,255, 64);
+            fullModelPrimitive->recursiveDraw();
+            viewCamera.end();
+        } viewFbo.end();
+        
+    } ofPopMatrix();
+    ofPopView();
     ofPopStyle();
-    viewFbo.end();
-    
-    projector->referencePoints.disableControlEvents();
-    projector->referencePoints.disableDrawEvent();
-    
-    ofDisableAlphaBlending();
-    ofEnableDepthTest();
-    
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
-    
-    projector->renderPass.begin();
-    projector->renderPass.activateAllDrawBuffers();
-    ofClear(0);
-    
-    if(projector->mapamok.calibrationReady){
-        projector->mapamok.begin(ofGetCurrentViewport());
-        cam = &projector->mapamok.cam;
-        pbr.setCamera(cam);
-        pbr.renderScene();
-        projector->mapamok.end();
-    } else {
-        projector->cam.begin(ofGetCurrentViewport());
-        cam = &projector->cam;
-        pbr.setCamera(cam);
-        pbr.renderScene();
-        projector->cam.end();
-    }
-    
-    projector->renderPass.end();
-    
-    glDisable(GL_CULL_FACE);
-    
-    ofDisableDepthTest();
-    ofEnableAlphaBlending();
-    
-    // post effect
-    projector->tonemapPass.begin();
-    ofClear(0);
-    tonemap.begin();
-    tonemap.setUniformTexture("image", projector->renderPass.getTexture(), 0);
-    tonemap.setUniform1f("exposure", pPbrExposure);
-    tonemap.setUniform1f("gamma", pPbrGamma);
-    projector->renderPass.draw(0, 0);
-    tonemap.end();
-    projector->tonemapPass.end();
-    
-    projector->output.begin();
-    fxaa.begin();
-    fxaa.setUniformTexture("image", projector->tonemapPass.getTexture(), 0);
-    fxaa.setUniform2f("texel", 1.25 / float(projector->tonemapPass.getWidth()), 1.25 / float(projector->tonemapPass.getHeight()));
-    projector->tonemapPass.draw(0,0);
-    fxaa.end();
-    projector->output.end();
-    
-    ofPushStyle();
-    projector->output.draw(ofGetCurrentViewport());
-    ofPopStyle();*/
-    
 }
 
 void ofApp::draw() {
     
     ofBackground(0);
     ofSetColor(255);
+    glCullFace(GL_FRONT);
+    glDisable(GL_CULL_FACE);
     
-    if(pCalibrationEdit) {
+    drawView();
+    
+    for (auto projector : mProjectors){
         
-        // EDITOR
+        projector.second->renderCalibrationEditor(spaceModelPrimitive);
         
-        ofEnableAlphaBlending();
-        drawCalibrationEditor();
-        
-        for (auto projector : mProjectors){
+        if(!projector.second->pCalibrationEdit){
             
-            projector.second->referencePoints.enableControlEvents();
-            projector.second->referencePoints.enableDrawEvent();
+            pbr.updateDepthMaps();
             
-            if(projector.second->mapamok.calibrationReady){
-                projector.second->mapamok.begin(projector.second->viewPort);
-                ofSetColor(255, 128);
-                renderCalibration();
-                projector.second->mapamok.end();
-            }
-        }
-        
-    } else {
-        
-        // RENDERING
-        
-        pbr.updateDepthMaps();
-        
-        viewFbo.begin();
-        ofScale(1.0/viewFbo.getWidth());
-        ofClear(0,128,255, 255);
-        ofPushStyle();
-        ofPushMatrix();
-        ofScale(1.0, guiFont.getSize());
-        guiFont.drawString("View", 0.10, 0.10);
-        ofPopMatrix();
-        ofPopStyle();
-        viewFbo.end();
-        
-        for (auto projector : mProjectors){
-            if(projector.first != "perspective"){
-            
-            projector.second->referencePoints.disableControlEvents();
-            projector.second->referencePoints.disableDrawEvent();
+            projector.second->begin(true);
             
             ofDisableAlphaBlending();
             ofEnableDepthTest();
@@ -410,81 +273,17 @@ void ofApp::draw() {
             glEnable(GL_CULL_FACE);
             glCullFace(GL_FRONT);
             
-            projector.second->renderPass.begin();
-            projector.second->renderPass.activateAllDrawBuffers();
-            ofClear(0);
-            
-            if(projector.second->mapamok.calibrationReady){
-                projector.second->mapamok.begin(projector.second->viewPort - projector.second->viewPort.getPosition());
-                cam = &projector.second->mapamok.cam;
-                pbr.setCamera(cam);
-                pbr.renderScene();
-                projector.second->mapamok.end();
-            } else {
-                projector.second->cam.begin(projector.second->viewPort - projector.second->viewPort.getPosition());
-                cam = &projector.second->cam;
-                pbr.setCamera(cam);
-                pbr.renderScene();
-                projector.second->cam.end();
-            }
-            
-            projector.second->renderPass.end();
+            cam = &projector.second->getCam();
+            pbr.setCamera(cam);
+            pbr.renderScene();
             
             glDisable(GL_CULL_FACE);
             
-            ofDisableDepthTest();
-            ofEnableAlphaBlending();
+            projector.second->end();
             
-            // post effect
-            projector.second->tonemapPass.begin();
-            ofClear(0);
-            /*
-            ofDisableArbTex();
-            const unsigned char pattern[] = {
-                0, 32,  8, 40,  2, 34, 10, 42,   // 8x8 Bayer ordered dithering
-                48, 16, 56, 24, 50, 18, 58, 26,  // pattern.  Each input pixel
-                12, 44,  4, 36, 14, 46,  6, 38,  // is scaled to the 0..63 range
-                60, 28, 52, 20, 62, 30, 54, 22,  // before looking in this table
-                3, 35, 11, 43,  1, 33,  9, 41,   // to determine the action.
-                51, 19, 59, 27, 49, 17, 57, 25,
-                15, 47,  7, 39, 13, 45,  5, 37,
-                63, 31, 55, 23, 61, 29, 53, 21 };
-            
-            ofPixels ditherPixels;
-            ditherPixels.setFromPixels(&pattern[0], 8, 8, OF_PIXELS_GRAY);
-            
-            ofTexture ditherTexture;
-            ditherTexture.allocate(ditherPixels.getWidth(), ditherPixels.getHeight(), GL_R8);
-            ditherTexture.loadData(ditherPixels);
-            ditherTexture.setTextureWrap(GL_REPEAT, GL_REPEAT);
-            ditherTexture.setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-
-            ofEnableArbTex();
-            */
-            tonemap.begin();
-            tonemap.setUniformTexture("image", projector.second->renderPass.getTexture(), 0);
-            //tonemap.setUniformTexture("dither", ditherTexture, 1);
-            tonemap.setUniform1f("time", ofGetElapsedTimef());
-            tonemap.setUniform1f("exposure", pPbrExposure);
-            tonemap.setUniform1f("gamma", pPbrGamma);
-            projector.second->renderPass.draw(0, 0);
-            tonemap.end();
-            projector.second->tonemapPass.end();
-            
-            projector.second->output.begin();
-            fxaa.begin();
-            fxaa.setUniformTexture("image", projector.second->tonemapPass.getTexture(), 0);
-            fxaa.setUniform2f("texel", 1.25 / float(projector.second->tonemapPass.getWidth()), 1.25 / float(projector.second->tonemapPass.getHeight()));
-            projector.second->tonemapPass.draw(0,0);
-            fxaa.end();
-            projector.second->output.end();
-            
-            ofPushStyle();
-            projector.second->output.draw(projector.second->viewPort);
-            ofPopStyle();
-
         }
-    }
+        
+        projector.second->draw();
         
     }
     
@@ -538,14 +337,15 @@ void ofApp::loadSpaceModel(string filename) {
     spaceModel.calculateDimensions();
     
     spaceModelPrimitive = spaceModel.getPrimitives();
+    spaceModelPrimitive->setParent(world.origin);
     vector<ofMesh> meshes = spaceModelPrimitive->getBakedMeshesRecursive();
     
-    auto calibrationPrimitive = getFirstPrimitiveWithTextureNameContaining(spaceModelPrimitive, "room.calibration");
+    auto calibrationPrimitive = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.calibration");
     
-    wallModelNode = getFirstPrimitiveWithTextureNameContaining(spaceModelPrimitive, "room.walls");
-    approachModelNode = getFirstPrimitiveWithTextureNameContaining(spaceModelPrimitive, "approach.deck");
-    trussModelNode = getFirstPrimitiveWithTextureNameContaining(spaceModelPrimitive, "room.truss");
-    viewNode = getFirstPrimitiveWithTextureNameContaining(spaceModelPrimitive, "room.view");
+    wallModelNode = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.walls");
+    approachModelNode = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("approach.deck");
+    trussModelNode = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.truss");
+    viewNode = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.view");
     
     meshes = calibrationPrimitive->getBakedMeshesRecursive();
     
@@ -593,18 +393,20 @@ void ofApp::loadFullModel(string filename) {
     fullModel.calculateDimensions();
     
     fullModelPrimitive = fullModel.getPrimitives();
+    fullModelPrimitive->setParent(world.origin);
+    
     
 }
 
 void ofApp::save(string name){
     ofJson j;
-    ofSerialize(j, pgMain);
+    ofSerialize(j, pgGlobal);
     ofSaveJson("settings/" + name + ".json", j);
 }
 
 void ofApp::load(string name){
     ofJson j = ofLoadJson("settings/" + name + ".json");
-    ofDeserialize(j, pgMain);
+    ofDeserialize(j, pgGlobal);
 }
 
 void ofApp::keyPressed(int key) {
@@ -651,13 +453,13 @@ bool ofApp::imGui()
             if(ImGui::Button("Save")){
                 save("default");
             }
-
+            
             ImGui::Checkbox("Use Shader", &shaderToggle);
             bool guiShaderValid = shader.isValid;
             ImGui::Checkbox("Shader Valid", &guiShaderValid);
             
             if(ImGui::SliderFloat("Resolution", &viewResolution, 1.0, 300.0)){
-                allocateViewFbo();
+                setupViewPlane();
             }
             
             //ImGui::PushFont(font1);
@@ -670,14 +472,28 @@ bool ofApp::imGui()
             ImGui::Checkbox("Show Test Window", &guiShowTest);
             if(guiShowTest)
                 ImGui::ShowTestWindow();
-
-            if (ofxImGui::BeginTree(this->pgCalibration, mainSettings))
-            {
-                ofxImGui::AddParameter(pCalibrationEdit);
-                ofxImGui::AddParameter(pCalibrationShowScales);
-
-                for(auto & projector : mProjectors){
-                    ImGui::TextUnformatted(projector.first.c_str());
+            
+            for(auto & projector : mProjectors){
+                
+                if(ofxImGui::BeginTree(projector.first.c_str(), mainSettings)){
+                    auto p = projector.second;
+                    
+                    ofxImGui::AddParameter(p->pCalibrationEdit);
+                    ofxImGui::AddParameter(p->pCalibrationDrawScales);
+                    ofxImGui::AddCombo(p->pCalibrationMeshDrawMode, p->CalibrationMeshDrawModeLabels);
+                    ofxImGui::AddCombo(p->pCalibrationMeshColorMode, p->CalibrationMeshColorModeLabels);
+                    
+                    vector<string> objectNames;
+                    for(auto str :spaceModelPrimitive->textureNames){
+                        string objectName = ofSplitString(str, "/").back();
+                        auto objectNameComponents = ofSplitString(objectName, ".");
+                        objectNameComponents.pop_back();
+                        objectName = ofJoinString(objectNameComponents, ".");
+                        objectNames.push_back(objectName);
+                    }
+                    
+                    ofxImGui::AddCombo(p->pCalibrationHighlightIndex, objectNames);
+                    
                     if(ImGui::Button("Load")){
                         projector.second->load("calibrations/" + projector.first);
                     } ImGui::SameLine();
@@ -687,28 +503,13 @@ bool ofApp::imGui()
                     if(ImGui::Button("Clear")){
                         projector.second->referencePoints.clear();
                     }
-                }
-
-                static const vector<string> labels = { "Faces", "Outline", "Wireframe full", "Wireframe occluded" };
-                
-                ofxImGui::AddCombo(this->pCalibrationRenderMode, labels);
-                
-                vector<string> objectNames;
-                for(auto str :spaceModelPrimitive->textureNames){
-                    string objectName = ofSplitString(str, "/").back();
-                    auto objectNameComponents = ofSplitString(objectName, ".");
-                    objectNameComponents.pop_back();
-                    objectName = ofJoinString(objectNameComponents, ".");
-                    objectNames.push_back(objectName);
+                    
+                    ofxImGui::EndTree(mainSettings);
                 }
                 
-                ofxImGui::AddCombo(this->pCalibrationHighlightIndex, objectNames);
-                
-                ofxImGui::EndTree(mainSettings);
             }
-
-            ofxImGui::AddGroup(pgPbr, mainSettings);
             
+            ofxImGui::AddGroup(pgPbr, mainSettings);
             
         }
         

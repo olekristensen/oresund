@@ -36,6 +36,7 @@
 		7FE21DA22137DB7C003EBC59 /* ofxPBRCubeMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FE21D8E2137DB7C003EBC59 /* ofxPBRCubeMap.cpp */; };
 		7FE21DA32137DB7C003EBC59 /* ofxPBRMaterial.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FE21D962137DB7C003EBC59 /* ofxPBRMaterial.cpp */; };
 		7FE21DA42137DB7C003EBC59 /* ofxPBROmniShadow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FE21D972137DB7C003EBC59 /* ofxPBROmniShadow.cpp */; };
+		7FE21DAA213FCB2E003EBC59 /* Scene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FE21DA9213FCB2E003EBC59 /* Scene.cpp */; };
 		7FF377CE212D7EC900F71BFD /* Projector.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FF377CD212D7EC800F71BFD /* Projector.hpp */; };
 		8DED5056525646FA71980866 /* ofxAssimpModelLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDE55D82BD962DAC0E94B708 /* ofxAssimpModelLoader.cpp */; };
 		A0F2BFB15B92B4C6EB9527DE /* Helpers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2C966A8F6085AAA2FED6F411 /* Helpers.cpp */; };
@@ -314,6 +315,8 @@
 		7FE21D952137DB7C003EBC59 /* ofxPBRLight.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxPBRLight.h; sourceTree = "<group>"; };
 		7FE21D962137DB7C003EBC59 /* ofxPBRMaterial.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ofxPBRMaterial.cpp; sourceTree = "<group>"; };
 		7FE21D972137DB7C003EBC59 /* ofxPBROmniShadow.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ofxPBROmniShadow.cpp; sourceTree = "<group>"; };
+		7FE21DA8213FCB2E003EBC59 /* Scene.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Scene.hpp; sourceTree = "<group>"; };
+		7FE21DA9213FCB2E003EBC59 /* Scene.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Scene.cpp; sourceTree = "<group>"; };
 		7FF377CD212D7EC800F71BFD /* Projector.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; name = Projector.hpp; path = SharedCode/Projector.hpp; sourceTree = "<group>"; };
 		807FB3DE21FAEFCA58336C58 /* color_cvt.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = color_cvt.hpp; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv2/cudev/functional/detail/color_cvt.hpp; sourceTree = SOURCE_ROOT; };
 		808F0EC060E7C8DA90947996 /* light.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = light.h; path = ../../../addons/ofxAssimpModelLoader/libs/assimp/include/assimp/light.h; sourceTree = SOURCE_ROOT; };
@@ -1405,6 +1408,7 @@
 				63D7CD5A7B545361252C64A3 /* SelectablePoints.hpp */,
 				4A3450CE40106024C04656BD /* MeshUtils.hpp */,
 				FED1789536830CB504EC0154 /* ofAutoShader.hpp */,
+				7F66436A2138299500FB39C3 /* ofxAssimp3dPrimitiveHelpers.hpp */,
 				7FF377CD212D7EC800F71BFD /* Projector.hpp */,
 			);
 			name = SharedCode;
@@ -1654,10 +1658,11 @@
 			isa = PBXGroup;
 			children = (
 				E4B69E1D0A3A1BDC003C02F2 /* main.cpp */,
-				A761AAA4C33697EE94784AF9 /* SharedCode */,
 				7F664367213827EB00FB39C3 /* ofApp.cpp */,
 				7F664368213827EB00FB39C3 /* ofApp.hpp */,
-				7F66436A2138299500FB39C3 /* ofxAssimp3dPrimitiveHelpers.hpp */,
+				7FE21DA9213FCB2E003EBC59 /* Scene.cpp */,
+				7FE21DA8213FCB2E003EBC59 /* Scene.hpp */,
+				A761AAA4C33697EE94784AF9 /* SharedCode */,
 			);
 			path = src;
 			sourceTree = SOURCE_ROOT;
@@ -1862,6 +1867,7 @@
 				A0F2BFB15B92B4C6EB9527DE /* Helpers.cpp in Sources */,
 				27CF6B6E279F8EE58C9D4B90 /* BaseTheme.cpp in Sources */,
 				DBBE189ECD171A97DCF46C6A /* BaseEngine.cpp in Sources */,
+				7FE21DAA213FCB2E003EBC59 /* Scene.cpp in Sources */,
 				016BB55A143AD429330F07DB /* Gui.cpp in Sources */,
 				6B3BB6E115053982E13C175C /* EngineVk.cpp in Sources */,
 				000315A9FA4E2F9A09533E05 /* EngineOpenGLES.cpp in Sources */,

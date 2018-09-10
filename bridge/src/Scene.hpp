@@ -8,6 +8,10 @@
 #pragma once
 #include "ofMain.h"
 
+class World {
+public:
+    ofNode origin;
+};
 
 class Scene {
     
@@ -16,9 +20,10 @@ public:
     ofParameter<bool> enabled {"enabled", true};
     ofParameter<bool> enabledDraw {"draw", true};
     ofParameter<bool> enabledDrawModel {"draw model", true};
+    ofParameter<float> alpha {"alpha", 1.0, 0.0, 1.0};
     
     //ofParameter<bool> qlab {"add to qlab", false};
-    ofParameterGroup params {"untitled", enabled, enabledDraw, enabledDrawModel};
+    ofParameterGroup params {"untitled", enabled, alpha, enabledDraw, enabledDrawModel};
     
     // add dynamic draw order
     float time;
@@ -44,19 +49,8 @@ public:
     virtual void drawModel() {};
     
     virtual void exit(){};
-    //    virtual void receiveOsc(ofxOscMessage * m, string rest) {};
     
-    /*    virtual void setGui(ofxUICanvas * gui, float width){
-     gui->addWidgetDown(new ofxUILabel(name, OFX_UI_FONT_SMALL));
-     gui->addWidgetDown(new ofxUILabel("OSC Address: " + oscAddress, OFX_UI_FONT_SMALL));
-     gui->addSpacer(width, 1);
-     //gui->addToggle(indexStr+"Enabled", &enabled);
-     }
-     
-     virtual void guiEvent(ofxUIEventArgs &e) {};
-     */
-    
-    /*vector<shared_ptr<Scene>> * allScenes;
+    vector<shared_ptr<Scene>> * allScenes;
     
     shared_ptr<Scene> getScene(string n) {
         for(auto s : *allScenes) {
@@ -65,19 +59,16 @@ public:
                 return s;
             }
         }
-    }*/
+    }
     
-    void setupScene(ofParameterGroup * mainP /*, World  * w, vector<shared_ptr<Scene>> * _allScenes*/ ) {
+    void setupScene(ofParameterGroup * mainP, World  * w, vector<shared_ptr<Scene>> * _allScenes ) {
         
-        //allScenes = _allScenes;
+        allScenes = _allScenes;
         
         globalParams = mainP;
-        //world = w; // what kind of world reference do we need ?
+        world = w;
         
         //enabled.addListener(this, &ofxStereoscopy::Scene::enableToggled);
-        
-        //globalParams->getVec3f("stage_size_cm").addListener(this, &ofxStereoscopy::Scene::setReconstructFlag<ofVec3f>);
-        
         
         setup();
         isSetup = true;
@@ -146,7 +137,7 @@ public:
     virtual void setupGui() {};
     
     ofParameterGroup * globalParams;
-    //World * world;
+    World * world;
     
 private:
     

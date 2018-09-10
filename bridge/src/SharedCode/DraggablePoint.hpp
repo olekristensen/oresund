@@ -25,6 +25,11 @@ public:
 	void draw(float clickRadiusSquared) {
 		float r = 2;//sqrt(clickRadiusSquared);
 		ofPushStyle();
+        ofEnableAlphaBlending();
+        ofDisableDepthTest();
+        ofFill();
+        ofSetColor(0, 64);
+        ofDrawCircle(position, r + 4);
 		ofNoFill();
 		ofSetLineWidth(2);
 		if(selected) {
@@ -39,7 +44,10 @@ public:
 		ofPushStyle();
 		ofFill();
         if(hit) {
-            ofSetColor(ofColor::green);
+            ofSetColor(17, 133, 247);
+        }
+        if(selected){
+            ofSetColor(ofColor::yellow);
         }
 		ofDrawCircle(position, r);
 		ofPopStyle();

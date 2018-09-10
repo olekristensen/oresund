@@ -1,9 +1,5 @@
 //TODO:
 
-// add fbo walls
-// make meshes into vbo's
-// add projectors and viewports
-// create shaders
 // make text string file format
 
 // separate click radius from draw radius
@@ -17,8 +13,6 @@
 #include "ofApp.hpp"
 
 int main() {
-    //TODO: windows for projections
-
     ofGLFWWindowSettings settings;
     settings.setGLVersion(4, 1);
     // settings.setPosition() TODO - set fullscreen at correct positions - query connected displays?

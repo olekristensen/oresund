@@ -395,23 +395,6 @@ ofMesh joinMeshes(vector<ofMesh>& meshes) {
 	return mesh;
 }
 
-void prepareRender(bool useDepthTesting, bool useBackFaceCulling, bool useFrontFaceCulling) {
-	ofSetDepthTest(useDepthTesting);
-	if(useBackFaceCulling || useFrontFaceCulling) {
-		glEnable(GL_CULL_FACE);
-		if(useBackFaceCulling && useFrontFaceCulling) {
-			glCullFace(GL_FRONT_AND_BACK);
-		} else if(useBackFaceCulling) {
-			glCullFace(GL_BACK);
-		} else if(useFrontFaceCulling) {
-			glCullFace(GL_FRONT);
-		}
-	} else {
-		glDisable(GL_CULL_FACE);
-	}
-}
-
-
 ofVec3f getNormal(const ofVec3f& v1, const ofVec3f& v2, const ofVec3f& v3) {
 	ofVec3f a = v1 - v2;
 	ofVec3f b = v3 - v2;

@@ -14,6 +14,7 @@
 #include "Projector.hpp"
 #include "ofAutoShader.hpp"
 #include "ofxPBR.h"
+#include "Scene.hpp"
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
@@ -28,14 +29,29 @@ enum class CalibrationRenderMode
 class ofApp : public ofBaseApp {
 public:
     
+    ofApp() {
+        
+        pgScenes.setName("scenes");
+        
+        //scenes.push_back(make_shared<BoxSplit>());
+        
+        for( auto s : scenes) {
+            pgScenes.add(s->getParameters());
+        }
+        
+        pgGlobal.add(pgScenes);
+    }
+    
     void setup();
     void update();
+    void extracted();
+    
     void draw();
     
     void keyPressed(int key);
     void windowResized(int w, int h);
     
-    void allocateViewFbo();
+    void setupViewPlane();
     void renderScene();
     void renderCalibration();
     void drawCalibrationEditor();
@@ -56,23 +72,30 @@ public:
     
     ofTrueTypeFont guiFont;
     
+    // SCENES
+    
+    vector<shared_ptr<Scene> > scenes;
+    ofParameterGroup pgScenes;
+
     // PARAMETERS
     
-    ofParameter<bool> pCalibrationEdit {"Edit", true};
-    ofParameter<bool> pCalibrationShowScales {"Show Scales", true};
-    ofParameter<int> pCalibrationHighlightIndex{ "Highlight", 0, 0, 0 };
-    ofParameter<int> pCalibrationRenderMode{ "Render Mode", static_cast<int>(CalibrationRenderMode::Faces) };
-    ofParameterGroup pgCalibration{ "Calibration", pCalibrationEdit, pCalibrationShowScales, pCalibrationHighlightIndex, pCalibrationRenderMode };
-
     ofParameter<float> pPbrGamma{ "Gamma", 2.2f, 0.0f, 5.0f };
     ofParameter<float> pPbrEnvLevel{ "Environment Level", 0.1f, 0.0f, 1.0f };
+    ofParameter<float> pPbrEnvExposure{ "Environment Exposure", 1.0f, 0.0f, 20.0f };
+    ofParameter<float> pPbrEnvRotation{ "Environment Rotation", 0.0f, 0.0f, TWO_PI };
     ofParameter<float> pPbrExposure{ "Exposure", 1.0f, 0.0f, 20.0f };
-    ofParameterGroup pgPbr{ "PBR", pPbrEnvLevel, pPbrExposure, pPbrGamma };
+    ofParameterGroup pgPbr{ "PBR", pPbrEnvLevel, pPbrEnvExposure, pPbrEnvRotation, pPbrExposure, pPbrGamma };
+    
+    ofParameterGroup pgProjectors;
 
-    ofParameterGroup pgMain{"Main", pgCalibration, pgPbr};
+    ofParameterGroup pgGlobal{"Global", pgPbr};
 
     // STATE
     bool shaderToggle = false;
+    
+    // WORLD
+    
+    World world;
     
     // MODELS
     ofxAssimpModelLoader spaceModel;
@@ -92,9 +115,9 @@ public:
     ofVboMesh calibrationMesh, calibrationCornerMesh;
     
     // PROJECTORS
-    //glm::vec2 projectionResolution = {1280, 720};
+    glm::vec2 projectionResolution = {1280, 720};
     
-    glm::vec2 projectionResolution = {1920, 1200};
+    //glm::vec2 projectionResolution = {1920, 1200};
     
     map<string, shared_ptr<Projector> > mProjectors;
     
@@ -116,14 +139,16 @@ public:
     void drawProjectorRight(ofEventArgs & args);
     void drawProjectorLeft(ofEventArgs & args);
     void drawProjection(shared_ptr<Projector> & projector);
-    
+        
     // VIEW
     
     ofxAssimp3dPrimitive * viewNode;
     ofCamera viewCamera;
     ofFbo viewFbo;
-    ofRectangle viewRectangle;
+    ofPlanePrimitive viewPlane;
     float viewResolution = 200;
+    
+    void drawView();
     
     // PBR
     

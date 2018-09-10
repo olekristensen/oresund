@@ -82,7 +82,7 @@ public:
         ofPushView();
         ofViewport(mViewPort.x, mViewPort.y, mViewPort.width, mViewPort.height, true);
         ofSetupScreenPerspective();
-        //ofTranslate(mViewPort.getTopLeft());
+//        ofTranslate(-mViewPort.getTopLeft());
         ofPushStyle();
         ofSetColor(255, 0, 255);
         for(int i = 0; i < size(); i++) {
@@ -91,8 +91,28 @@ public:
         ofPopStyle();
         ofPopView();
 	}
+    
+    void draw(bool vFlip) {
+        ofPushView();
+        ofPushMatrix();
+        ofPushStyle();
+        ofViewport(0,0, mViewPort.width, mViewPort.height, true);
+        ofSetupScreenPerspective();
+        if(vFlip){
+            ofTranslate(0, mViewPort.height/2.0);
+            ofScale(1.0, -1.0, 1.0);
+            ofTranslate(0, -mViewPort.height/2.0);
+        }
+        ofSetColor(255, 255);
+        for(int i = 0; i < size(); i++) {
+            points[i].draw(clickRadiusSquared);
+        }
+        ofPopStyle();
+        ofPopMatrix();
+        ofPopView();
+    }
+
     void save(string filePath){
-        //TODO: reference points persistence
 
         string savePath = ofToDataPath(filePath + "/reference-points.json", true);
         
