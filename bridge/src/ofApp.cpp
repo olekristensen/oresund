@@ -9,37 +9,6 @@
 #include "ofxAssimp3dPrimitiveHelpers.hpp"
 #include "MeshUtils.hpp"
 
-void ofApp::setupViewPlane(float & resolution) {
-    
-    ofVec3f viewCornerMin;
-    ofVec3f viewCornerMax;
-    
-    auto viewFboSettings = defaultFboSettings;
-    
-    getBoundingBox(viewNode->getBakedMesh(), viewCornerMin, viewCornerMax);
-    viewPlane.setWidth(fabs(viewCornerMax.z - viewCornerMin.z));
-    viewPlane.setHeight(fabs(viewCornerMax.y - viewCornerMin.y));
-    viewPlane.setGlobalOrientation(ofQuaternion(90, ofVec3f(0,1,0)));
-    viewPlane.setPosition(0, viewPlane.getHeight()/2.0, -viewPlane.getWidth()/2.0);
-    
-    viewPlane.setParent(world.origin);
-    
-    viewFboSettings.width = floor(viewPlane.getWidth() * resolution);
-    viewFboSettings.height = floor(viewPlane.getHeight() * resolution);
-    viewFboSettings.minFilter = GL_LINEAR;
-    viewFboSettings.maxFilter = GL_LINEAR;
-    
-    viewFbo.allocate(viewFboSettings);
-    
-    viewCamera.setParent(world.origin);
-    
-    viewCamera.setScale(1,1,1);
-    viewCamera.setNearClip(0.1);
-    viewCamera.setFarClip(10000);
-    viewCamera.lookAt(toOf(viewPlane.getGlobalPosition()) * toOf(viewPlane.getGlobalTransformMatrix()));
-    viewCamera.setupPerspective();
-}
-
 void ofApp::setup() {
     
     // WINDOW
@@ -80,9 +49,6 @@ void ofApp::setup() {
     shader.loadAuto("shaders/shader");
     shader.bindDefaults();
     
-    float res = 200.0;
-    setupViewPlane(res);
-    
     // PROJECTORS
     
     mViewPort = ofRectangle(0, 0, projectionResolution.x, projectionResolution.y);
@@ -113,6 +79,12 @@ void ofApp::setup() {
     }
     pgProjectors.setName("Projectors");
     pgGlobal.add(pgProjectors);
+    
+    //VIEW PLANE
+    
+    mViewPlane = make_shared<ViewPlane>(defaultFboSettings, shader, tonemap, fxaa, viewNode, world);
+    
+    pgGlobal.add(mViewPlane->pg);
     
     //PBR
     
@@ -150,15 +122,20 @@ void ofApp::setup() {
 }
 
 void ofApp::update() {
+    
+    // PBR UPDATES
     cubeMap.setEnvLevel(pPbrEnvLevel);
     cubeMap.setExposure(pPbrEnvExposure);
     cubeMap.setRotation(pPbrEnvRotation);
     
+    // MODELS
     spaceModel.update();
     fullModel.update();
     if(fullModelPrimitive != nullptr){
         fullModelPrimitive->update();
     }
+    
+    //PROJECTORS
     for (auto projector : mProjectors){
         projector.second->update(calibrationCornerMesh);
         if(projector.first == "perspective"){
@@ -166,11 +143,17 @@ void ofApp::update() {
             projector.second->referencePoints.disableControlEvents();
         }
     }
+    
+    //SHADERS
     tonemap.begin();
     tonemap.setUniform1f("time", ofGetElapsedTimef());
     tonemap.setUniform1f("exposure", pPbrExposure);
     tonemap.setUniform1f("gamma", pPbrGamma);
     tonemap.end();
+    
+    mViewPlane->cam.setGlobalPosition(3+(cos(ofGetElapsedTimef())*1.45), 2, -2+sin(ofGetElapsedTimef()));
+
+    
 }
 
 void ofApp::renderScene() {
@@ -208,58 +191,21 @@ void ofApp::drawProjection(shared_ptr<Projector> & projector) {
     
 }
 
-void ofApp::drawView() {
-    ofPushStyle();
-    viewFbo.getTexture().bind();
-    viewPlane.drawFaces();
-    viewFbo.getTexture().unbind();
-    ofPopStyle();
-}
-
 void ofApp::renderView() {
     ofPushStyle();
-    ofPushView();
-    ofPushMatrix();{
-        glDisable(GL_CULL_FACE);
-        
-        viewCamera.setGlobalPosition(3, 2, -2+sin(ofGetElapsedTimef()));
-        float width = viewPlane.getWidth();
-        float height = viewPlane.getHeight();
-        ofVec3f windowTopLeft(0.0,
-                              height,
-                              0.0);
-        //windowTopLeft = windowTopLeft * viewPlane.getLocalTransformMatrix();
-        ofVec3f windowBottomLeft(0.0,
-                                 0.0,
-                                 0.0f);
-        //windowBottomLeft = windowBottomLeft * viewPlane.getLocalTransformMatrix();
-        ofVec3f  windowBottomRight(0.0,
-                                   0.0,
-                                   -width);
-        //windowBottomRight = windowBottomRight * viewPlane.getLocalTransformMatrix();
-        // To setup off axis view portal we need to be in the plane's matrix. All window coordinates of the camera are relative to the plane.
-        viewPlane.ofPlanePrimitive::transformGL();
-        viewCamera.setupOffAxisViewPortal(windowTopLeft , windowBottomLeft, windowBottomRight );
-        viewPlane.ofPlanePrimitive::restoreTransformGL();
-        viewCamera.setFarClip(10000);
-        viewCamera.setNearClip(.1);
-        viewCamera.setVFlip(false);
-        
-        viewFbo.begin(); {
-            viewFbo.activateAllDrawBuffers();
-            ofClear(0);
-            viewCamera.begin();
-            glEnable(GL_CULL_FACE);
-            glCullFace(GL_FRONT);
-            cam = &viewCamera;
-            pbr.setCamera(cam);
-            pbr.setDrawEnvironment(true);
-            pbr.renderScene();
-            viewCamera.end();
-        } viewFbo.end();
-        
-    } ofPopMatrix();
-    ofPopView();
+
+    mViewPlane->begin(false, false, true);
+    ofClear(255,255);
+    ofSetColor(0, 0, 127,255);
+    //trussModelNode->recursiveDraw();
+    mViewPlane->end();
+
+    mViewPlane->begin(true, true);
+    cam = &mViewPlane->cam;
+    pbr.setCamera(cam);
+    pbr.setDrawEnvironment(true);
+    pbr.renderScene();
+    mViewPlane->end();
     ofPopStyle();
 }
 
@@ -289,20 +235,34 @@ void ofApp::draw() {
             glEnable(GL_CULL_FACE);
             glCullFace(GL_FRONT);
             
-            cam = &projector.second->getCam();
+            //cam = &projector.second->getCam();
+            
+            cam = &mViewPlane->cam;
             pbr.setCamera(cam);
-            pbr.setDrawEnvironment(false);
+            pbr.setDrawEnvironment(true);
             pbr.renderScene();
             
             glDisable(GL_CULL_FACE);
             
             ofPushStyle();
-            ofDisableDepthTest();
-            ofEnableBlendMode(OF_BLENDMODE_ADD);
-            drawView();
+            ofEnableDepthTest();
+            ofEnableAlphaBlending();
+            
+            mViewPlane->draw(true);
             ofPopStyle();
             
             projector.second->end();
+            
+        } else {
+            if(projector.first == "perspective"){
+                projector.second->begin(false, false, false);
+                ofPushStyle();
+                ofEnableBlendMode(OF_BLENDMODE_ADD);
+                ofSetColor(255, 64);
+                mViewPlane->cam.drawFrustum(ofRectangle(0,0,mViewPlane->output.getWidth(), mViewPlane->output.getHeight()));
+                ofPopStyle();
+                projector.second->end();
+            }
             
         }
         
@@ -533,10 +493,10 @@ bool ofApp::imGui()
                 
             }
             
-            //ofxImGui::AddGroup(pgView, mainSettings);
-            
         }
         ofxImGui::AddGroup(pgPbr, mainSettings);
+
+        ofxImGui::AddGroup(mViewPlane->pg, mainSettings);
 
         ofxImGui::AddGroup(pgScenes, mainSettings);
         

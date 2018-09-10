@@ -10,14 +10,16 @@
 #import "Scene.hpp"
 
 class ViewPlane {
+public:
     
     ofCamera cam;
     
     ofShader & highlightShader, tonemapShader, fxaaShader;
     
-    ofFbo hdrPass, tonemapPass, output;
+    ofFbo hdrPass, tonemapPass, output, mask;
     
     bool renderingHdr = false;
+    bool renderingMask = false;
     
     ofFbo::Settings & defaultFboSettings;
     
@@ -26,7 +28,7 @@ class ViewPlane {
     World & world;
     
     ofParameter<float> pViewResolution {"Resolution", 200, 10, 500};
-    ofParameterGroup pgView{ "View", pViewResolution };
+    ofParameterGroup pg{ "View", pViewResolution };
 
     ViewPlane(ofFbo::Settings & defaultFboSettings, ofShader & highlightShader, ofShader & tonemapShader, ofShader & fxaaShader, ofxAssimp3dPrimitive * viewNode, World & world)
     : defaultFboSettings(defaultFboSettings), highlightShader(highlightShader), tonemapShader(tonemapShader), fxaaShader(fxaaShader), viewNode(viewNode), world(world)
@@ -80,8 +82,8 @@ class ViewPlane {
         
         ofFbo::Settings secondPassSettings;
         secondPassSettings = viewFboSettings;
-        secondPassSettings.internalformat = GL_RGB;
-        secondPassSettings.colorFormats.push_back(GL_RGB);
+        secondPassSettings.internalformat = GL_RGBA;
+        secondPassSettings.colorFormats.push_back(GL_RGBA);
         tonemapPass.allocate(secondPassSettings);
         
         ofFbo::Settings outputSettings;
@@ -90,10 +92,20 @@ class ViewPlane {
         outputSettings.numSamples = 8;
         outputSettings.minFilter = GL_LINEAR;
         outputSettings.maxFilter = GL_LINEAR;
-        outputSettings.internalformat = GL_RGB;
-        outputSettings.colorFormats.push_back(GL_RGB);
+        outputSettings.internalformat = GL_RGBA;
+        outputSettings.colorFormats.push_back(GL_RGBA);
         output.allocate(outputSettings);
-        
+
+        ofFbo::Settings maskSettings;
+        maskSettings = viewFboSettings;
+        maskSettings.depthStencilAsTexture = false;
+        maskSettings.numSamples = 8;
+        maskSettings.minFilter = GL_LINEAR;
+        maskSettings.maxFilter = GL_LINEAR;
+        maskSettings.internalformat = GL_RGB;
+        maskSettings.colorFormats.push_back(GL_RGB);
+        mask.allocate(maskSettings);
+
         // CAMERA
         
         cam.setParent(world.origin);
@@ -105,14 +117,14 @@ class ViewPlane {
         cam.setupPerspective();
     }
     
-    void begin(bool hdr = true, bool clear = true){
+    void begin(bool hdr = true, bool clear = true, bool masking = false){
         ofPushStyle();
         ofPushView();
         ofPushMatrix();
 
         renderingHdr = hdr;
+        renderingMask = masking;
         
-        cam.setGlobalPosition(3, 2, -2+sin(ofGetElapsedTimef()));
         float width = plane.getWidth();
         float height = plane.getHeight();
         ofVec3f windowTopLeft(0.0,
@@ -142,6 +154,8 @@ class ViewPlane {
         if(renderingHdr){
             hdrPass.begin();
             hdrPass.activateAllDrawBuffers();
+        } else if(renderingMask) {
+            mask.begin();
         } else {
             output.begin();
         }
@@ -176,6 +190,8 @@ class ViewPlane {
             fxaaShader.end();
             output.end();
             
+        } else if (renderingMask){
+            mask.end();
         } else {
             output.end();
         }
@@ -184,11 +200,18 @@ class ViewPlane {
         ofPopStyle();
     }
     
-    void draw(){
+    void draw(bool hdr = false){
         ofPushStyle();
-        output.getTexture().bind();
-        plane.drawFaces();
-        output.getTexture().unbind();
+        if(hdr && renderingHdr){
+            hdrPass.getTexture().setAlphaMask(mask.getTexture());
+            hdrPass.getTexture().bind();
+            plane.drawFaces();
+            hdrPass.getTexture().unbind();
+        } else {
+            output.getTexture().bind();
+            plane.drawFaces();
+            output.getTexture().unbind();
+        }
         ofPopStyle();
     }
 

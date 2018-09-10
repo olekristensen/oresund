@@ -135,13 +135,8 @@ public:
     // VIEW
     
     ofxAssimp3dPrimitive * viewNode;
-    ofCamera viewCamera;
-    ofFbo viewFbo;
-    ofPlanePrimitive viewPlane;
-    
-    void setupViewPlane(float & resolution);
+    shared_ptr<ViewPlane> mViewPlane;
     void renderView();
-    void drawView();
     
     // PBR
     
