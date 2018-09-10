@@ -17,19 +17,15 @@ class Scene {
     
 public:
     
-    ofParameter<bool> enabled {"enabled", true};
-    ofParameter<bool> enabledDraw {"draw", true};
-    ofParameter<bool> enabledDrawModel {"draw model", true};
-    ofParameter<float> alpha {"alpha", 1.0, 0.0, 1.0};
+    ofParameter<bool> enabled {"Enabled", true};
+    ofParameter<bool> enableModel {"Enabled in model", true};
+    ofParameter<ofFloatColor> leftColor {"Left Color", ofFloatColor(1.0,1.0,1.0,1.0), ofFloatColor(.0,.0,.0,.0), ofFloatColor(1.0,1.0,1.0,1.0)};
+    ofParameter<ofFloatColor> rightColor {"Right Color", ofFloatColor(1.0,1.0,1.0,1.0), ofFloatColor(.0,.0,.0,.0), ofFloatColor(1.0,1.0,1.0,1.0)};
+    ofParameter<ofFloatColor> viewColor {"View Color", ofFloatColor(1.0,1.0,1.0,1.0), ofFloatColor(.0,.0,.0,.0), ofFloatColor(1.0,1.0,1.0,1.0)};
     
-    //ofParameter<bool> qlab {"add to qlab", false};
-    ofParameterGroup params {"untitled", enabled, alpha, enabledDraw, enabledDrawModel};
-    
-    // add dynamic draw order
-    float time;
-    
-    //    ofxTimeline * mainTimeline;
-    //    ofxTLCurves * tlenabled;
+    ofParameterGroup pgViewAlphas {"View Alphas", leftColor, rightColor, viewColor};
+
+    ofParameterGroup params {"untitled", enabled, pgViewAlphas};
     
     Scene() {
     };
@@ -41,7 +37,7 @@ public:
     virtual void reconstruct() {};
     
     void drawSceneModel() {
-        if(enabledDrawModel.get() && enabled.get()) {
+        if(enabled.get()) {
             drawModel();
         }
     };
@@ -54,7 +50,6 @@ public:
     
     shared_ptr<Scene> getScene(string n) {
         for(auto s : *allScenes) {
-            //cout<<s->getParameters().getName()<<endl;
             if(s->getParameters().getName() == n) {
                 return s;
             }
@@ -68,7 +63,7 @@ public:
         globalParams = mainP;
         world = w;
         
-        //enabled.addListener(this, &ofxStereoscopy::Scene::enableToggled);
+        enabled.addListener(this, &Scene::enableToggled);
         
         setup();
         isSetup = true;
@@ -105,7 +100,7 @@ public:
     
     void drawScene() {
         
-        if(enabled.get() && isSetup && enabledDraw.get()) {
+        if(enabled.get() && isSetup) {
             ofPushMatrix();ofPushView();ofPushStyle();
             draw();
             ofPopStyle();ofPopView();ofPopMatrix();
@@ -116,25 +111,6 @@ public:
     ofParameterGroup & getParameters() {
         return params;
     }
-    
-    /*ofVec3f getDancerPositionNormalised(int dancer){
-        return globalParams->getGroup("scenes").getGroup("roomScene").getGroup("dancers").getVec3f(dancer==1?"one":"two");
-    }*/
-    
-    /*ofVec3f dp(int dancer = 0){
-        if(dancer > 0){
-            return getDancerPositionNormalised(dancer) * globalParams->getVec3f("stage_size_cm");
-        } else {
-            return (dp(1)+dp(2))/2.0;
-        }
-    }*/
-    
-    /*ofVec3f getWorldSize() {
-        return globalParams->getVec3f("stage_size_cm").get();
-    }*/
-    
-    virtual void drawGui() {};
-    virtual void setupGui() {};
     
     ofParameterGroup * globalParams;
     World * world;

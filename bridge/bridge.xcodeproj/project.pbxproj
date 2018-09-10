@@ -29,6 +29,7 @@
 		6B3BB6E115053982E13C175C /* EngineVk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 91D1568F53D3EC80AC718E7B /* EngineVk.cpp */; };
 		7CDAD32BE4FA46701E3552C7 /* RunningBackground.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5CBF6AED6A17AC0C17F63CC4 /* RunningBackground.cpp */; };
 		7F664369213827EB00FB39C3 /* ofApp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7F664367213827EB00FB39C3 /* ofApp.cpp */; };
+		7FCFB9152146FC170082AB39 /* pbrScene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FCFB9132146FC170082AB39 /* pbrScene.cpp */; };
 		7FE21D9E2137DB7C003EBC59 /* ofxPBRDirectionalShadow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FE21D862137DB7C003EBC59 /* ofxPBRDirectionalShadow.cpp */; };
 		7FE21D9F2137DB7C003EBC59 /* ofxPBRShadow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FE21D872137DB7C003EBC59 /* ofxPBRShadow.cpp */; };
 		7FE21DA02137DB7C003EBC59 /* ofxPBR.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FE21D892137DB7C003EBC59 /* ofxPBR.cpp */; };
@@ -297,6 +298,9 @@
 		7F664368213827EB00FB39C3 /* ofApp.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ofApp.hpp; sourceTree = "<group>"; };
 		7F66436A2138299500FB39C3 /* ofxAssimp3dPrimitiveHelpers.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ofxAssimp3dPrimitiveHelpers.hpp; sourceTree = "<group>"; };
 		7F66436B213D694000FB39C3 /* calibrations */ = {isa = PBXFileReference; lastKnownFileType = folder; name = calibrations; path = bin/data/calibrations; sourceTree = "<group>"; };
+		7FCFB9132146FC170082AB39 /* pbrScene.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = pbrScene.cpp; sourceTree = "<group>"; };
+		7FCFB9142146FC170082AB39 /* pbrScene.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = pbrScene.hpp; sourceTree = "<group>"; };
+		7FCFB916214703AB0082AB39 /* ViewPlane.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = ViewPlane.hpp; path = SharedCode/ViewPlane.hpp; sourceTree = "<group>"; };
 		7FE21D852137DB7C003EBC59 /* ofxPBRDirectionalShadow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxPBRDirectionalShadow.h; sourceTree = "<group>"; };
 		7FE21D862137DB7C003EBC59 /* ofxPBRDirectionalShadow.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ofxPBRDirectionalShadow.cpp; sourceTree = "<group>"; };
 		7FE21D872137DB7C003EBC59 /* ofxPBRShadow.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ofxPBRShadow.cpp; sourceTree = "<group>"; };
@@ -1161,6 +1165,17 @@
 			name = hal;
 			sourceTree = "<group>";
 		};
+		7FCFB9122146FBD60082AB39 /* Scenes */ = {
+			isa = PBXGroup;
+			children = (
+				7FE21DA9213FCB2E003EBC59 /* Scene.cpp */,
+				7FE21DA8213FCB2E003EBC59 /* Scene.hpp */,
+				7FCFB9132146FC170082AB39 /* pbrScene.cpp */,
+				7FCFB9142146FC170082AB39 /* pbrScene.hpp */,
+			);
+			path = Scenes;
+			sourceTree = "<group>";
+		};
 		7FE21D5E2137DB7C003EBC59 /* ofxPBR */ = {
 			isa = PBXGroup;
 			children = (
@@ -1410,6 +1425,7 @@
 				FED1789536830CB504EC0154 /* ofAutoShader.hpp */,
 				7F66436A2138299500FB39C3 /* ofxAssimp3dPrimitiveHelpers.hpp */,
 				7FF377CD212D7EC800F71BFD /* Projector.hpp */,
+				7FCFB916214703AB0082AB39 /* ViewPlane.hpp */,
 			);
 			name = SharedCode;
 			sourceTree = "<group>";
@@ -1660,8 +1676,7 @@
 				E4B69E1D0A3A1BDC003C02F2 /* main.cpp */,
 				7F664367213827EB00FB39C3 /* ofApp.cpp */,
 				7F664368213827EB00FB39C3 /* ofApp.hpp */,
-				7FE21DA9213FCB2E003EBC59 /* Scene.cpp */,
-				7FE21DA8213FCB2E003EBC59 /* Scene.hpp */,
+				7FCFB9122146FBD60082AB39 /* Scenes */,
 				A761AAA4C33697EE94784AF9 /* SharedCode */,
 			);
 			path = src;
@@ -1860,6 +1875,7 @@
 				6AABAB39E82AF5CFEA23A205 /* ContourFinder.cpp in Sources */,
 				C602002DE761F9B52DB4400A /* ObjectFinder.cpp in Sources */,
 				A6668C5B1272D7FCD5B5A16F /* Utilities.cpp in Sources */,
+				7FCFB9152146FC170082AB39 /* pbrScene.cpp in Sources */,
 				311DF864378748129984EA1D /* Kalman.cpp in Sources */,
 				45CC483A999BF1065A6B926C /* Distance.cpp in Sources */,
 				B6840996567E78436F7ECFAB /* ETF.cpp in Sources */,

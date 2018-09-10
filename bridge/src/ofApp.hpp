@@ -15,23 +15,16 @@
 #include "ofAutoShader.hpp"
 #include "ofxPBR.h"
 #include "Scene.hpp"
+#include "ViewPlane.hpp"
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
-
-enum class CalibrationRenderMode
-{
-    Faces,
-    Outline,
-    WireframeFull,
-    WireframeOccluded
-};
 
 class ofApp : public ofBaseApp {
 public:
     
     ofApp() {
         
-        pgScenes.setName("scenes");
+        pgScenes.setName("Scenes");
         
         //scenes.push_back(make_shared<BoxSplit>());
         
@@ -51,7 +44,6 @@ public:
     void keyPressed(int key);
     void windowResized(int w, int h);
     
-    void setupViewPlane();
     void renderScene();
     void renderCalibration();
     void drawCalibrationEditor();
@@ -146,8 +138,9 @@ public:
     ofCamera viewCamera;
     ofFbo viewFbo;
     ofPlanePrimitive viewPlane;
-    float viewResolution = 200;
     
+    void setupViewPlane(float & resolution);
+    void renderView();
     void drawView();
     
     // PBR

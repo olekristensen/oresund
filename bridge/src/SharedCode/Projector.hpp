@@ -194,7 +194,8 @@ public:
                 ofPushStyle();
                 ofColor c;
                 if(colorMode == CalibrationMeshColorMode::MeshColor){
-                    c.setHsb(360.0*mIndex/calibrationPrimitive->textureNames.size(), 255, 255);
+                    float step = 1.0/calibrationPrimitive->textureNames.size();
+                    c.setHsb(360.0*((mIndex*step)-(step*2.0/3.0)), 255, 255);
                     ofEnableAlphaBlending();
                     prepareRender(true, false, false);
                 }
@@ -295,7 +296,7 @@ public:
         }
     }
     
-    void begin(bool hdr = true, bool forceEasyCam = false){
+    void begin(bool hdr = true, bool forceEasyCam = false, bool clear = true){
         renderingHdr = hdr;
         forcingEasyCam = forceEasyCam;
         
@@ -308,7 +309,7 @@ public:
         } else {
             output.begin();
         }
-        ofClear(0);
+        if(clear) ofClear(0);
         
         if(forceEasyCam){
             cam.begin(viewPort - viewPort.getPosition());

@@ -9,7 +9,7 @@
 #include "ofxAssimp3dPrimitiveHelpers.hpp"
 #include "MeshUtils.hpp"
 
-void ofApp::setupViewPlane() {
+void ofApp::setupViewPlane(float & resolution) {
     
     ofVec3f viewCornerMin;
     ofVec3f viewCornerMax;
@@ -24,8 +24,11 @@ void ofApp::setupViewPlane() {
     
     viewPlane.setParent(world.origin);
     
-    viewFboSettings.width = floor(viewPlane.getWidth() * viewResolution);
-    viewFboSettings.height = floor(viewPlane.getHeight() * viewResolution);
+    viewFboSettings.width = floor(viewPlane.getWidth() * resolution);
+    viewFboSettings.height = floor(viewPlane.getHeight() * resolution);
+    viewFboSettings.minFilter = GL_LINEAR;
+    viewFboSettings.maxFilter = GL_LINEAR;
+    
     viewFbo.allocate(viewFboSettings);
     
     viewCamera.setParent(world.origin);
@@ -68,9 +71,7 @@ void ofApp::setup() {
     defaultFboSettings.maxFilter = GL_NEAREST;
     defaultFboSettings.wrapModeHorizontal = GL_CLAMP_TO_EDGE;
     defaultFboSettings.wrapModeVertical = GL_CLAMP_TO_EDGE;
-    
-    setupViewPlane();
-    
+        
     // SHADERS
     
     string shaderPath = "shaders/postEffect/";
@@ -78,6 +79,9 @@ void ofApp::setup() {
     fxaa.loadAuto(shaderPath + "fxaa");
     shader.loadAuto("shaders/shader");
     shader.bindDefaults();
+    
+    float res = 200.0;
+    setupViewPlane(res);
     
     // PROJECTORS
     
@@ -98,7 +102,6 @@ void ofApp::setup() {
     
     for(auto projector : mProjectors){
         projector.second->referencePoints.enableControlEvents();
-        //projector.second->referencePoints.enableDrawEvent();
         projector.second->cam.setDistance(10);
         projector.second->cam.setNearClip(.1);
         projector.second->cam.setFarClip(10000);
@@ -142,6 +145,7 @@ void ofApp::setup() {
     
     gui.setup();
     
+    load("default");
     
 }
 
@@ -196,7 +200,6 @@ void ofApp::drawProjection(shared_ptr<Projector> & projector) {
     
     ofPushStyle();
     ofSetColor(255);
-    
     glDisable(GL_CULL_FACE);
     ofEnableArbTex();
     ofEnableAlphaBlending();
@@ -206,6 +209,14 @@ void ofApp::drawProjection(shared_ptr<Projector> & projector) {
 }
 
 void ofApp::drawView() {
+    ofPushStyle();
+    viewFbo.getTexture().bind();
+    viewPlane.drawFaces();
+    viewFbo.getTexture().unbind();
+    ofPopStyle();
+}
+
+void ofApp::renderView() {
     ofPushStyle();
     ofPushView();
     ofPushMatrix();{
@@ -236,10 +247,14 @@ void ofApp::drawView() {
         
         viewFbo.begin(); {
             viewFbo.activateAllDrawBuffers();
-            ofClear(0, 255);
+            ofClear(0);
             viewCamera.begin();
-            ofSetColor(255,0,255, 64);
-            fullModelPrimitive->recursiveDraw();
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_FRONT);
+            cam = &viewCamera;
+            pbr.setCamera(cam);
+            pbr.setDrawEnvironment(true);
+            pbr.renderScene();
             viewCamera.end();
         } viewFbo.end();
         
@@ -252,18 +267,19 @@ void ofApp::draw() {
     
     ofBackground(0);
     ofSetColor(255);
+    
+    glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
+    pbr.updateDepthMaps();
     glDisable(GL_CULL_FACE);
     
-    drawView();
+    renderView();
     
     for (auto projector : mProjectors){
         
         projector.second->renderCalibrationEditor(spaceModelPrimitive);
         
         if(!projector.second->pCalibrationEdit){
-            
-            pbr.updateDepthMaps();
             
             projector.second->begin(true);
             
@@ -275,9 +291,16 @@ void ofApp::draw() {
             
             cam = &projector.second->getCam();
             pbr.setCamera(cam);
+            pbr.setDrawEnvironment(false);
             pbr.renderScene();
             
             glDisable(GL_CULL_FACE);
+            
+            ofPushStyle();
+            ofDisableDepthTest();
+            ofEnableBlendMode(OF_BLENDMODE_ADD);
+            drawView();
+            ofPopStyle();
             
             projector.second->end();
             
@@ -301,7 +324,6 @@ void ofApp::draw() {
     // GUI
     ofEnableBlendMode(OF_BLENDMODE_ALPHA);
     ofFill();
-    
     
     // Gui
     this->mouseOverGui = false;
@@ -458,10 +480,6 @@ bool ofApp::imGui()
             bool guiShaderValid = shader.isValid;
             ImGui::Checkbox("Shader Valid", &guiShaderValid);
             
-            if(ImGui::SliderFloat("Resolution", &viewResolution, 1.0, 300.0)){
-                setupViewPlane();
-            }
-            
             //ImGui::PushFont(font1);
             ImGui::TextUnformatted("Interface");
             //ImGui::PopFont();
@@ -473,46 +491,54 @@ bool ofApp::imGui()
             if(guiShowTest)
                 ImGui::ShowTestWindow();
             
-            for(auto & projector : mProjectors){
+            if(ofxImGui::BeginTree("Calibration", mainSettings)){
                 
-                if(ofxImGui::BeginTree(projector.first.c_str(), mainSettings)){
-                    auto p = projector.second;
+                for(auto & projector : mProjectors){
                     
-                    ofxImGui::AddParameter(p->pCalibrationEdit);
-                    ofxImGui::AddParameter(p->pCalibrationDrawScales);
-                    ofxImGui::AddCombo(p->pCalibrationMeshDrawMode, p->CalibrationMeshDrawModeLabels);
-                    ofxImGui::AddCombo(p->pCalibrationMeshColorMode, p->CalibrationMeshColorModeLabels);
-                    
-                    vector<string> objectNames;
-                    for(auto str :spaceModelPrimitive->textureNames){
-                        string objectName = ofSplitString(str, "/").back();
-                        auto objectNameComponents = ofSplitString(objectName, ".");
-                        objectNameComponents.pop_back();
-                        objectName = ofJoinString(objectNameComponents, ".");
-                        objectNames.push_back(objectName);
+                    if(ofxImGui::BeginTree(projector.first.c_str(), mainSettings)){
+                        auto p = projector.second;
+                        
+                        ofxImGui::AddParameter(p->pCalibrationEdit);
+                        ofxImGui::AddParameter(p->pCalibrationDrawScales);
+                        ofxImGui::AddCombo(p->pCalibrationMeshDrawMode, p->CalibrationMeshDrawModeLabels);
+                        ofxImGui::AddCombo(p->pCalibrationMeshColorMode, p->CalibrationMeshColorModeLabels);
+                        ofxImGui::AddParameter(p->pCalibrationProjectorColor);
+                        vector<string> objectNames;
+                        for(auto str :spaceModelPrimitive->textureNames){
+                            string objectName = ofSplitString(str, "/").back();
+                            auto objectNameComponents = ofSplitString(objectName, ".");
+                            objectNameComponents.pop_back();
+                            objectName = ofJoinString(objectNameComponents, ".");
+                            objectNames.push_back(objectName);
+                        }
+                        
+                        ofxImGui::AddCombo(p->pCalibrationHighlightIndex, objectNames);
+                        
+                        if(ImGui::Button("Load")){
+                            projector.second->load("calibrations/" + projector.first);
+                        } ImGui::SameLine();
+                        if(ImGui::Button("Save")){
+                            projector.second->save("calibrations/" + projector.first);
+                        }ImGui::SameLine();
+                        if(ImGui::Button("Clear")){
+                            projector.second->referencePoints.clear();
+                        }
+                        
+                        ofxImGui::EndTree(mainSettings);
                     }
                     
-                    ofxImGui::AddCombo(p->pCalibrationHighlightIndex, objectNames);
-                    
-                    if(ImGui::Button("Load")){
-                        projector.second->load("calibrations/" + projector.first);
-                    } ImGui::SameLine();
-                    if(ImGui::Button("Save")){
-                        projector.second->save("calibrations/" + projector.first);
-                    }ImGui::SameLine();
-                    if(ImGui::Button("Clear")){
-                        projector.second->referencePoints.clear();
-                    }
-                    
-                    ofxImGui::EndTree(mainSettings);
                 }
+                
+                ofxImGui::EndTree(mainSettings);
                 
             }
             
-            ofxImGui::AddGroup(pgPbr, mainSettings);
+            //ofxImGui::AddGroup(pgView, mainSettings);
             
         }
-        
+        ofxImGui::AddGroup(pgPbr, mainSettings);
+
+        ofxImGui::AddGroup(pgScenes, mainSettings);
         
     }
     ofxImGui::EndWindow(mainSettings);
