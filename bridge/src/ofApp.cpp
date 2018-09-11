@@ -18,13 +18,13 @@ void ofApp::setup() {
     
     // MODELS
     
-    spaceModelPrimitive = nullptr;
+    //spaceModelPrimitive = nullptr;
     
     if(ofFile::doesFileExist("models/space.dae")) {
         loadSpaceModel("models/space.dae");
     }
     
-    fullModelPrimitive = nullptr;
+    //fullModelPrimitive = nullptr;
     
     if(ofFile::doesFileExist("models/full.dae")) {
         loadFullModel("models/full.dae");
@@ -75,6 +75,9 @@ void ofApp::setup() {
         projector.second->referencePoints.setCamera(&projector.second->cam);
         projector.second->pg.setName(projector.first);
         projector.second->pg.add(projector.second->pgCalibration);
+        if(projector.first == "perspective"){
+            projector.second->pg.add(projector.second->pTrackViewCamera);
+        }
         pgProjectors.add(projector.second->pg);
     }
     pgProjectors.setName("Projectors");
@@ -82,7 +85,7 @@ void ofApp::setup() {
     
     //VIEW PLANE
     
-    mViewPlane = make_shared<ViewPlane>(defaultFboSettings, shader, tonemap, fxaa, viewNode, world);
+    mViewPlane = make_shared<ViewPlane>(defaultFboSettings, shader, tonemap, fxaa, world.primitives["view"], world);
     
     pgGlobal.add(mViewPlane->pg);
     
@@ -94,7 +97,7 @@ void ofApp::setup() {
     
     pbr.setup(scene, cam, 1024*4);
     
-    materials.resize(fullModelPrimitive->textureNames.size());
+    materials.resize(world.primitives["model"]->textureNames.size());
     
     int materialIndex = 0;
     for (auto & material : materials){
@@ -131,16 +134,22 @@ void ofApp::update() {
     // MODELS
     spaceModel.update();
     fullModel.update();
-    if(fullModelPrimitive != nullptr){
-        fullModelPrimitive->update();
+    if(world.primitives["model"] != nullptr){
+        world.primitives["model"]->update();
     }
     
+    mViewPlane->cam.setGlobalPosition(3+(cos(ofGetElapsedTimef())*.5), 2, -2+sin(ofGetElapsedTimef()));
+
     //PROJECTORS
     for (auto projector : mProjectors){
         projector.second->update(calibrationCornerMesh);
         if(projector.first == "perspective"){
             projector.second->referencePoints.disableDrawEvent();
             projector.second->referencePoints.disableControlEvents();
+            if(projector.second->pTrackViewCamera){
+                projector.second->cam.setGlobalPosition(mViewPlane->cam.getGlobalPosition());
+                projector.second->cam.lookAt(mViewPlane->plane.getPosition(), glm::vec3(0,1,0));
+            }
         }
     }
     
@@ -150,9 +159,6 @@ void ofApp::update() {
     tonemap.setUniform1f("exposure", pPbrExposure);
     tonemap.setUniform1f("gamma", pPbrGamma);
     tonemap.end();
-    
-    mViewPlane->cam.setGlobalPosition(3+(cos(ofGetElapsedTimef())*1.45), 2, -2+sin(ofGetElapsedTimef()));
-
     
 }
 
@@ -164,7 +170,7 @@ void ofApp::renderScene() {
     pbr.beginDefaultRenderer();
     {
         ofSetColor(255,255);
-        renderPrimitiveWithMaterialsRecursive(fullModelPrimitive, materials, pbr);
+        renderPrimitiveWithMaterialsRecursive(world.primitives["model"], materials, pbr);
     }
     pbr.endDefaultRenderer();
     glDisable(GL_CULL_FACE);
@@ -194,17 +200,13 @@ void ofApp::drawProjection(shared_ptr<Projector> & projector) {
 void ofApp::renderView() {
     ofPushStyle();
 
-    mViewPlane->begin(false, false, true);
-    ofClear(255,255);
-    ofSetColor(0, 0, 127,255);
-    //trussModelNode->recursiveDraw();
-    mViewPlane->end();
-
     mViewPlane->begin(true, true);
+    
     cam = &mViewPlane->cam;
     pbr.setCamera(cam);
     pbr.setDrawEnvironment(true);
     pbr.renderScene();
+    
     mViewPlane->end();
     ofPopStyle();
 }
@@ -213,6 +215,8 @@ void ofApp::draw() {
     
     ofBackground(0);
     ofSetColor(255);
+    ofEnableAlphaBlending();
+
     
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
@@ -221,26 +225,38 @@ void ofApp::draw() {
     
     renderView();
     
+    // RENDER PROJECTOR FBO's
+    
     for (auto projector : mProjectors){
         
-        projector.second->renderCalibrationEditor(spaceModelPrimitive);
+        projector.second->renderCalibrationEditor(world.primitives["space"]);
         
         if(!projector.second->pCalibrationEdit){
             
             projector.second->begin(true);
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
             
-            ofDisableAlphaBlending();
+            ofPushStyle();
+            
+            ofEnableAlphaBlending();
             ofEnableDepthTest();
             
-            glEnable(GL_CULL_FACE);
-            glCullFace(GL_FRONT);
-            
+            ofSetColor(0, 255);
+            world.primitives["floor"]->recursiveDraw();
+            world.primitives["walls"]->recursiveDraw();
+
+            ofPopStyle();
+
+            ofEnableAlphaBlending();
+            ofEnableDepthTest();
+
             cam = &projector.second->getCam();
             
             //TODO: Align reflections to viewplane
             //cam = &mViewPlane->cam;
             pbr.setCamera(cam);
-            pbr.setDrawEnvironment(true);
+            pbr.setDrawEnvironment(false);
             pbr.renderScene();
             
             glDisable(GL_CULL_FACE);
@@ -254,27 +270,28 @@ void ofApp::draw() {
             
             projector.second->end();
             
-        } else {
-            if(projector.first == "perspective"){
-                projector.second->begin(false, false, false);
-                ofPushStyle();
-                ofEnableBlendMode(OF_BLENDMODE_ADD);
-                ofSetColor(255, 64);
-                mViewPlane->cam.drawFrustum(ofRectangle(0,0,mViewPlane->output.getWidth(), mViewPlane->output.getHeight()));
-                ofPopStyle();
-                projector.second->end();
-            }
-            
         }
         
-        projector.second->draw();
+        if(projector.first == "perspective" && !projector.second->pTrackViewCamera){
+            projector.second->begin(false, false, false);
+            ofPushStyle();
+            ofEnableBlendMode(OF_BLENDMODE_ADD);
+            ofDisableDepthTest();
+            ofSetColor(255, 64);
+            mViewPlane->cam.drawFrustum(ofRectangle(0,0,mViewPlane->output.getWidth(), mViewPlane->output.getHeight()));
+            ofPopStyle();
+            projector.second->end();
+        }
         
     }
     
-    // draw frames and labels
+    // DRAW PROJECTORS
     for (auto projector : mProjectors){
         ofPushStyle();
         ofSetColor(255,255,255,255);
+        ofDisableAlphaBlending();
+        ofDisableDepthTest();
+        projector.second->draw();
         ofNoFill();
         ofDrawRectangle(projector.second->viewPort);
         ofFill();
@@ -319,20 +336,21 @@ void ofApp::loadSpaceModel(string filename) {
     spaceModel.setScaleNormalization(false);
     spaceModel.calculateDimensions();
     
-    spaceModelPrimitive = spaceModel.getPrimitives();
+    
+    auto spaceModelPrimitive = spaceModel.getPrimitives();
     spaceModelPrimitive->setParent(world.origin);
-    vector<ofMesh> meshes = spaceModelPrimitive->getBakedMeshesRecursive();
+    world.primitives["space"] = spaceModelPrimitive;
     
-    auto calibrationPrimitive = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.calibration");
+    world.primitives["calibration"] = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.calibration");
+    vector<ofMesh> meshes = world.primitives["calibration"]->getBakedMeshesRecursive();
     
-    wallModelNode = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.walls");
-    approachModelNode = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("approach.deck");
-    trussModelNode = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.truss");
-    viewNode = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.view");
+    world.primitives["walls"] = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.walls");
+    world.primitives["floor"] = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.floor");
+    world.primitives["approach"] = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("approach.deck");
+    world.primitives["truss"] = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.truss");
+    world.primitives["view"] = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.view");
     
-    meshes = calibrationPrimitive->getBakedMeshesRecursive();
-    
-    calibrationPrimitive->clearParent();
+    world.primitives["calibration"]->clearParent();
     
     // join all the meshes
     calibrationMesh = ofVboMesh();
@@ -375,8 +393,8 @@ void ofApp::loadFullModel(string filename) {
     fullModel.setScaleNormalization(false);
     fullModel.calculateDimensions();
     
-    fullModelPrimitive = fullModel.getPrimitives();
-    fullModelPrimitive->setParent(world.origin);
+    world.primitives["model"] = fullModel.getPrimitives();
+    world.primitives["model"]->setParent(world.origin);
     
     
 }
@@ -465,7 +483,7 @@ bool ofApp::imGui()
                         ofxImGui::AddCombo(p->pCalibrationMeshColorMode, p->CalibrationMeshColorModeLabels);
                         ofxImGui::AddParameter(p->pCalibrationProjectorColor);
                         vector<string> objectNames;
-                        for(auto str :spaceModelPrimitive->textureNames){
+                        for(auto str :world.primitives["space"]->textureNames){
                             string objectName = ofSplitString(str, "/").back();
                             auto objectNameComponents = ofSplitString(objectName, ".");
                             objectNameComponents.pop_back();
@@ -483,6 +501,10 @@ bool ofApp::imGui()
                         }ImGui::SameLine();
                         if(ImGui::Button("Clear")){
                             projector.second->referencePoints.clear();
+                        }
+
+                        if(projector.first == "perspective"){
+                            ofxImGui::AddParameter(p->pTrackViewCamera);
                         }
                         
                         ofxImGui::EndTree(mainSettings);

@@ -77,7 +77,7 @@ public:
     ofParameter<float> pPbrEnvRotation{ "Environment Rotation", 0.0f, 0.0f, TWO_PI };
     ofParameter<float> pPbrExposure{ "Exposure", 1.0f, 0.0f, 20.0f };
     ofParameterGroup pgPbr{ "PBR", pPbrEnvLevel, pPbrEnvExposure, pPbrEnvRotation, pPbrExposure, pPbrGamma };
-    
+
     ofParameterGroup pgProjectors;
 
     ofParameterGroup pgGlobal{"Global", pgPbr};
@@ -92,13 +92,15 @@ public:
     // MODELS
     ofxAssimpModelLoader spaceModel;
     ofxAssimpModelLoader fullModel;
-    ofxAssimp3dPrimitive * fullModelPrimitive = nullptr;
+    
+/*    ofxAssimp3dPrimitive * fullModelPrimitive = nullptr;
     ofxAssimp3dPrimitive * spaceModelPrimitive = nullptr;
     ofxAssimp3dPrimitive * wallModelNode = nullptr;
     ofxAssimp3dPrimitive * trussModelNode = nullptr;
     ofxAssimp3dPrimitive * pylonsModelNode = nullptr;
     ofxAssimp3dPrimitive * approachModelNode = nullptr;
-    
+*/
+
     // CALIBRATION
     const float cornerRatio = 1.0;
     const int cornerMinimum = 6;
@@ -107,9 +109,8 @@ public:
     ofVboMesh calibrationMesh, calibrationCornerMesh;
     
     // PROJECTORS
-    glm::vec2 projectionResolution = {1280, 720};
-    
-    //glm::vec2 projectionResolution = {1920, 1200};
+    //glm::vec2 projectionResolution = {1280, 720};
+    glm::vec2 projectionResolution = {1920, 1200};
     
     map<string, shared_ptr<Projector> > mProjectors;
     
@@ -134,7 +135,7 @@ public:
         
     // VIEW
     
-    ofxAssimp3dPrimitive * viewNode;
+    //ofxAssimp3dPrimitive * viewNode;
     shared_ptr<ViewPlane> mViewPlane;
     void renderView();
     

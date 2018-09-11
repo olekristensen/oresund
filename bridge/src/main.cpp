@@ -18,7 +18,8 @@ int main() {
     // settings.setPosition() TODO - set fullscreen at correct positions - query connected displays?
     //ofCreateWindow(pr1settings);
     
-    settings.setSize(1280*2,720*2);
+    //settings.setSize(1280*2,720*2);
+    settings.setSize(1920*2,1080*2);
     //ofCreateWindow(settings);
     shared_ptr<ofAppBaseWindow> controlWindow = ofCreateWindow(settings);
     shared_ptr<ofApp> controlApp(new ofApp);

@@ -7,10 +7,13 @@
 
 #pragma once
 #include "ofMain.h"
+#include "ofxAssimp3dPrimitive.hpp"
 
 class World {
 public:
     ofNode origin;
+    map< string, ofxAssimp3dPrimitive * > primitives;
+    
 };
 
 class Scene {

@@ -16,10 +16,9 @@ public:
     
     ofShader & highlightShader, tonemapShader, fxaaShader;
     
-    ofFbo hdrPass, tonemapPass, output, mask;
+    ofFbo hdrPass, tonemapPass, output;
     
     bool renderingHdr = false;
-    bool renderingMask = false;
     
     ofFbo::Settings & defaultFboSettings;
     
@@ -89,22 +88,12 @@ public:
         ofFbo::Settings outputSettings;
         outputSettings = viewFboSettings;
         outputSettings.depthStencilAsTexture = false;
-        outputSettings.numSamples = 8;
+        outputSettings.numSamples = 4;
         outputSettings.minFilter = GL_LINEAR;
         outputSettings.maxFilter = GL_LINEAR;
         outputSettings.internalformat = GL_RGBA;
         outputSettings.colorFormats.push_back(GL_RGBA);
         output.allocate(outputSettings);
-
-        ofFbo::Settings maskSettings;
-        maskSettings = viewFboSettings;
-        maskSettings.depthStencilAsTexture = false;
-        maskSettings.numSamples = 8;
-        maskSettings.minFilter = GL_LINEAR;
-        maskSettings.maxFilter = GL_LINEAR;
-        maskSettings.internalformat = GL_RGB;
-        maskSettings.colorFormats.push_back(GL_RGB);
-        mask.allocate(maskSettings);
 
         // CAMERA
         
@@ -117,13 +106,12 @@ public:
         cam.setupPerspective();
     }
     
-    void begin(bool hdr = true, bool clear = true, bool masking = false){
+    void begin(bool hdr = true, bool clear = true){
         ofPushStyle();
         ofPushView();
         ofPushMatrix();
 
         renderingHdr = hdr;
-        renderingMask = masking;
         
         float width = plane.getWidth();
         float height = plane.getHeight();
@@ -148,14 +136,9 @@ public:
         cam.setNearClip(.1);
         cam.setVFlip(false);
         
-        ofDisableAlphaBlending();
-        ofEnableDepthTest();
-        
         if(renderingHdr){
             hdrPass.begin();
             hdrPass.activateAllDrawBuffers();
-        } else if(renderingMask) {
-            mask.begin();
         } else {
             output.begin();
         }
@@ -169,14 +152,15 @@ public:
         if(renderingHdr){
             hdrPass.end();
             
-            ofDisableDepthTest();
-            ofEnableAlphaBlending();
+            ofPushStyle();
             
+            //ofDisableDepthTest();
+            //ofEnableAlphaBlending();
+            
+            /* fxaa
             tonemapPass.begin();
             ofClear(0);
-            
             tonemapShader.begin();
-            
             tonemapShader.setUniformTexture("image", hdrPass.getTexture(), 0);
             hdrPass.draw(0, 0);
             tonemapShader.end();
@@ -189,9 +173,18 @@ public:
             tonemapPass.draw(0,0);
             fxaaShader.end();
             output.end();
+            */
+
+            output.begin();
+            ofClear(0);
+            tonemapShader.begin();
+            tonemapShader.setUniformTexture("image", hdrPass.getTexture(), 0);
+            hdrPass.draw(0, 0);
+            tonemapShader.end();
+            output.end();
             
-        } else if (renderingMask){
-            mask.end();
+            ofPopStyle();
+            
         } else {
             output.end();
         }
@@ -203,7 +196,6 @@ public:
     void draw(bool hdr = false){
         ofPushStyle();
         if(hdr && renderingHdr){
-            hdrPass.getTexture().setAlphaMask(mask.getTexture());
             hdrPass.getTexture().bind();
             plane.drawFaces();
             hdrPass.getTexture().unbind();

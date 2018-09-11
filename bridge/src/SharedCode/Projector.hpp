@@ -57,6 +57,7 @@ public:
     ofParameter<ofFloatColor> pCalibrationProjectorColor{ "Projector color", ofFloatColor(1.0,1.0,1.0,1.0), ofFloatColor(0.0,0.0,0.0,0.0),ofFloatColor(1.0,1.0,1.0,1.0)};
     ofParameter<int>  pCalibrationHighlightIndex{ "Highlight", 0, 0, 0 };
     ofParameterGroup  pgCalibration{ "Calibration", pCalibrationEdit, pCalibrationDrawScales, pCalibrationMeshDrawMode, pCalibrationMeshColorMode,pCalibrationProjectorColor, pCalibrationHighlightIndex };
+    ofParameter<bool> pTrackViewCamera {"Track View Camera", false};
     ofParameterGroup pg;
     
     
@@ -95,7 +96,7 @@ public:
         outputSettings.width = width;
         outputSettings.height = height;
         outputSettings.depthStencilAsTexture = false;
-        outputSettings.numSamples = 8;
+        outputSettings.numSamples = 4;
         outputSettings.internalformat = GL_RGB;
         outputSettings.colorFormats.push_back(GL_RGB);
         output.allocate(outputSettings);
@@ -178,7 +179,9 @@ public:
             ofPushStyle();
             ofSetLineWidth(3.0);
             ofEnableSmoothing();
-            
+            ofEnableDepthTest();
+            ofEnableAlphaBlending();
+
             // SCALES
             if(pCalibrationDrawScales){
                 ofDrawGrid(1.0, 10, true);
@@ -193,7 +196,11 @@ public:
             for(int mIndex = 0 ; mIndex < calibrationPrimitive->textureNames.size(); mIndex++){
                 ofPushStyle();
                 ofColor c;
-                if(colorMode == CalibrationMeshColorMode::MeshColor){
+                if(mIndex == pCalibrationHighlightIndex){
+                    highlightShader.begin();
+                    highlightShader.setUniform1f("elapsedTime", ofGetElapsedTimef());
+                    prepareRender(true, false, false);
+                } else if(colorMode == CalibrationMeshColorMode::MeshColor){
                     float step = 1.0/calibrationPrimitive->textureNames.size();
                     c.setHsb(360.0*((mIndex*step)-(step*2.0/3.0)), 255, 255);
                     ofEnableAlphaBlending();
@@ -212,11 +219,7 @@ public:
                 ofSetColor(c);
                 auto primitives = calibrationPrimitive->getPrimitivesWithTextureIndex(mIndex);
                 for(auto p : primitives){
-                    if(mIndex == pCalibrationHighlightIndex){
-                        highlightShader.begin();
-                        highlightShader.setUniform1f("elapsedTime", ofGetElapsedTimef());
-                        prepareRender(true, false, false);
-                    }
+                    ofPushStyle();
                     if(drawMode == CalibrationMeshDrawMode::Faces) {
                         p->recursiveDraw(OF_MESH_FILL);
                     } else if(drawMode == CalibrationMeshDrawMode::WireframeFull) {
@@ -237,14 +240,18 @@ public:
                         p->recursiveDraw(OF_MESH_WIREFRAME);
                         prepareRender(false, false, false);
                     }
-                    if(mIndex == pCalibrationHighlightIndex){
-                        highlightShader.end();
-                    }
+                    ofPopStyle();
                 }
+
+                if(mIndex == pCalibrationHighlightIndex){
+                    highlightShader.end();
+                }
+
                 ofPopStyle();
             }
             ofPopStyle();
             
+            ofPushStyle();
             ofEnableAlphaBlending();
             ofDisableDepthTest();
             
@@ -255,6 +262,7 @@ public:
                 calibrationPrimitive->recursiveDraw(OF_MESH_WIREFRAME);
                 cam.end();
             }
+            ofPopStyle();
             
             // lines
             ofPushView();
