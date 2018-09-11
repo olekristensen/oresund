@@ -235,9 +235,10 @@ void ofApp::draw() {
             glEnable(GL_CULL_FACE);
             glCullFace(GL_FRONT);
             
-            //cam = &projector.second->getCam();
+            cam = &projector.second->getCam();
             
-            cam = &mViewPlane->cam;
+            //TODO: Align reflections to viewplane
+            //cam = &mViewPlane->cam;
             pbr.setCamera(cam);
             pbr.setDrawEnvironment(true);
             pbr.renderScene();
