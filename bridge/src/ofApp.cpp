@@ -18,14 +18,10 @@ void ofApp::setup() {
     
     // MODELS
     
-    //spaceModelPrimitive = nullptr;
-    
     if(ofFile::doesFileExist("models/space.dae")) {
         loadSpaceModel("models/space.dae");
     }
-    
-    //fullModelPrimitive = nullptr;
-    
+        
     if(ofFile::doesFileExist("models/full.dae")) {
         loadFullModel("models/full.dae");
     }
@@ -203,7 +199,7 @@ void ofApp::renderView() {
     mViewPlane->begin(true, true);
     
     cam = &mViewPlane->cam;
-    pbr.setCamera(cam);
+    //pbr.setCamera(cam);
     pbr.setDrawEnvironment(true);
     pbr.renderScene();
     
@@ -216,12 +212,8 @@ void ofApp::draw() {
     ofBackground(0);
     ofSetColor(255);
     ofEnableAlphaBlending();
-
     
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
     pbr.updateDepthMaps();
-    glDisable(GL_CULL_FACE);
     
     renderView();
     
@@ -234,8 +226,6 @@ void ofApp::draw() {
         if(!projector.second->pCalibrationEdit){
             
             projector.second->begin(true);
-            glEnable(GL_CULL_FACE);
-            glCullFace(GL_BACK);
             
             ofPushStyle();
             
@@ -255,11 +245,9 @@ void ofApp::draw() {
             
             //TODO: Align reflections to viewplane
             //cam = &mViewPlane->cam;
-            pbr.setCamera(cam);
+            //pbr.setCamera(cam);
             pbr.setDrawEnvironment(false);
             pbr.renderScene();
-            
-            glDisable(GL_CULL_FACE);
             
             ofPushStyle();
             ofEnableDepthTest();
