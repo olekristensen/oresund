@@ -58,6 +58,7 @@ public:
     ofParameter<int>  pCalibrationHighlightIndex{ "Highlight", 0, 0, 0 };
     ofParameterGroup  pgCalibration{ "Calibration", pCalibrationEdit, pCalibrationDrawScales, pCalibrationMeshDrawMode, pCalibrationMeshColorMode,pCalibrationProjectorColor, pCalibrationHighlightIndex };
     ofParameter<bool> pTrackViewCamera {"Track View Camera", false};
+    ofParameter<bool> pEnabled {"Enabled", true};
     ofParameterGroup pg;
     
     

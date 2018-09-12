@@ -328,6 +328,7 @@
 		7F0A1FC42149196100FF8BE6 /* Timeline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Timeline.h; sourceTree = "<group>"; };
 		7F0A1FD92149196100FF8BE6 /* OFSpecialization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OFSpecialization.h; sourceTree = "<group>"; };
 		7F0A1FDA2149196100FF8BE6 /* ofxChoreograph.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxChoreograph.h; sourceTree = "<group>"; };
+		7F0A1FF921498A0500FF8BE6 /* data */ = {isa = PBXFileReference; lastKnownFileType = folder; name = data; path = bin/data; sourceTree = "<group>"; };
 		7F1C9454212B1FEB008E0976 /* shaders */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shaders; path = bin/data/shaders; sourceTree = "<group>"; };
 		7F664367213827EB00FB39C3 /* ofApp.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ofApp.cpp; sourceTree = "<group>"; };
 		7F664368213827EB00FB39C3 /* ofApp.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ofApp.hpp; sourceTree = "<group>"; };
@@ -1804,6 +1805,7 @@
 		E4B69B4A0A3A1720003C02F2 = {
 			isa = PBXGroup;
 			children = (
+				7F0A1FF921498A0500FF8BE6 /* data */,
 				7F66436B213D694000FB39C3 /* calibrations */,
 				7F1C9454212B1FEB008E0976 /* shaders */,
 				E4B6FCAD0C3E899E008CF71C /* openFrameworks-Info.plist */,

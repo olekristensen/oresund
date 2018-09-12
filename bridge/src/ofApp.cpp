@@ -11,6 +11,25 @@
 
 using namespace ofxChoreograph;
 
+ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color)
+{
+    auto res = ImVec4(r / (float)255, g / (float)255, b / (float)255, a / (float)255);
+#ifdef FLIP_COLOR_SCHEME
+    if (!consistent_color) return flip(res);
+#endif
+    return res;
+}
+
+ImVec4 operator+(const ImVec4& c, float v)
+{
+    return ImVec4(
+                  std::max(0.f, std::min(1.f, c.x + v)),
+                  std::max(0.f, std::min(1.f, c.y + v)),
+                  std::max(0.f, std::min(1.f, c.z + v)),
+                  std::max(0.f, std::min(1.f, c.w))
+                  );
+}
+
 void ofApp::setup() {
     
     // WINDOW
@@ -23,7 +42,7 @@ void ofApp::setup() {
     if(ofFile::doesFileExist("models/space.dae")) {
         loadSpaceModel("models/space.dae");
     }
-        
+    
     if(ofFile::doesFileExist("models/full.dae")) {
         loadFullModel("models/full.dae");
     }
@@ -38,7 +57,7 @@ void ofApp::setup() {
     defaultFboSettings.maxFilter = GL_NEAREST;
     defaultFboSettings.wrapModeHorizontal = GL_CLAMP_TO_EDGE;
     defaultFboSettings.wrapModeVertical = GL_CLAMP_TO_EDGE;
-        
+    
     // SHADERS
     
     string shaderPath = "shaders/postEffect/";
@@ -72,10 +91,11 @@ void ofApp::setup() {
         projector.second->cam.setVFlip(false);
         projector.second->referencePoints.setCamera(&projector.second->cam);
         projector.second->pg.setName(projector.first);
-        projector.second->pg.add(projector.second->pgCalibration);
         if(projector.first == "perspective"){
+            projector.second->pg.add(projector.second->pEnabled);
             projector.second->pg.add(projector.second->pTrackViewCamera);
         }
+        projector.second->pg.add(projector.second->pgCalibration);
         pgProjectors.add(projector.second->pg);
     }
     pgProjectors.setName("Projectors");
@@ -116,12 +136,80 @@ void ofApp::setup() {
         s->setupScene(&pgGlobal, &world, &scenes);
     }
     
+    //GUI
+    
+    ofAddListener(ofGetWindowPtr()->events().keyPressed, this,
+                  &ofApp::keycodePressed);
+    
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    gui_font_text = io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Light.ttf").c_str(), 16.0f);
+    gui_font_header = io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Regular.ttf").c_str(), 22.0f);
+    
     gui.setup();
+    
+    logo.load("images/logo.png");
+    logoID = gui.loadImage(logo);
+    
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.WindowPadding = ImVec2(14.,14.);
+    style.WindowRounding = 4.0f;
+    style.ChildWindowRounding = 4.;
+    style.FramePadding = ImVec2(8, 4);
+    style.FrameRounding = 4;
+    style.ItemSpacing = ImVec2(6, 5);
+    style.ItemInnerSpacing = ImVec2(7, 4);
+    style.IndentSpacing = 18;
+    style.ScrollbarRounding = 2;
+    
+    style.Colors[ImGuiCol_Text]                  = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+    style.Colors[ImGuiCol_TextDisabled]          = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+    style.Colors[ImGuiCol_WindowBg]              = ImVec4(0.025f, 0.025f, 0.025f, 0.85f);
+    style.Colors[ImGuiCol_ChildWindowBg]         = ImVec4(0.00f, 0.00f, 0.00f, 0.22f);
+    style.Colors[ImGuiCol_PopupBg]               = ImVec4(0.05f, 0.05f, 0.05f, 0.90f);
+    style.Colors[ImGuiCol_Border]                = ImVec4(0.70f, 0.70f, 0.70f, 0.29f);
+    style.Colors[ImGuiCol_BorderShadow]          = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    style.Colors[ImGuiCol_FrameBg]               = ImVec4(0.07f, 0.09f, 0.10f, 0.40f);
+    style.Colors[ImGuiCol_FrameBgHovered]        = ImVec4(0.00f, 0.45f, 0.78f, 0.39f);
+    style.Colors[ImGuiCol_FrameBgActive]         = ImVec4(0.65f, 0.74f, 0.81f, 0.33f);
+    style.Colors[ImGuiCol_TitleBg]               = ImVec4(0.11f, 0.13f, 0.15f, 1.00f);
+    style.Colors[ImGuiCol_TitleBgCollapsed]      = ImVec4(0.11f, 0.13f, 0.15f, 1.00f);
+    style.Colors[ImGuiCol_TitleBgActive]         = ImVec4(0.24f, 0.29f, 0.32f, 1.00f);
+    style.Colors[ImGuiCol_MenuBarBg]             = ImVec4(0.11f, 0.13f, 0.15f, 0.80f);
+    style.Colors[ImGuiCol_ScrollbarBg]           = ImVec4(0.05f, 0.07f, 0.08f, 1.00f);
+    style.Colors[ImGuiCol_ScrollbarGrab]         = ImVec4(0.21f, 0.24f, 0.26f, 1.00f);
+    style.Colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(0.31f, 0.34f, 0.36f, 1.00f);
+    style.Colors[ImGuiCol_ScrollbarGrabActive]   = ImVec4(0.11f, 0.13f, 0.15f, 1.00f);
+    style.Colors[ImGuiCol_ComboBg]               = ImVec4(0.04f, 0.04f, 0.05f, 1.00f);
+    style.Colors[ImGuiCol_CheckMark]             = ImVec4(0.90f, 0.90f, 0.90f, 0.57f);
+    style.Colors[ImGuiCol_SliderGrab]            = ImVec4(1.00f, 1.00f, 1.00f, 0.13f);
+    style.Colors[ImGuiCol_SliderGrabActive]      = ImVec4(0.00f, 0.45f, 0.78f, 1.00f);
+    style.Colors[ImGuiCol_Button]                = ImVec4(0.24f, 0.30f, 0.35f, 0.18f);
+    style.Colors[ImGuiCol_ButtonHovered]         = ImVec4(0.00f, 0.45f, 0.78f, 0.39f);
+    style.Colors[ImGuiCol_ButtonActive]          = ImVec4(0.00f, 0.45f, 0.78f, 1.00f);
+    style.Colors[ImGuiCol_Header]                = ImVec4(0.24f, 0.30f, 0.35f, 0.18f);
+    style.Colors[ImGuiCol_HeaderHovered]         = ImVec4(0.00f, 0.45f, 0.78f, 0.39f);
+    style.Colors[ImGuiCol_HeaderActive]          = ImVec4(0.00f, 0.45f, 0.78f, 1.00f);
+    style.Colors[ImGuiCol_Column]                = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+    style.Colors[ImGuiCol_ColumnHovered]         = ImVec4(0.70f, 0.60f, 0.60f, 1.00f);
+    style.Colors[ImGuiCol_ColumnActive]          = ImVec4(0.90f, 0.70f, 0.70f, 1.00f);
+    style.Colors[ImGuiCol_ResizeGrip]            = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
+    style.Colors[ImGuiCol_ResizeGripHovered]     = ImVec4(1.00f, 1.00f, 1.00f, 0.60f);
+    style.Colors[ImGuiCol_ResizeGripActive]      = ImVec4(1.00f, 1.00f, 1.00f, 0.90f);
+    style.Colors[ImGuiCol_CloseButton]           = ImVec4(0.00f, 0.00f, 0.00f, 0.50f);
+    style.Colors[ImGuiCol_CloseButtonHovered]    = ImVec4(0.00f, 0.45f, 0.78f, 0.39f);
+    style.Colors[ImGuiCol_CloseButtonActive]     = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
+    style.Colors[ImGuiCol_PlotLines]             = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    style.Colors[ImGuiCol_PlotLinesHovered]      = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+    style.Colors[ImGuiCol_PlotHistogram]         = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+    style.Colors[ImGuiCol_PlotHistogramHovered]  = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+    style.Colors[ImGuiCol_TextSelectedBg]        = ImVec4(0.00f, 0.56f, 1.00f, 0.35f);
+    style.Colors[ImGuiCol_ModalWindowDarkening]  = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
     
     load("default");
     
     outputs["envExposure"]().makeReferenceTo(pPbrEnvExposure);
-
+    
     auto m = timeline.apply(&outputs["envExposure"]);
     m.set(0.0);
     m.hold(5.0);
@@ -130,7 +218,7 @@ void ofApp::setup() {
 }
 
 void ofApp::update() {
-
+    
     // TIMELINE
     timeline.step(ofGetLastFrameTime());
     
@@ -147,16 +235,18 @@ void ofApp::update() {
     }
     
     mViewPlane->cam.setGlobalPosition(3+(cos(ofGetElapsedTimef())*.5), 2, -2+sin(ofGetElapsedTimef()));
-
+    
     //PROJECTORS
     for (auto projector : mProjectors){
-        projector.second->update(calibrationCornerMesh);
-        if(projector.first == "perspective"){
-            projector.second->referencePoints.disableDrawEvent();
-            projector.second->referencePoints.disableControlEvents();
-            if(projector.second->pTrackViewCamera){
-                projector.second->cam.setGlobalPosition(mViewPlane->cam.getGlobalPosition());
-                projector.second->cam.lookAt(mViewPlane->plane.getPosition(), glm::vec3(0,1,0));
+        if(projector.second->pEnabled){
+            projector.second->update(calibrationCornerMesh);
+            if(projector.first == "perspective"){
+                projector.second->referencePoints.disableDrawEvent();
+                projector.second->referencePoints.disableControlEvents();
+                if(projector.second->pTrackViewCamera){
+                    projector.second->cam.setGlobalPosition(mViewPlane->cam.getGlobalPosition());
+                    projector.second->cam.lookAt(mViewPlane->plane.getPosition(), glm::vec3(0,1,0));
+                }
             }
         }
     }
@@ -207,7 +297,7 @@ void ofApp::drawProjection(shared_ptr<Projector> & projector) {
 
 void ofApp::renderView() {
     ofPushStyle();
-
+    
     mViewPlane->begin(true, true);
     
     cam = &mViewPlane->cam;
@@ -232,57 +322,58 @@ void ofApp::draw() {
     // RENDER PROJECTOR FBO's
     
     for (auto projector : mProjectors){
-        
-        projector.second->renderCalibrationEditor(world.primitives["space"]);
-        
-        if(!projector.second->pCalibrationEdit){
+        if(projector.second->pEnabled){
             
-            projector.second->begin(true);
+            projector.second->renderCalibrationEditor(world.primitives["space"]);
             
-            ofPushStyle();
+            if(!projector.second->pCalibrationEdit){
+                
+                projector.second->begin(true);
+                
+                ofPushStyle();
+                
+                ofEnableAlphaBlending();
+                ofEnableDepthTest();
+                
+                ofSetColor(0, 255);
+                world.primitives["floor"]->recursiveDraw();
+                world.primitives["walls"]->recursiveDraw();
+                
+                ofPopStyle();
+                
+                ofEnableAlphaBlending();
+                ofEnableDepthTest();
+                
+                cam = &projector.second->getCam();
+                
+                //TODO: Align reflections to viewplane
+                //cam = &mViewPlane->cam;
+                //pbr.setCamera(cam);
+                pbr.setDrawEnvironment(false);
+                pbr.renderScene();
+                
+                ofPushStyle();
+                ofEnableDepthTest();
+                ofEnableAlphaBlending();
+                
+                mViewPlane->draw(true);
+                ofPopStyle();
+                
+                projector.second->end();
+                
+            }
             
-            ofEnableAlphaBlending();
-            ofEnableDepthTest();
-            
-            ofSetColor(0, 255);
-            world.primitives["floor"]->recursiveDraw();
-            world.primitives["walls"]->recursiveDraw();
-
-            ofPopStyle();
-
-            ofEnableAlphaBlending();
-            ofEnableDepthTest();
-
-            cam = &projector.second->getCam();
-            
-            //TODO: Align reflections to viewplane
-            //cam = &mViewPlane->cam;
-            //pbr.setCamera(cam);
-            pbr.setDrawEnvironment(false);
-            pbr.renderScene();
-            
-            ofPushStyle();
-            ofEnableDepthTest();
-            ofEnableAlphaBlending();
-            
-            mViewPlane->draw(true);
-            ofPopStyle();
-            
-            projector.second->end();
-            
+            if(projector.first == "perspective" && !projector.second->pTrackViewCamera){
+                projector.second->begin(false, false, false);
+                ofPushStyle();
+                ofEnableBlendMode(OF_BLENDMODE_ADD);
+                ofDisableDepthTest();
+                ofSetColor(255, 64);
+                mViewPlane->cam.drawFrustum(ofRectangle(0,0,mViewPlane->output.getWidth(), mViewPlane->output.getHeight()));
+                ofPopStyle();
+                projector.second->end();
+            }
         }
-        
-        if(projector.first == "perspective" && !projector.second->pTrackViewCamera){
-            projector.second->begin(false, false, false);
-            ofPushStyle();
-            ofEnableBlendMode(OF_BLENDMODE_ADD);
-            ofDisableDepthTest();
-            ofSetColor(255, 64);
-            mViewPlane->cam.drawFrustum(ofRectangle(0,0,mViewPlane->output.getWidth(), mViewPlane->output.getHeight()));
-            ofPopStyle();
-            projector.second->end();
-        }
-        
     }
     
     // DRAW PROJECTORS
@@ -294,14 +385,13 @@ void ofApp::draw() {
         projector.second->draw();
         ofNoFill();
         ofDrawRectangle(projector.second->viewPort);
-        ofFill();
-        guiFont.drawString(projector.first, projector.second->viewPort.x+12,projector.second->viewPort.y+24);
         ofPopStyle();
     }
     
     // GUI
     ofEnableBlendMode(OF_BLENDMODE_ALPHA);
     ofFill();
+    ofSetColor(255,255);
     
     // Gui
     this->mouseOverGui = false;
@@ -410,12 +500,18 @@ void ofApp::load(string name){
     ofDeserialize(j, pgGlobal);
 }
 
-void ofApp::keyPressed(int key) {
-    if(key == 'f') {
-        ofToggleFullscreen();
-    }
-    if(key == '\t') {
-        guiVisible = !guiVisible;
+void ofApp::keyPressed(int key){
+    
+}
+
+void ofApp::keycodePressed(ofKeyEventArgs& e){
+    if(e.hasModifier(OF_KEY_CONTROL)){
+        if(e.keycode == 'F'){
+            ofToggleFullscreen();
+        }
+        if(e.keycode == 'G'){
+            guiVisible = !guiVisible;
+        }
     }
 }
 
@@ -428,18 +524,32 @@ bool ofApp::imGui()
 {
     auto mainSettings = ofxImGui::Settings();
     
+    ofDisableDepthTest();
+    
     this->gui.begin();
     {
+        ImGui::PushFont(gui_font_text);
         
         ImGuiWindowFlags window_flags = 0;
         window_flags |= ImGuiWindowFlags_NoCollapse;
         
         if (ofxImGui::BeginWindow(title.c_str(), mainSettings, window_flags)){
             
-            ImGui::TextUnformatted("den frie vilje");
+            ImGui::Columns(2, "TitleColumns", false);
+            ImGui::PushFont(gui_font_header);
+            ImGui::TextUnformatted("Øresundsbroen");
+            ImGui::PopFont();
+            ImGui::TextUnformatted("(c) den frie vilje 2018 for Arup");
             ImGui::Text("FPS %.3f", ofGetFrameRate());
-            
+            int logoSize = 60;
+            ImGui::SetColumnOffset(1, ImGui::GetWindowContentRegionMax().x - (logoSize + 7));
+            ImGui::NextColumn();
+            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.8);
+            ImGui::Image((ImTextureID)(uintptr_t)logoID, {static_cast<float>(logoSize),static_cast<float>(logoSize)});
+            ImGui::PopStyleVar();
+            ImGui::Columns(1);
             ImGui::Separator();
+            
             
             //            ImGui::Checkbox("Fix principal point", &mapamok.bCV_CALIB_FIX_PRINCIPAL_POINT);
             //            ImGui::Checkbox("Fix aspect ratio", &mapamok.bCV_CALIB_FIX_ASPECT_RATIO);
@@ -458,10 +568,6 @@ bool ofApp::imGui()
             bool guiShaderValid = shader.isValid;
             ImGui::Checkbox("Shader Valid", &guiShaderValid);
             
-            //ImGui::PushFont(font1);
-            ImGui::TextUnformatted("Interface");
-            //ImGui::PopFont();
-            
             ImGui::Separator();
             
             static bool guiShowTest;
@@ -469,61 +575,131 @@ bool ofApp::imGui()
             if(guiShowTest)
                 ImGui::ShowTestWindow();
             
-            if(ofxImGui::BeginTree("Calibration", mainSettings)){
+            ofxImGui::AddGroup(pgPbr, mainSettings);
+            
+            ofxImGui::AddGroup(mViewPlane->pg, mainSettings);
+            
+            ofxImGui::AddGroup(pgScenes, mainSettings);
+            
+            ofxImGui::EndWindow(mainSettings);
+        }
+        
+        for(auto & projector : mProjectors){
+            
+            auto p = projector.second;
+            
+            window_flags = 0;
+            window_flags |= ImGuiWindowFlags_NoCollapse;
+            window_flags |= ImGuiWindowFlags_NoMove;
+            window_flags |= ImGuiWindowFlags_NoTitleBar;
+            window_flags |= ImGuiWindowFlags_NoResize;
+            window_flags |= ImGuiWindowFlags_NoScrollbar;
+            window_flags |= ImGuiWindowFlags_NoScrollWithMouse;
+            
+            float windowMargin = 24;
+            float windowHeight = 48;
+            
+            ofRectangle windowRect;
+            windowRect.setPosition(glm::vec3(p->viewPort.getBottomLeft()+glm::vec2(windowMargin,-(windowMargin+windowHeight))));
+            windowRect.setSize(p->viewPort.getWidth()-(2*windowMargin),windowHeight);
+            
+            bool mouseOverWindow = (windowRect.inside(ofGetMouseX(), ofGetMouseY()) || p->pCalibrationEdit) && !p->cam.isMouseDragging();
+            
+            if(!mouseOverWindow) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.1);{
                 
-                for(auto & projector : mProjectors){
-                    
-                    if(ofxImGui::BeginTree(projector.first.c_str(), mainSettings)){
-                        auto p = projector.second;
-                        
-                        ofxImGui::AddParameter(p->pCalibrationEdit);
-                        ofxImGui::AddParameter(p->pCalibrationDrawScales);
-                        ofxImGui::AddCombo(p->pCalibrationMeshDrawMode, p->CalibrationMeshDrawModeLabels);
-                        ofxImGui::AddCombo(p->pCalibrationMeshColorMode, p->CalibrationMeshColorModeLabels);
-                        ofxImGui::AddParameter(p->pCalibrationProjectorColor);
-                        vector<string> objectNames;
-                        for(auto str :world.primitives["space"]->textureNames){
-                            string objectName = ofSplitString(str, "/").back();
-                            auto objectNameComponents = ofSplitString(objectName, ".");
-                            objectNameComponents.pop_back();
-                            objectName = ofJoinString(objectNameComponents, ".");
-                            objectNames.push_back(objectName);
-                        }
-                        
-                        ofxImGui::AddCombo(p->pCalibrationHighlightIndex, objectNames);
-                        
-                        if(ImGui::Button("Load")){
-                            projector.second->load("calibrations/" + projector.first);
-                        } ImGui::SameLine();
-                        if(ImGui::Button("Save")){
-                            projector.second->save("calibrations/" + projector.first);
-                        }ImGui::SameLine();
-                        if(ImGui::Button("Clear")){
-                            projector.second->referencePoints.clear();
-                        }
-
-                        if(projector.first == "perspective"){
-                            ofxImGui::AddParameter(p->pTrackViewCamera);
-                        }
-                        
-                        ofxImGui::EndTree(mainSettings);
+                mainSettings.windowSize = glm::vec2(windowRect.getWidth(), windowRect.getHeight());
+                mainSettings.windowPos = windowRect.getPosition();
+                
+                ofxImGui::BeginWindow(projector.first.c_str(), mainSettings, window_flags, nullptr, ImGuiSetCond_Always);
+                
+                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6*6, 5));
+                if(!mouseOverWindow) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 10.0);{
+                    ImGui::PushFont(gui_font_header);
+                    ImGui::TextUnformatted(projector.first.c_str());
+                    ImGui::PopFont();
+                    ImGui::SameLine();
+                } if(!mouseOverWindow) ImGui::PopStyleVar();
+                
+                if(!mouseOverWindow) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);{
+                    if(projector.first == "perspective"){
+                        ofxImGui::AddParameter(p->pEnabled);
+                        ImGui::SameLine();
+                        ofxImGui::AddParameter(p->pTrackViewCamera);
+                        ImGui::SameLine();
                     }
+                    ofxImGui::AddParameter(p->pCalibrationEdit);
+                    ImGui::SameLine();
                     
+                    if(!mouseOverWindow) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.01);{
+                        if(!p->pCalibrationEdit && mouseOverWindow) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, .25);{
+                            ofxImGui::AddParameter(p->pCalibrationDrawScales);
+                            ImGui::SameLine();
+                            ImGui::PushItemWidth(200);
+                            ofxImGui::AddCombo(p->pCalibrationMeshDrawMode, p->CalibrationMeshDrawModeLabels);
+                            ImGui::SameLine();
+                            ofxImGui::AddCombo(p->pCalibrationMeshColorMode, p->CalibrationMeshColorModeLabels);
+                            ImGui::SameLine();
+                            ofxImGui::AddParameter(p->pCalibrationProjectorColor);
+                            ImGui::SameLine();
+                            vector<string> objectNames;
+                            for(auto str :world.primitives["space"]->textureNames){
+                                string objectName = ofSplitString(str, "/").back();
+                                auto objectNameComponents = ofSplitString(objectName, ".");
+                                objectNameComponents.pop_back();
+                                objectName = ofJoinString(objectNameComponents, ".");
+                                objectNames.push_back(objectName);
+                            }
+                            
+                            ofxImGui::AddCombo(p->pCalibrationHighlightIndex, objectNames);
+                        } if(!p->pCalibrationEdit && mouseOverWindow) ImGui::PopStyleVar();
+                        ImGui::PopItemWidth();
+                        ImGui::PopStyleVar();
+                    }if(!mouseOverWindow) ImGui::PopStyleVar();
+                }if(!mouseOverWindow) ImGui::PopStyleVar();
+                
+                // Right aligned buttons are annoying
+                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6*2, 5));
+                
+                const float ItemSpacing = ImGui::GetStyle().ItemSpacing.x;
+                static float ClearButtonWidth = 100.0f; //The 100.0f is just a guess size for the first frame.
+                float pos = ClearButtonWidth;
+                ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - pos);
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.,0,0,0.5));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.,0,0,1.0));
+                if(ImGui::Button("Clear")){
+                    projector.second->referencePoints.clear();
                 }
+                ClearButtonWidth = ImGui::GetItemRectSize().x; //Get the actual width for next frame.
+                ImGui::PopStyleColor();
+                ImGui::PopStyleColor();
                 
-                ofxImGui::EndTree(mainSettings);
+                static float LoadButtonWidth = 100.0f;
+                pos += LoadButtonWidth + ItemSpacing;
+                ImGui::SameLine(ImGui::GetWindowContentRegionMax().x- pos);
+                if(ImGui::Button("Load")){
+                    projector.second->load("calibrations/" + projector.first);
+                }
+                LoadButtonWidth = ImGui::GetItemRectSize().x; //Get the actual width for next frame.
                 
-            }
+                static float SaveButtonWidth = 100.0f;
+                pos += SaveButtonWidth + ItemSpacing;
+                ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - pos);
+                if(ImGui::Button("Save")){
+                    projector.second->save("calibrations/" + projector.first);
+                }
+                SaveButtonWidth = ImGui::GetItemRectSize().x; //Get the actual width for next frame.
+                ImGui::PopStyleVar();
+                
+                ofxImGui::EndWindow(mainSettings);
+                if(p->cam.isMouseDragging()) mainSettings.mouseOverGui = false;
+            }if(!mouseOverWindow) ImGui::PopStyleVar();
             
         }
-        ofxImGui::AddGroup(pgPbr, mainSettings);
-
-        ofxImGui::AddGroup(mViewPlane->pg, mainSettings);
-
-        ofxImGui::AddGroup(pgScenes, mainSettings);
+        
         
     }
-    ofxImGui::EndWindow(mainSettings);
+    
+    ImGui::PopFont();
     
     this->gui.end();
     
