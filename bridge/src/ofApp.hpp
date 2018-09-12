@@ -16,6 +16,8 @@
 #include "ofxPBR.h"
 #include "Scene.hpp"
 #include "ViewPlane.hpp"
+#include "ofxChoreograph.h"
+
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
@@ -73,7 +75,7 @@ public:
     
     ofParameter<float> pPbrGamma{ "Gamma", 2.2f, 0.0f, 5.0f };
     ofParameter<float> pPbrEnvLevel{ "Environment Level", 0.1f, 0.0f, 1.0f };
-    ofParameter<float> pPbrEnvExposure{ "Environment Exposure", 1.0f, 0.0f, 20.0f };
+    ofParameter<float> pPbrEnvExposure{ "Environment Exposure", 1.0f, 0.0f, 2.0f };
     ofParameter<float> pPbrEnvRotation{ "Environment Rotation", 0.0f, 0.0f, TWO_PI };
     ofParameter<float> pPbrExposure{ "Exposure", 1.0f, 0.0f, 20.0f };
     ofParameterGroup pgPbr{ "PBR", pPbrEnvLevel, pPbrEnvExposure, pPbrEnvRotation, pPbrExposure, pPbrGamma };
@@ -82,8 +84,9 @@ public:
 
     ofParameterGroup pgGlobal{"Global", pgPbr};
 
-    // STATE
-    bool shaderToggle = false;
+    // TIMELINE
+    ofxChoreograph::Timeline timeline;
+    map< string, ofxChoreograph::Output<ofParameter<float> > > outputs;
     
     // WORLD
     

@@ -9,6 +9,8 @@
 #include "ofxAssimp3dPrimitiveHelpers.hpp"
 #include "MeshUtils.hpp"
 
+using namespace ofxChoreograph;
+
 void ofApp::setup() {
     
     // WINDOW
@@ -118,9 +120,19 @@ void ofApp::setup() {
     
     load("default");
     
+    outputs["envExposure"]().makeReferenceTo(pPbrEnvExposure);
+
+    auto m = timeline.apply(&outputs["envExposure"]);
+    m.set(0.0);
+    m.hold(5.0);
+    m.then<RampTo>(1.0, 20.0);
+    
 }
 
 void ofApp::update() {
+
+    // TIMELINE
+    timeline.step(ofGetLastFrameTime());
     
     // PBR UPDATES
     cubeMap.setEnvLevel(pPbrEnvLevel);
@@ -443,7 +455,6 @@ bool ofApp::imGui()
                 save("default");
             }
             
-            ImGui::Checkbox("Use Shader", &shaderToggle);
             bool guiShaderValid = shader.isValid;
             ImGui::Checkbox("Shader Valid", &guiShaderValid);
             
