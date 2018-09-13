@@ -35,7 +35,7 @@ void ofApp::setup() {
     // WINDOW
     ofSetWindowTitle(title);
     ofSetVerticalSync(true);
-
+    
     // MODELS
     
     if(ofFile::doesFileExist("models/space.dae")) {
@@ -131,9 +131,9 @@ void ofApp::setup() {
     
     // FONTS
     
-    fontTitle.load("fonts/OpenSans-Light.ttf", 16, true, true, true);
-    fontText.load("fonts/OpenSans-Regular.ttf", 16, true, true, true);
-
+    fontTitle.load("fonts/OpenSans-Light.ttf", 500, true, true, true);
+    fontText.load("fonts/OpenSans-Regular.ttf", 500, true, true, true);
+    
     
     // SCENES
     
@@ -148,7 +148,7 @@ void ofApp::setup() {
     
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
-    gui_font_text = io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Light.ttf").c_str(), 16.0f);
+    gui_font_text = io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Regular.ttf").c_str(), 16.0f);
     gui_font_header = io.Fonts->AddFontFromFileTTF(ofToDataPath("fonts/OpenSans-Regular.ttf").c_str(), 22.0f);
     
     gui.setup();
@@ -303,14 +303,32 @@ void ofApp::drawProjection(shared_ptr<Projector> & projector) {
 void ofApp::renderView() {
     ofPushStyle();
     
-    mViewPlane->begin(true, true);
+    // HDR
+    mViewPlane->begin(true, true);{
+        
+        cam = &mViewPlane->cam;
+        pbr.setMainCamera(cam);
+        pbr.setDrawEnvironment(true);
+        pbr.renderScene();
+        
+    }mViewPlane->end();
     
-    cam = &mViewPlane->cam;
-    pbr.setMainCamera(cam);
-    pbr.setDrawEnvironment(true);
-    pbr.renderScene();
+    // LDR overlays
+    mViewPlane->begin(false, true);{
+        ofPushMatrix();
+        mViewPlane->plane.transformGL();
+        ofDisableDepthTest();
+        ofEnableAlphaBlending();
+        ofFill();
+        ofSetColor(ofFloatColor::white);
+        ofTranslate(-mViewPlane->plane.getWidth()/2., mViewPlane->plane.getHeight()/2.0);
+        ofTranslate(0.1, -0.28);
+        ofScale(0.18/fontTitle.getSize());
+        fontTitle.drawString("Øresundsbroen", 0.0, 0.0);
+        mViewPlane->plane.restoreTransformGL();
+        ofPopMatrix();
+    }mViewPlane->end();
     
-    mViewPlane->end();
     ofPopStyle();
 }
 
@@ -333,36 +351,51 @@ void ofApp::draw() {
             
             if(!projector.second->pCalibrationEdit){
                 
-                projector.second->begin(true);
+                projector.second->begin(true);{
+                    
+                    ofSetColor(255,255);
+
+                    // BLACK ROOM MASK
+                    ofPushStyle();
+                    ofEnableAlphaBlending();
+                    ofEnableDepthTest();
+                    ofSetColor(0, 255);
+                    world.primitives["floor"]->recursiveDraw();
+                    world.primitives["walls"]->recursiveDraw();
+                    ofPopStyle();
+                    
+                    // PBR in space
+                    ofPushStyle();
+                    ofEnableAlphaBlending();
+                    ofEnableDepthTest();
+                    cam = &mViewPlane->cam;
+                    pbr.setMainCamera(cam);
+                    pbr.setDrawEnvironment(false);
+                    pbr.renderScene();
+                    ofPopStyle();
+                    
+                    // HDR view
+                    ofPushStyle();
+                    ofEnableAlphaBlending();
+                    ofEnableDepthTest();
+                    mViewPlane->draw(true);
+                    ofPopStyle();
+                    
+                }projector.second->end();
                 
-                ofPushStyle();
-                
-                ofEnableAlphaBlending();
-                ofEnableDepthTest();
-                
-                ofSetColor(0, 255);
-                world.primitives["floor"]->recursiveDraw();
-                world.primitives["walls"]->recursiveDraw();
-                
-                ofPopStyle();
-                
-                ofEnableAlphaBlending();
-                ofEnableDepthTest();
-                
-                //TODO: Align reflections to viewplane
-                cam = &mViewPlane->cam;
-                pbr.setMainCamera(cam);
-                pbr.setDrawEnvironment(false);
-                pbr.renderScene();
-                
-                ofPushStyle();
-                ofEnableDepthTest();
-                ofEnableAlphaBlending();
-                
-                mViewPlane->draw(true);
-                ofPopStyle();
-                
-                projector.second->end();
+                projector.second->begin(false, false, false);{
+                    //LDR overlays (text, graphics)
+                    ofPushStyle();
+                    ofEnableAlphaBlending();
+                    ofEnableDepthTest();
+                    ofPushMatrix();
+                    ofTranslate(0.1, 0., 0.);
+                    ofSetColor(255,255);
+                    mViewPlane->draw(false, true);
+                    ofPopMatrix();
+                    ofPopStyle();
+
+                }projector.second->end();
                 
             }
             
@@ -373,7 +406,7 @@ void ofApp::draw() {
                 ofDisableDepthTest();
                 ofSetColor(255, 64);
                 mViewPlane->cam.drawFrustum(ofRectangle(0,0,mViewPlane->output.getWidth(), mViewPlane->output.getHeight()));
-
+                
                 ofDrawLine(mProjectorLeft->cam.getGlobalPosition(), mViewPlane->cam.getGlobalPosition());
                 
                 ofPopStyle();
@@ -623,7 +656,7 @@ bool ofApp::imGui()
                 
                 string uppercaseTitle = "";
                 std::transform(projector.first.begin(), projector.first.end(),uppercaseTitle.begin(), ::toupper);
-
+                
                 ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6*6, 5));
                 if(!mouseOverWindow) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 10.0);{
                     ImGui::PushFont(gui_font_header);

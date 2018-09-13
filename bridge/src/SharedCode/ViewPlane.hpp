@@ -28,7 +28,7 @@ public:
     
     ofParameter<float> pViewResolution {"Resolution", 200, 10, 500};
     ofParameterGroup pg{ "View", pViewResolution };
-
+    
     ViewPlane(ofFbo::Settings & defaultFboSettings, ofShader & highlightShader, ofShader & tonemapShader, ofShader & fxaaShader, ofxAssimp3dPrimitive * viewNode, World & world)
     : defaultFboSettings(defaultFboSettings), highlightShader(highlightShader), tonemapShader(tonemapShader), fxaaShader(fxaaShader), viewNode(viewNode), world(world)
     {
@@ -55,7 +55,7 @@ public:
         
         ofVec3f viewCornerMin;
         ofVec3f viewCornerMax;
-
+        
         // PLANE
         
         getBoundingBox(viewNode->getBakedMesh(), viewCornerMin, viewCornerMax);
@@ -65,11 +65,11 @@ public:
         plane.setPosition(0, plane.getHeight()/2.0, -plane.getWidth()/2.0);
         
         plane.setParent(world.origin);
-
+        
         // FBO's
         
         auto viewFboSettings = defaultFboSettings;
-
+        
         viewFboSettings.width = floor(plane.getWidth() * resolution);
         viewFboSettings.height = floor(plane.getHeight() * resolution);
         
@@ -96,7 +96,7 @@ public:
         outputSettings.internalformat = GL_RGBA;
         outputSettings.colorFormats.push_back(GL_RGBA);
         output.allocate(outputSettings);
-
+        
         // CAMERA
         
         cam.setParent(world.origin);
@@ -112,7 +112,7 @@ public:
         ofPushStyle();
         ofPushView();
         ofPushMatrix();
-
+        
         renderingHdr = hdr;
         
         float width = plane.getWidth();
@@ -160,22 +160,22 @@ public:
             //ofEnableAlphaBlending();
             
             /* fxaa
-            tonemapPass.begin();
-            ofClear(0);
-            tonemapShader.begin();
-            tonemapShader.setUniformTexture("image", hdrPass.getTexture(), 0);
-            hdrPass.draw(0, 0);
-            tonemapShader.end();
-            tonemapPass.end();
-            
-            output.begin();
-            fxaaShader.begin();
-            fxaaShader.setUniformTexture("image", tonemapPass.getTexture(), 0);
-            fxaaShader.setUniform2f("texel", 1.25 / float(tonemapPass.getWidth()), 1.25 / float(tonemapPass.getHeight()));
-            tonemapPass.draw(0,0);
-            fxaaShader.end();
-            output.end();
-            */
+             tonemapPass.begin();
+             ofClear(0);
+             tonemapShader.begin();
+             tonemapShader.setUniformTexture("image", hdrPass.getTexture(), 0);
+             hdrPass.draw(0, 0);
+             tonemapShader.end();
+             tonemapPass.end();
+             
+             output.begin();
+             fxaaShader.begin();
+             fxaaShader.setUniformTexture("image", tonemapPass.getTexture(), 0);
+             fxaaShader.setUniform2f("texel", 1.25 / float(tonemapPass.getWidth()), 1.25 / float(tonemapPass.getHeight()));
+             tonemapPass.draw(0,0);
+             fxaaShader.end();
+             output.end();
+             */
             
             ofPopStyle();
             
@@ -187,27 +187,27 @@ public:
         ofPopStyle();
     }
     
-    void draw(bool hdr = false){
+    void draw(bool hdr = false, bool ldr = false){
         ofPushStyle();
-        if(hdr && renderingHdr){
+        if(hdr && !ldr){
             hdrPass.getTexture().bind();
             plane.drawFaces();
             hdrPass.getTexture().unbind();
-        } else {
-
-            output.begin();
-            ofClear(0);
-            tonemapShader.begin();
-            tonemapShader.setUniformTexture("image", hdrPass.getTexture(), 0);
-            hdrPass.draw(0, 0);
-            tonemapShader.end();
-            output.end();
-
+        } else if(ldr) {
+            if(hdr){
+                output.begin();
+                ofClear(0);
+                tonemapShader.begin();
+                tonemapShader.setUniformTexture("image", hdrPass.getTexture(), 0);
+                hdrPass.draw(0, 0);
+                tonemapShader.end();
+                output.end();
+            }
             output.getTexture().bind();
             plane.drawFaces();
             output.getTexture().unbind();
         }
         ofPopStyle();
     }
-
+    
 };
