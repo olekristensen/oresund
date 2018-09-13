@@ -35,8 +35,7 @@ void ofApp::setup() {
     // WINDOW
     ofSetWindowTitle(title);
     ofSetVerticalSync(true);
-    guiFont.load("fonts/OpenSans-Light.ttf", 16);
-    
+
     // MODELS
     
     if(ofFile::doesFileExist("models/space.dae")) {
@@ -129,6 +128,12 @@ void ofApp::setup() {
     
     pbr.setCubeMap(&cubeMap);
     pbr.setDrawEnvironment(true);
+    
+    // FONTS
+    
+    fontTitle.load("fonts/OpenSans-Light.ttf", 16, true, true, true);
+    fontText.load("fonts/OpenSans-Regular.ttf", 16, true, true, true);
+
     
     // SCENES
     
@@ -301,7 +306,7 @@ void ofApp::renderView() {
     mViewPlane->begin(true, true);
     
     cam = &mViewPlane->cam;
-    //pbr.setCamera(cam);
+    pbr.setMainCamera(cam);
     pbr.setDrawEnvironment(true);
     pbr.renderScene();
     
@@ -344,11 +349,9 @@ void ofApp::draw() {
                 ofEnableAlphaBlending();
                 ofEnableDepthTest();
                 
-                cam = &projector.second->getCam();
-                
                 //TODO: Align reflections to viewplane
-                //cam = &mViewPlane->cam;
-                //pbr.setCamera(cam);
+                cam = &mViewPlane->cam;
+                pbr.setMainCamera(cam);
                 pbr.setDrawEnvironment(false);
                 pbr.renderScene();
                 
@@ -370,6 +373,9 @@ void ofApp::draw() {
                 ofDisableDepthTest();
                 ofSetColor(255, 64);
                 mViewPlane->cam.drawFrustum(ofRectangle(0,0,mViewPlane->output.getWidth(), mViewPlane->output.getHeight()));
+
+                ofDrawLine(mProjectorLeft->cam.getGlobalPosition(), mViewPlane->cam.getGlobalPosition());
+                
                 ofPopStyle();
                 projector.second->end();
             }
@@ -605,17 +611,23 @@ bool ofApp::imGui()
             
             bool mouseOverWindow = (windowRect.inside(ofGetMouseX(), ofGetMouseY()) || p->pCalibrationEdit) && !p->cam.isMouseDragging();
             
-            if(!mouseOverWindow) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.1);{
+            float distanceToWindow = ofClamp(windowRect.distanceFrom(glm::vec2(ofGetMouseX(), ofGetMouseY())), 0, 100);
+            
+            
+            if(!mouseOverWindow) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ofMap(distanceToWindow, 0, 100, 1.0, 0.1));{
                 
                 mainSettings.windowSize = glm::vec2(windowRect.getWidth(), windowRect.getHeight());
                 mainSettings.windowPos = windowRect.getPosition();
                 
-                ofxImGui::BeginWindow(projector.first.c_str(), mainSettings, window_flags, nullptr, ImGuiSetCond_Always);
+                ofxImGui::BeginWindow(projector.first, mainSettings, window_flags, nullptr, ImGuiSetCond_Always);
                 
+                string uppercaseTitle = "";
+                std::transform(projector.first.begin(), projector.first.end(),uppercaseTitle.begin(), ::toupper);
+
                 ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6*6, 5));
                 if(!mouseOverWindow) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 10.0);{
                     ImGui::PushFont(gui_font_header);
-                    ImGui::TextUnformatted(projector.first.c_str());
+                    ImGui::TextUnformatted(uppercaseTitle.c_str());
                     ImGui::PopFont();
                     ImGui::SameLine();
                 } if(!mouseOverWindow) ImGui::PopStyleVar();

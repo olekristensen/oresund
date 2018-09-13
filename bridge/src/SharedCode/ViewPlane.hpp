@@ -75,6 +75,8 @@ public:
         
         ofFbo::Settings firstPassSettings;
         firstPassSettings = viewFboSettings;
+        firstPassSettings.minFilter = GL_LINEAR;
+        firstPassSettings.maxFilter = GL_LINEAR;
         firstPassSettings.internalformat = GL_RGBA32F;
         firstPassSettings.colorFormats.push_back(GL_RGBA32F);
         hdrPass.allocate(firstPassSettings);
@@ -174,14 +176,6 @@ public:
             fxaaShader.end();
             output.end();
             */
-
-            output.begin();
-            ofClear(0);
-            tonemapShader.begin();
-            tonemapShader.setUniformTexture("image", hdrPass.getTexture(), 0);
-            hdrPass.draw(0, 0);
-            tonemapShader.end();
-            output.end();
             
             ofPopStyle();
             
@@ -200,6 +194,15 @@ public:
             plane.drawFaces();
             hdrPass.getTexture().unbind();
         } else {
+
+            output.begin();
+            ofClear(0);
+            tonemapShader.begin();
+            tonemapShader.setUniformTexture("image", hdrPass.getTexture(), 0);
+            hdrPass.draw(0, 0);
+            tonemapShader.end();
+            output.end();
+
             output.getTexture().bind();
             plane.drawFaces();
             output.getTexture().unbind();

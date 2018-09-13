@@ -43,12 +43,11 @@ public:
     
     enum class CalibrationMeshColorMode
     {
-        Neutral,
         ProjectorColor,
         MeshColor
     };
     
-    const vector<string> CalibrationMeshColorModeLabels = { "Neutral", "ProjectorColor", "MeshColor" };
+    const vector<string> CalibrationMeshColorModeLabels = { "Projector", "Mesh" };
     
     ofParameter<bool> pCalibrationEdit {"Calibrate", true};
     ofParameter<bool> pCalibrationDrawScales {"Draw Scales", true};
@@ -182,7 +181,7 @@ public:
             ofEnableSmoothing();
             ofEnableDepthTest();
             ofEnableAlphaBlending();
-
+            
             // SCALES
             if(pCalibrationDrawScales){
                 ofDrawGrid(1.0, 10, true);
@@ -194,62 +193,108 @@ public:
             auto colorMode = static_cast<CalibrationMeshColorMode>(this->pCalibrationMeshColorMode.get());
             auto drawMode = static_cast<CalibrationMeshDrawMode>(this->pCalibrationMeshDrawMode.get());
             
+            if(colorMode == CalibrationMeshColorMode::ProjectorColor){
+                
+                for(int mIndex = 0 ; mIndex < calibrationPrimitive->textureNames.size(); mIndex++){
+                    ofPushStyle();
+                    if(mIndex == pCalibrationHighlightIndex){
+                        highlightShader.begin();
+                        highlightShader.setUniform1f("elapsedTime", ofGetElapsedTimef());
+                        glClear(GL_DEPTH_BUFFER_BIT);
+                        prepareRender(true, false, true);
+                        ofEnableAlphaBlending();
+                        
+                        auto primitives = calibrationPrimitive->getPrimitivesWithTextureIndex(mIndex);
+                        for(auto p : primitives){
+                            ofPushStyle();
+                            p->recursiveDraw(OF_MESH_FILL);
+                            ofPopStyle();
+                        }
+                        
+                        prepareRender(true, false, false);
+                        highlightShader.end();
+                    }
+                    ofEnableAlphaBlending();
+                    ofPopStyle();
+                }
+                
+                glClear(GL_DEPTH_BUFFER_BIT);
+                
+            }
             for(int mIndex = 0 ; mIndex < calibrationPrimitive->textureNames.size(); mIndex++){
                 ofPushStyle();
                 ofColor c;
-                if(mIndex == pCalibrationHighlightIndex){
-                    highlightShader.begin();
-                    highlightShader.setUniform1f("elapsedTime", ofGetElapsedTimef());
-                    prepareRender(true, false, false);
-                } else if(colorMode == CalibrationMeshColorMode::MeshColor){
-                    float step = 1.0/calibrationPrimitive->textureNames.size();
-                    c.setHsb(360.0*((mIndex*step)-(step*2.0/3.0)), 255, 255);
-                    ofEnableAlphaBlending();
-                    prepareRender(true, false, false);
-                }
-                else if(colorMode == CalibrationMeshColorMode::ProjectorColor){
-                    c.set(pCalibrationProjectorColor.get());
-                    ofEnableAlphaBlending();
-                    prepareRender(false, false, false);
-                }
-                else if(colorMode == CalibrationMeshColorMode::Neutral){
-                    c.setHsb(0, 0, 255, 32);
-                    ofEnableAlphaBlending();
-                    prepareRender(false, false, false);
-                }
-                ofSetColor(c);
-                auto primitives = calibrationPrimitive->getPrimitivesWithTextureIndex(mIndex);
-                for(auto p : primitives){
-                    ofPushStyle();
-                    if(drawMode == CalibrationMeshDrawMode::Faces) {
-                        p->recursiveDraw(OF_MESH_FILL);
-                    } else if(drawMode == CalibrationMeshDrawMode::WireframeFull) {
-                        p->recursiveDraw(OF_MESH_WIREFRAME);
-                    } else if(drawMode == CalibrationMeshDrawMode::Outline || drawMode == CalibrationMeshDrawMode::WireframeOccluded) {
-                        prepareRender(true, true, false);
-                        glEnable(GL_POLYGON_OFFSET_FILL);
-                        float lineWidth = ofGetStyle().lineWidth;
-                        if(drawMode == CalibrationMeshDrawMode::Outline) {
-                            glPolygonOffset(-lineWidth, -lineWidth);
-                        } else if(drawMode == CalibrationMeshDrawMode::WireframeOccluded) {
-                            glPolygonOffset(+lineWidth, +lineWidth);
-                        }
-                        glColorMask(false, false, false, false);
-                        p->recursiveDraw(OF_MESH_FILL);
-                        glColorMask(true, true, true, true);
-                        glDisable(GL_POLYGON_OFFSET_FILL);
-                        p->recursiveDraw(OF_MESH_WIREFRAME);
+                if(!(mIndex == pCalibrationHighlightIndex && colorMode == CalibrationMeshColorMode::MeshColor)){
+                    
+                    if(colorMode == CalibrationMeshColorMode::MeshColor){
+                        float step = 1.0/calibrationPrimitive->textureNames.size();
+                        c.setHsb(360.0*((mIndex*step)-(step*2.0/3.0)), 255, 255);
+                        ofEnableAlphaBlending();
+                        prepareRender(true, false, false);
+                    }
+                    else if(colorMode == CalibrationMeshColorMode::ProjectorColor){
+                        c.set(pCalibrationProjectorColor.get());
+                        ofEnableBlendMode(OF_BLENDMODE_SCREEN);
                         prepareRender(false, false, false);
                     }
-                    ofPopStyle();
+                    ofSetColor(c);
+                    auto primitives = calibrationPrimitive->getPrimitivesWithTextureIndex(mIndex);
+                    for(auto p : primitives){
+                        ofPushStyle();
+                        if(drawMode == CalibrationMeshDrawMode::Faces) {
+                            p->recursiveDraw(OF_MESH_FILL);
+                        } else if(drawMode == CalibrationMeshDrawMode::WireframeFull) {
+                            p->recursiveDraw(OF_MESH_WIREFRAME);
+                        } else if(drawMode == CalibrationMeshDrawMode::Outline || drawMode == CalibrationMeshDrawMode::WireframeOccluded) {
+                            prepareRender(true, true, false);
+                            glEnable(GL_POLYGON_OFFSET_FILL);
+                            float lineWidth = ofGetStyle().lineWidth;
+                            if(drawMode == CalibrationMeshDrawMode::Outline) {
+                                glPolygonOffset(-lineWidth*2, -lineWidth*2);
+                            } else if(drawMode == CalibrationMeshDrawMode::WireframeOccluded) {
+                                glPolygonOffset(+lineWidth, +lineWidth);
+                            }
+                            glColorMask(false, false, false, false);
+                            p->recursiveDraw(OF_MESH_FILL);
+                            glColorMask(true, true, true, true);
+                            glDisable(GL_POLYGON_OFFSET_FILL);
+                            p->recursiveDraw(OF_MESH_WIREFRAME);
+                            prepareRender(false, false, false);
+                        }
+                        ofPopStyle();
+                    }
+                    
                 }
-
-                if(mIndex == pCalibrationHighlightIndex){
-                    highlightShader.end();
-                }
-
+                
+                ofEnableAlphaBlending();
+                
                 ofPopStyle();
             }
+            if(colorMode != CalibrationMeshColorMode::ProjectorColor){
+                
+                for(int mIndex = 0 ; mIndex < calibrationPrimitive->textureNames.size(); mIndex++){
+                    ofPushStyle();
+                    if(mIndex == pCalibrationHighlightIndex){
+                        highlightShader.begin();
+                        highlightShader.setUniform1f("elapsedTime", ofGetElapsedTimef());
+                        prepareRender(true, false, true);
+                        ofEnableAlphaBlending();
+                        
+                        auto primitives = calibrationPrimitive->getPrimitivesWithTextureIndex(mIndex);
+                        for(auto p : primitives){
+                            ofPushStyle();
+                            p->recursiveDraw(OF_MESH_FILL);
+                            ofPopStyle();
+                        }
+                        
+                        prepareRender(true, false, false);
+                        highlightShader.end();
+                    }
+                    ofEnableAlphaBlending();
+                    ofPopStyle();
+                }
+            }
+            
             ofPopStyle();
             
             ofPushStyle();
@@ -347,15 +392,14 @@ public:
             
             tonemapPass.begin();
             ofClear(0);
-            
             tonemapShader.begin();
-            
             tonemapShader.setUniformTexture("image", hdrPass.getTexture(), 0);
             hdrPass.draw(0, 0);
             tonemapShader.end();
             tonemapPass.end();
             
             output.begin();
+            ofClear(0);
             fxaaShader.begin();
             fxaaShader.setUniformTexture("image", tonemapPass.getTexture(), 0);
             fxaaShader.setUniform2f("texel", 1.25 / float(tonemapPass.getWidth()), 1.25 / float(tonemapPass.getHeight()));

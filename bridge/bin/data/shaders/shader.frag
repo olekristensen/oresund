@@ -15,7 +15,7 @@ in float randomOffset;
 out vec4 fragColor;
 
 const vec4 on = vec4(1.);
-const vec4 off = vec4(vec3(0.), 1.);
+const vec4 off = vec4(vec3(0.), 1.0);
 
 const float waves = 19.;
 

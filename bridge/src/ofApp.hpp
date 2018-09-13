@@ -87,9 +87,10 @@ public:
     void load(string name);
     
     // GUI
+    
     bool imGui();
     ofxImGui::Gui gui;
-    string title = "Öresund bridge";
+    string title = "Øresund Bridge";
     bool guiVisible = true;
     bool mouseOverGui;
     int guiColumnWidth = 250;
@@ -98,8 +99,9 @@ public:
     ofImage logo;
     GLuint logoID;
     
-    ofTrueTypeFont guiFont;
-    
+    ofTrueTypeFont fontTitle;
+    ofTrueTypeFont fontText;
+
     // SCENES
     
     vector<shared_ptr<Scene> > scenes;
