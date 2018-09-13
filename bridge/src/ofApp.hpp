@@ -132,14 +132,6 @@ public:
     ofxAssimpModelLoader spaceModel;
     ofxAssimpModelLoader fullModel;
     
-/*    ofxAssimp3dPrimitive * fullModelPrimitive = nullptr;
-    ofxAssimp3dPrimitive * spaceModelPrimitive = nullptr;
-    ofxAssimp3dPrimitive * wallModelNode = nullptr;
-    ofxAssimp3dPrimitive * trussModelNode = nullptr;
-    ofxAssimp3dPrimitive * pylonsModelNode = nullptr;
-    ofxAssimp3dPrimitive * approachModelNode = nullptr;
-*/
-
     // CALIBRATION
     const float cornerRatio = 1.0;
     const int cornerMinimum = 6;
