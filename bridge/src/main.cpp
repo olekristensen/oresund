@@ -30,8 +30,8 @@ int main() {
     shared_ptr<ofAppBaseWindow> projectorLeftWindow = ofCreateWindow(settings);
     shared_ptr<ofAppBaseWindow> projectorRightWindow = ofCreateWindow(settings);
     
-    ofAddListener(projectorRightWindow->events().draw,controlApp.get(),&ofApp::drawProjectorRight);
-    ofAddListener(projectorLeftWindow->events().draw,controlApp.get(),&ofApp::drawProjectorLeft);
+    ofAddListener(projectorRightWindow->events().draw,controlApp.get(),&ofApp::drawProjectorSide);
+    ofAddListener(projectorLeftWindow->events().draw,controlApp.get(),&ofApp::drawProjectorWall);
     
     ofRunApp(controlWindow, controlApp);
     ofRunMainLoop();

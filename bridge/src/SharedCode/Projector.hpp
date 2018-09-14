@@ -56,7 +56,8 @@ public:
     ofParameter<ofFloatColor> pCalibrationProjectorColor{ "Projector color", ofFloatColor(1.0,1.0,1.0,1.0), ofFloatColor(0.0,0.0,0.0,0.0),ofFloatColor(1.0,1.0,1.0,1.0)};
     ofParameter<int>  pCalibrationHighlightIndex{ "Highlight", 0, 0, 0 };
     ofParameterGroup  pgCalibration{ "Calibration", pCalibrationEdit, pCalibrationDrawScales, pCalibrationMeshDrawMode, pCalibrationMeshColorMode,pCalibrationProjectorColor, pCalibrationHighlightIndex };
-    ofParameter<bool> pTrackViewCamera {"Track View Camera", false};
+    ofParameter<bool> pAnimateCamera {"Animate Camera", false};
+    ofParameter<bool> pTrackUserCamera {"Track User Camera", false};
     ofParameter<bool> pEnabled {"Enabled", true};
     ofParameterGroup pg;
     

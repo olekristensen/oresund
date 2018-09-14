@@ -69,18 +69,18 @@ void ofApp::setup() {
     
     mViewPort = ofRectangle(0, 0, projectionResolution.x, projectionResolution.y);
     
-    mProjectorPerspective = make_shared<Projector>(ofRectangle(0,projectionResolution.y,ofGetWidth(), ofGetHeight()-projectionResolution.y),
+    mProjectorFirstPerson = make_shared<Projector>(ofRectangle(0,projectionResolution.y,ofGetWidth(), ofGetHeight()-projectionResolution.y),
                                                    defaultFboSettings, shader, tonemap, fxaa);
-    mProjectors.insert(make_pair("perspective", mProjectorPerspective));
+    mProjectors.insert(make_pair("first person", mProjectorFirstPerson));
     
-    mProjectorLeft = make_shared<Projector>(ofRectangle(0, 0, projectionResolution.x, projectionResolution.y),
+    mProjectorWall = make_shared<Projector>(ofRectangle(0, 0, projectionResolution.x, projectionResolution.y),
                                             defaultFboSettings, shader, tonemap, fxaa);
-    mProjectors.insert(make_pair("left", mProjectorLeft));
+    mProjectors.insert(make_pair("wall", mProjectorWall));
     
-    mProjectorRight = make_shared<Projector>(ofRectangle(projectionResolution.x, 0, projectionResolution.x, projectionResolution.y),
+    mProjectorSide = make_shared<Projector>(ofRectangle(projectionResolution.x, 0, projectionResolution.x, projectionResolution.y),
                                              defaultFboSettings, shader, tonemap, fxaa);
     
-    mProjectors.insert(make_pair("right", mProjectorRight));
+    mProjectors.insert(make_pair("side", mProjectorSide));
     
     for(auto projector : mProjectors){
         projector.second->referencePoints.enableControlEvents();
@@ -90,12 +90,14 @@ void ofApp::setup() {
         projector.second->cam.setVFlip(false);
         projector.second->referencePoints.setCamera(&projector.second->cam);
         projector.second->pg.setName(projector.first);
-        if(projector.first == "perspective"){
+        if(projector.first == "first person"){
             projector.second->pg.add(projector.second->pEnabled);
-            projector.second->pg.add(projector.second->pTrackViewCamera);
+            projector.second->pg.add(projector.second->pTrackUserCamera);
+            projector.second->pg.add(projector.second->pAnimateCamera);
         }
         projector.second->pg.add(projector.second->pgCalibration);
         pgProjectors.add(projector.second->pg);
+        projector.second->load("calibrations/" + projector.first);
     }
     pgProjectors.setName("Projectors");
     pgGlobal.add(pgProjectors);
@@ -108,10 +110,8 @@ void ofApp::setup() {
     
     //PBR
     
-    cam = &mProjectorLeft->cam;
-    
-    scene = bind(&ofApp::renderScene, this);
-    
+    cam = &mProjectorWall->cam;
+    scene = bind(&ofApp::pbrRenderScene, this);
     pbr.setup(scene, cam, 1024*4);
     
     materials.resize(world.primitives["model"]->textureNames.size());
@@ -131,8 +131,8 @@ void ofApp::setup() {
     
     // FONTS
     
-    fontTitle.load("fonts/OpenSans-Light.ttf", 500, true, true, true);
-    fontText.load("fonts/OpenSans-Regular.ttf", 500, true, true, true);
+    fontHeader.load("fonts/OpenSans-Regular.ttf", 264, true, true, true);
+    fontBody.load("fonts/OpenSans-Light.ttf", 264, true, true, true);
     
     
     // SCENES
@@ -215,15 +215,38 @@ void ofApp::setup() {
     
     // TIMELINE
     
-    timelineOutputs["envExposure"]().makeReferenceTo(pPbrEnvExposure);
-    timelineOutputs["envExposure"]().makeReferenceTo(pPbrEnvExposure);
-
-    auto m = timeline.apply(&timelineOutputs["envExposure"]);
-    m.set(0.0);
-    m.hold(5.0);
-    m.then<RampTo>(1.0, 20.0);
+    timelineFloatOutputs["envExposure"]().makeReferenceTo(pPbrEnvExposure);
+    timelineFloatOutputs["envRotation"]().makeReferenceTo(pPbrEnvRotation);
+    timelineFloatOutputs["pbrGamma"]().makeReferenceTo(pPbrGamma);
+    
+    timelineFloatColorOutputs["textHeaderColor"]().makeReferenceTo(pTextHeaderColor);
+    timelineFloatColorOutputs["textBodyColor"]().makeReferenceTo(pTextBodyColor);
+    
     
 }
+
+void ofApp::startAnimation(){
+    auto pbrGamma = timeline.apply(&timelineFloatOutputs["pbrGamma"]);
+    pbrGamma.set(0.0);
+    pbrGamma.hold(5.0);
+    pbrGamma.then<RampTo>(2.2, 10., EaseOutQuad());
+    
+    auto envRotation = timeline.apply(&timelineFloatOutputs["envRotation"]);
+    envRotation.set(-.3);
+    envRotation.hold(5.0);
+    envRotation.then<RampTo>(.4, 10.f);
+    
+    auto textHeaderColor = timeline.apply(&timelineFloatColorOutputs["textHeaderColor"]);
+    textHeaderColor.set(ofFloatColor(1.,1.,1.,0.));
+    textHeaderColor.hold(10.0);
+    textHeaderColor.then<RampTo>(ofFloatColor(1.,1.,1.,1.),20.f);
+    
+    auto textBodyColor = timeline.apply(&timelineFloatColorOutputs["textBodyColor"]);
+    textBodyColor.set(ofFloatColor(1.,1.,1.,0.));
+    textHeaderColor.hold(10.0);
+    textBodyColor.then<RampTo>(ofFloatColor(1.,1.,1.,1.), 20.f);
+}
+
 
 void ofApp::update() {
     
@@ -242,18 +265,19 @@ void ofApp::update() {
         world.primitives["model"]->update();
     }
     
-    mViewPlane->cam.setGlobalPosition(3+(cos(ofGetElapsedTimef())*.5), 2, -2+sin(ofGetElapsedTimef()));
-    
     //PROJECTORS
     for (auto projector : mProjectors){
         if(projector.second->pEnabled){
             projector.second->update(calibrationCornerMesh);
-            if(projector.first == "perspective"){
+            if(projector.first == "first person"){
                 projector.second->referencePoints.disableDrawEvent();
                 projector.second->referencePoints.disableControlEvents();
-                if(projector.second->pTrackViewCamera){
-                    projector.second->cam.setGlobalPosition(mViewPlane->cam.getGlobalPosition());
+                if(projector.second->pAnimateCamera){
+                    projector.second->cam.setGlobalPosition(3+(cos(ofGetElapsedTimef()*.5)*.5), 2, -2+sin(ofGetElapsedTimef()*.2));
                     projector.second->cam.lookAt(mViewPlane->plane.getPosition(), glm::vec3(0,1,0));
+                }
+                if(projector.second->pTrackUserCamera){
+                    mViewPlane->cam.setGlobalPosition(projector.second->cam.getGlobalPosition());
                 }
             }
         }
@@ -268,7 +292,7 @@ void ofApp::update() {
     
 }
 
-void ofApp::renderScene() {
+void ofApp::pbrRenderScene() {
     
     ofEnableDepthTest();
     glEnable(GL_CULL_FACE);
@@ -276,19 +300,19 @@ void ofApp::renderScene() {
     pbr.beginDefaultRenderer();
     {
         ofSetColor(255,255);
-        renderPrimitiveWithMaterialsRecursive(world.primitives["model"], materials, pbr);
+        renderPrimitiveWithMaterialsRecursive(currentRenderPrimitive, materials, pbr);
     }
     pbr.endDefaultRenderer();
     glDisable(GL_CULL_FACE);
     ofDisableDepthTest();
 }
 
-void ofApp::drawProjectorLeft(ofEventArgs & args) {
-    drawProjection(mProjectorLeft);
+void ofApp::drawProjectorWall(ofEventArgs & args) {
+    drawProjection(mProjectorWall);
 }
 
-void ofApp::drawProjectorRight(ofEventArgs & args) {
-    drawProjection(mProjectorRight);
+void ofApp::drawProjectorSide(ofEventArgs & args) {
+    drawProjection(mProjectorSide);
 }
 
 void ofApp::drawProjection(shared_ptr<Projector> & projector) {
@@ -309,6 +333,7 @@ void ofApp::renderView() {
     // HDR
     mViewPlane->begin(true, true);{
         
+        currentRenderPrimitive = world.primitives["model"];
         cam = &mViewPlane->cam;
         pbr.setMainCamera(cam);
         pbr.setDrawEnvironment(true);
@@ -323,11 +348,20 @@ void ofApp::renderView() {
         ofDisableDepthTest();
         ofEnableAlphaBlending();
         ofFill();
-        ofSetColor(ofFloatColor::white);
         ofTranslate(-mViewPlane->plane.getWidth()/2., mViewPlane->plane.getHeight()/2.0);
         ofTranslate(0.1, -0.28);
-        ofScale(0.18/fontTitle.getSize());
-        fontTitle.drawString("Øresundsbroen", 0.0, 0.0);
+        
+        ofPushMatrix();{
+            ofScale(0.10/fontHeader.getSize());
+            
+            ofSetColor(ofColor(pTextBodyColor.get()));
+            fontBody.drawString("The Oresund Bridge", 0.0, 0.0);
+            
+            ofTranslate(0, -fontHeader.getSize()*1.5);
+            
+            ofSetColor(ofColor(pTextHeaderColor.get()));
+            fontHeader.drawString("Øresundsbroen", 0.0, 0.0);
+        }ofPopMatrix();
         mViewPlane->plane.restoreTransformGL();
         ofPopMatrix();
     }mViewPlane->end();
@@ -356,8 +390,10 @@ void ofApp::draw() {
                 
                 projector.second->begin(true);{
                     
+                    // HDR
+                    
                     ofSetColor(255,255);
-
+                    
                     // BLACK ROOM MASK
                     ofPushStyle();
                     ofEnableAlphaBlending();
@@ -365,44 +401,70 @@ void ofApp::draw() {
                     ofSetColor(0, 255);
                     world.primitives["floor"]->recursiveDraw();
                     world.primitives["walls"]->recursiveDraw();
+                    if(projector.first == "wall"){
+                        world.primitives["truss"]->recursiveDraw();
+                    }
                     ofPopStyle();
                     
-                    // PBR in space
-                    ofPushStyle();
-                    ofEnableAlphaBlending();
-                    ofEnableDepthTest();
-                    cam = &mViewPlane->cam;
-                    pbr.setMainCamera(cam);
-                    pbr.setDrawEnvironment(false);
-                    pbr.renderScene();
-                    ofPopStyle();
-                    
-                    // HDR view
-                    ofPushStyle();
-                    ofEnableAlphaBlending();
-                    ofEnableDepthTest();
-                    mViewPlane->draw(true);
-                    ofPopStyle();
+                    if(projector.first == "wall" || projector.first == "first person"){
+                        // HDR view
+                        ofPushStyle();
+                        ofEnableAlphaBlending();
+                        ofEnableDepthTest();
+                        mViewPlane->draw(true);
+                        ofPopStyle();
+                    }
+                    if(projector.first == "side" || projector.first == "first person"){
+                        // PBR in space
+                        ofPushStyle();
+                        ofEnableAlphaBlending();
+                        ofEnableDepthTest();
+                        currentRenderPrimitive = world.primitives["model"];
+                        cam = &mViewPlane->cam;
+                        pbr.setMainCamera(cam);
+                        pbr.setDrawEnvironment(false);
+                        pbr.renderScene();
+                        ofPopStyle();
+                    }
                     
                 }projector.second->end();
                 
                 projector.second->begin(false, false, false);{
-                    //LDR overlays (text, graphics)
+                    
+                    // LDR (overlays)
+                    
+                    // BLACK ROOM MASK
                     ofPushStyle();
                     ofEnableAlphaBlending();
                     ofEnableDepthTest();
-                    ofPushMatrix();
-                    ofTranslate(0.1, 0., 0.);
-                    ofSetColor(255,255);
-                    mViewPlane->draw(false, true);
-                    ofPopMatrix();
+                    ofSetColor(0, 255);
+                    glColorMask(false, false, false, false);
+                    world.primitives["floor"]->recursiveDraw();
+                    world.primitives["walls"]->recursiveDraw();
+                    glColorMask(true, true, true, true);
+                    
                     ofPopStyle();
-
+                    
+                    if(projector.first == "wall" || projector.first == "first person"){
+                        
+                        // TEXT
+                        ofPushStyle();
+                        ofEnableAlphaBlending();
+                        ofEnableDepthTest();
+                        ofPushMatrix();
+                        ofTranslate(0.01, 0., 0.);
+                        ofSetColor(255,255);
+                        mViewPlane->draw(false, true);
+                        ofPopMatrix();
+                        ofPopStyle();
+                        
+                    }
+                    
                 }projector.second->end();
                 
             }
             
-            if(projector.first == "perspective" && !projector.second->pTrackViewCamera){
+            if(projector.first == "first person" && !projector.second->pTrackUserCamera){
                 projector.second->begin(false, false, false);
                 ofPushStyle();
                 ofEnableBlendMode(OF_BLENDMODE_ADD);
@@ -410,7 +472,7 @@ void ofApp::draw() {
                 ofSetColor(255, 64);
                 mViewPlane->cam.drawFrustum(ofRectangle(0,0,mViewPlane->output.getWidth(), mViewPlane->output.getHeight()));
                 
-                ofDrawLine(mProjectorLeft->cam.getGlobalPosition(), mViewPlane->cam.getGlobalPosition());
+                ofDrawLine(mProjectorWall->cam.getGlobalPosition(), mViewPlane->cam.getGlobalPosition());
                 
                 ofPopStyle();
                 projector.second->end();
@@ -528,6 +590,8 @@ void ofApp::loadFullModel(string filename) {
     world.primitives["model"] = fullModel.getPrimitives();
     world.primitives["model"]->setParent(world.origin);
     
+    currentRenderPrimitive = world.primitives["model"];
+    
     
 }
 
@@ -558,8 +622,8 @@ void ofApp::keycodePressed(ofKeyEventArgs& e){
 }
 
 void ofApp::windowResized(int w, int h){
-    mProjectors.at("perspective")->viewPort.set(0, projectionResolution.y, w, h-projectionResolution.y);
-    mProjectors.at("perspective")->resizeFbos();
+    mProjectors.at("first person")->viewPort.set(0, projectionResolution.y, w, h-projectionResolution.y);
+    mProjectors.at("first person")->resizeFbos();
 }
 
 bool ofApp::imGui()
@@ -607,6 +671,13 @@ bool ofApp::imGui()
                 save("default");
             }
             
+            ImGui::Separator();
+            
+            if(ImGui::Button("Play")){
+                startAnimation();
+            }
+            ImGui::Separator();
+            
             bool guiShaderValid = shader.isValid;
             ImGui::Checkbox("Shader Valid", &guiShaderValid);
             
@@ -622,6 +693,8 @@ bool ofApp::imGui()
             ofxImGui::AddGroup(mViewPlane->pg, mainSettings);
             
             ofxImGui::AddGroup(pgScenes, mainSettings);
+            
+            ofxImGui::AddGroup(pgText, mainSettings);
             
             ofxImGui::EndWindow(mainSettings);
         }
@@ -669,10 +742,12 @@ bool ofApp::imGui()
                 } if(!mouseOverWindow) ImGui::PopStyleVar();
                 
                 if(!mouseOverWindow) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5);{
-                    if(projector.first == "perspective"){
+                    if(projector.first == "first person"){
                         ofxImGui::AddParameter(p->pEnabled);
                         ImGui::SameLine();
-                        ofxImGui::AddParameter(p->pTrackViewCamera);
+                        ofxImGui::AddParameter(p->pTrackUserCamera);
+                        ImGui::SameLine();
+                        ofxImGui::AddParameter(p->pAnimateCamera);
                         ImGui::SameLine();
                     }
                     ofxImGui::AddParameter(p->pCalibrationEdit);
@@ -705,7 +780,7 @@ bool ofApp::imGui()
                     }if(!mouseOverWindow) ImGui::PopStyleVar();
                 }if(!mouseOverWindow) ImGui::PopStyleVar();
                 
-                // Right aligned buttons are annoying
+                // Right aligned buttons are annoying in ImGui
                 ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6*2, 5));
                 
                 const float ItemSpacing = ImGui::GetStyle().ItemSpacing.x;

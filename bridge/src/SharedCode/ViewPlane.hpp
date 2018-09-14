@@ -26,13 +26,19 @@ public:
     ofxAssimp3dPrimitive * viewNode;
     World & world;
     
-    ofParameter<float> pViewResolution {"Resolution", 200, 10, 500};
+    ofParameter<float> pViewResolution {"Resolution", 200, 10, 1000};
     ofParameterGroup pg{ "View", pViewResolution };
     
     ViewPlane(ofFbo::Settings & defaultFboSettings, ofShader & highlightShader, ofShader & tonemapShader, ofShader & fxaaShader, ofxAssimp3dPrimitive * viewNode, World & world)
     : defaultFboSettings(defaultFboSettings), highlightShader(highlightShader), tonemapShader(tonemapShader), fxaaShader(fxaaShader), viewNode(viewNode), world(world)
     {
         pViewResolution.addListener(this, &ViewPlane::resizeFbos);
+        cam.setParent(world.origin);
+        cam.setScale(1,1,1);
+        cam.setNearClip(0.1);
+        cam.setFarClip(10000);
+        cam.setGlobalPosition(4.,2.0,-3.25);
+
     }
     
     void getBoundingBox(const ofMesh& mesh, ofVec3f& cornerMin, ofVec3f& cornerMax) {
@@ -99,11 +105,6 @@ public:
         
         // CAMERA
         
-        cam.setParent(world.origin);
-        
-        cam.setScale(1,1,1);
-        cam.setNearClip(0.1);
-        cam.setFarClip(10000);
         cam.lookAt(toOf(plane.getGlobalPosition()) * toOf(plane.getGlobalTransformMatrix()));
         cam.setupPerspective();
     }

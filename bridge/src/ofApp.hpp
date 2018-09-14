@@ -76,7 +76,8 @@ public:
     void keycodePressed(ofKeyEventArgs& e);
     void windowResized(int w, int h);
     
-    void renderScene();
+    void pbrRenderScene();
+    
     void renderCalibration();
     void drawCalibrationEditor();
     
@@ -99,8 +100,8 @@ public:
     ofImage logo;
     GLuint logoID;
     
-    ofTrueTypeFont fontTitle;
-    ofTrueTypeFont fontText;
+    ofTrueTypeFont fontHeader;
+    ofTrueTypeFont fontBody;
 
     // SCENES
     
@@ -118,11 +119,20 @@ public:
 
     ofParameterGroup pgProjectors;
 
-    ofParameterGroup pgGlobal{"Global", pgPbr};
+    ofParameter<ofFloatColor> pTextHeaderColor{ "Header Color", ofFloatColor(1.,1.,1.,1.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
+    ofParameter<ofFloatColor> pTextBodyColor{ "Body Color", ofFloatColor(1.,1.,1.,1.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
+    ofParameterGroup pgText{ "Text", pTextHeaderColor, pTextBodyColor };
+    
+    ofParameterGroup pgGlobal{"Global", pgPbr, pgText};
 
     // TIMELINE
     ofxChoreograph::Timeline timeline;
-    map< string, ofxChoreograph::Output<ofParameter<float> > > timelineOutputs;
+    
+    map< string, ofxChoreograph::Output<ofParameter<float> > > timelineFloatOutputs;
+    map< string, ofxChoreograph::Output<ofParameter<glm::vec2> > > timelineVec2Outputs;
+    map< string, ofxChoreograph::Output<ofParameter<glm::vec3> > > timelineVec3Outputs;
+    map< string, ofxChoreograph::Output<ofParameter<ofFloatColor> > > timelineFloatColorOutputs;
+    void startAnimation();
     
     // WORLD
     
@@ -145,23 +155,23 @@ public:
     
     map<string, shared_ptr<Projector> > mProjectors;
     
-    ofRectangle mViewPortLeft;
-    shared_ptr<Projector> mProjectorLeft;
+    ofRectangle mViewPortWall;
+    shared_ptr<Projector> mProjectorWall;
     
-    ofRectangle mViewPortRight;
-    shared_ptr<Projector> mProjectorRight;
+    ofRectangle mViewPortSide;
+    shared_ptr<Projector> mProjectorSide;
     
-    ofRectangle mViewPortPerspective;
-    shared_ptr<Projector> mProjectorPerspective;
+    ofRectangle mViewPortFirstPerson;
+    shared_ptr<Projector> mProjectorFirstPerson;
     
     ofRectangle mViewPort;
     
-    ofEasyCam mCamLeft;
-    ofEasyCam mCamRight;
-    ofEasyCam mCamPerspective;
+    ofEasyCam mCamWall;
+    ofEasyCam mCamSide;
+    ofEasyCam mCamFirstPerson;
     
-    void drawProjectorRight(ofEventArgs & args);
-    void drawProjectorLeft(ofEventArgs & args);
+    void drawProjectorSide(ofEventArgs & args);
+    void drawProjectorWall(ofEventArgs & args);
     void drawProjection(shared_ptr<Projector> & projector);
         
     // VIEW
@@ -178,6 +188,7 @@ public:
     ofxPBR pbr;
     
     ofCamera * cam;
+    ofxAssimp3dPrimitive * currentRenderPrimitive;
     
     ofFbo::Settings defaultFboSettings;
     
