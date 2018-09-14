@@ -213,9 +213,12 @@ void ofApp::setup() {
     
     load("default");
     
-    outputs["envExposure"]().makeReferenceTo(pPbrEnvExposure);
+    // TIMELINE
     
-    auto m = timeline.apply(&outputs["envExposure"]);
+    timelineOutputs["envExposure"]().makeReferenceTo(pPbrEnvExposure);
+    timelineOutputs["envExposure"]().makeReferenceTo(pPbrEnvExposure);
+
+    auto m = timeline.apply(&timelineOutputs["envExposure"]);
     m.set(0.0);
     m.hold(5.0);
     m.then<RampTo>(1.0, 20.0);

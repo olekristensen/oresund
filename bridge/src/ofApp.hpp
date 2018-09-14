@@ -122,7 +122,7 @@ public:
 
     // TIMELINE
     ofxChoreograph::Timeline timeline;
-    map< string, ofxChoreograph::Output<ofParameter<float> > > outputs;
+    map< string, ofxChoreograph::Output<ofParameter<float> > > timelineOutputs;
     
     // WORLD
     
