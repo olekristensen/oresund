@@ -155,8 +155,8 @@ public:
     
     map<string, shared_ptr<Projector> > mProjectors;
     
-    ofRectangle mViewPortWall;
-    shared_ptr<Projector> mProjectorWall;
+    ofRectangle mViewPortFront;
+    shared_ptr<Projector> mProjectorFront;
     
     ofRectangle mViewPortSide;
     shared_ptr<Projector> mProjectorSide;
@@ -176,9 +176,9 @@ public:
         
     // VIEW
     
-    //ofxAssimp3dPrimitive * viewNode;
-    shared_ptr<ViewPlane> mViewPlane;
-    void renderView();
+    shared_ptr<ViewPlane> mViewFront;
+    shared_ptr<ViewPlane> mViewSide;
+    void renderViews();
     
     // PBR
     

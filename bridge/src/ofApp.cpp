@@ -73,9 +73,9 @@ void ofApp::setup() {
                                                    defaultFboSettings, shader, tonemap, fxaa);
     mProjectors.insert(make_pair("first person", mProjectorFirstPerson));
     
-    mProjectorWall = make_shared<Projector>(ofRectangle(0, 0, projectionResolution.x, projectionResolution.y),
+    mProjectorFront = make_shared<Projector>(ofRectangle(0, 0, projectionResolution.x, projectionResolution.y),
                                             defaultFboSettings, shader, tonemap, fxaa);
-    mProjectors.insert(make_pair("wall", mProjectorWall));
+    mProjectors.insert(make_pair("front", mProjectorFront));
     
     mProjectorSide = make_shared<Projector>(ofRectangle(projectionResolution.x, 0, projectionResolution.x, projectionResolution.y),
                                              defaultFboSettings, shader, tonemap, fxaa);
@@ -104,13 +104,14 @@ void ofApp::setup() {
     
     //VIEW PLANE
     
-    mViewPlane = make_shared<ViewPlane>(defaultFboSettings, shader, tonemap, fxaa, world.primitives["view"], world);
-    
-    pgGlobal.add(mViewPlane->pg);
+    mViewFront = make_shared<ViewPlane>(defaultFboSettings, shader, tonemap, fxaa, world.primitives["view"], world);
+    //mViewFront = make_shared<ViewPlane>(defaultFboSettings, shader, tonemap, fxaa, world.primitives["view"], world);
+
+    pgGlobal.add(mViewFront->pg);
     
     //PBR
     
-    cam = &mProjectorWall->cam;
+    cam = &mProjectorFront->cam;
     scene = bind(&ofApp::pbrRenderScene, this);
     pbr.setup(scene, cam, 1024*4);
     
@@ -274,10 +275,10 @@ void ofApp::update() {
                 projector.second->referencePoints.disableControlEvents();
                 if(projector.second->pAnimateCamera){
                     projector.second->cam.setGlobalPosition(3+(cos(ofGetElapsedTimef()*.5)*.5), 2, -2+sin(ofGetElapsedTimef()*.2));
-                    projector.second->cam.lookAt(mViewPlane->plane.getPosition(), glm::vec3(0,1,0));
+                    projector.second->cam.lookAt(mViewFront->plane.getPosition(), glm::vec3(0,1,0));
                 }
                 if(projector.second->pTrackUserCamera){
-                    mViewPlane->cam.setGlobalPosition(projector.second->cam.getGlobalPosition());
+                    mViewFront->cam.setGlobalPosition(projector.second->cam.getGlobalPosition());
                 }
             }
         }
@@ -308,7 +309,7 @@ void ofApp::pbrRenderScene() {
 }
 
 void ofApp::drawProjectorWall(ofEventArgs & args) {
-    drawProjection(mProjectorWall);
+    drawProjection(mProjectorFront);
 }
 
 void ofApp::drawProjectorSide(ofEventArgs & args) {
@@ -327,28 +328,28 @@ void ofApp::drawProjection(shared_ptr<Projector> & projector) {
     
 }
 
-void ofApp::renderView() {
+void ofApp::renderViews() {
     ofPushStyle();
     
     // HDR
-    mViewPlane->begin(true, true);{
+    mViewFront->begin(true, true);{
         
         currentRenderPrimitive = world.primitives["model"];
-        cam = &mViewPlane->cam;
+        cam = &mViewFront->cam;
         pbr.setMainCamera(cam);
         pbr.setDrawEnvironment(true);
         pbr.renderScene();
         
-    }mViewPlane->end();
+    }mViewFront->end();
     
     // LDR overlays
-    mViewPlane->begin(false, true);{
+    mViewFront->begin(false, true);{
         ofPushMatrix();
-        mViewPlane->plane.transformGL();
+        mViewFront->plane.transformGL();
         ofDisableDepthTest();
         ofEnableAlphaBlending();
         ofFill();
-        ofTranslate(-mViewPlane->plane.getWidth()/2., mViewPlane->plane.getHeight()/2.0);
+        ofTranslate(-mViewFront->plane.getWidth()/2., mViewFront->plane.getHeight()/2.0);
         ofTranslate(0.1, -0.28);
         
         ofPushMatrix();{
@@ -362,9 +363,9 @@ void ofApp::renderView() {
             ofSetColor(ofColor(pTextHeaderColor.get()));
             fontHeader.drawString("Øresundsbroen", 0.0, 0.0);
         }ofPopMatrix();
-        mViewPlane->plane.restoreTransformGL();
+        mViewFront->plane.restoreTransformGL();
         ofPopMatrix();
-    }mViewPlane->end();
+    }mViewFront->end();
     
     ofPopStyle();
 }
@@ -377,7 +378,7 @@ void ofApp::draw() {
     
     pbr.updateDepthMaps();
     
-    renderView();
+    renderViews();
     
     // RENDER PROJECTOR FBO's
     
@@ -401,17 +402,17 @@ void ofApp::draw() {
                     ofSetColor(0, 255);
                     world.primitives["floor"]->recursiveDraw();
                     world.primitives["walls"]->recursiveDraw();
-                    if(projector.first == "wall"){
+                    if(projector.first == "front"){
                         world.primitives["truss"]->recursiveDraw();
                     }
                     ofPopStyle();
                     
-                    if(projector.first == "wall" || projector.first == "first person"){
+                    if(projector.first == "front" || projector.first == "first person"){
                         // HDR view
                         ofPushStyle();
                         ofEnableAlphaBlending();
                         ofEnableDepthTest();
-                        mViewPlane->draw(true);
+                        mViewFront->draw(true);
                         ofPopStyle();
                     }
                     if(projector.first == "side" || projector.first == "first person"){
@@ -420,7 +421,7 @@ void ofApp::draw() {
                         ofEnableAlphaBlending();
                         ofEnableDepthTest();
                         currentRenderPrimitive = world.primitives["model"];
-                        cam = &mViewPlane->cam;
+                        cam = &mViewFront->cam;
                         pbr.setMainCamera(cam);
                         pbr.setDrawEnvironment(false);
                         pbr.renderScene();
@@ -445,7 +446,7 @@ void ofApp::draw() {
                     
                     ofPopStyle();
                     
-                    if(projector.first == "wall" || projector.first == "first person"){
+                    if(projector.first == "front" || projector.first == "first person"){
                         
                         // TEXT
                         ofPushStyle();
@@ -454,7 +455,7 @@ void ofApp::draw() {
                         ofPushMatrix();
                         ofTranslate(0.01, 0., 0.);
                         ofSetColor(255,255);
-                        mViewPlane->draw(false, true);
+                        mViewFront->draw(false, true);
                         ofPopMatrix();
                         ofPopStyle();
                         
@@ -470,9 +471,9 @@ void ofApp::draw() {
                 ofEnableBlendMode(OF_BLENDMODE_ADD);
                 ofDisableDepthTest();
                 ofSetColor(255, 64);
-                mViewPlane->cam.drawFrustum(ofRectangle(0,0,mViewPlane->output.getWidth(), mViewPlane->output.getHeight()));
+                mViewFront->cam.drawFrustum(ofRectangle(0,0,mViewFront->output.getWidth(), mViewFront->output.getHeight()));
                 
-                ofDrawLine(mProjectorWall->cam.getGlobalPosition(), mViewPlane->cam.getGlobalPosition());
+                ofDrawLine(mProjectorFront->cam.getGlobalPosition(), mViewFront->cam.getGlobalPosition());
                 
                 ofPopStyle();
                 projector.second->end();
@@ -690,7 +691,7 @@ bool ofApp::imGui()
             
             ofxImGui::AddGroup(pgPbr, mainSettings);
             
-            ofxImGui::AddGroup(mViewPlane->pg, mainSettings);
+            ofxImGui::AddGroup(mViewFront->pg, mainSettings);
             
             ofxImGui::AddGroup(pgScenes, mainSettings);
             
