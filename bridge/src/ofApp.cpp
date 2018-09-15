@@ -8,6 +8,7 @@
 #include "ofApp.hpp"
 #include "ofxAssimp3dPrimitiveHelpers.hpp"
 #include "MeshUtils.hpp"
+#include <dispatch/dispatch.h>
 
 using namespace ofxChoreograph;
 
@@ -38,13 +39,14 @@ void ofApp::setup() {
     
     // MODELS
     
-    if(ofFile::doesFileExist("models/space.dae")) {
-        loadSpaceModel("models/space.dae");
+    if(ofFile::doesFileExist("models/full.dae")) {
+        loadModel("models/full.dae");
     }
-    
+    /*
     if(ofFile::doesFileExist("models/full.dae")) {
         loadFullModel("models/full.dae");
     }
+    */
     
     // FBOs
     
@@ -104,21 +106,25 @@ void ofApp::setup() {
     
     //VIEW PLANE
     
-    mViewFront = make_shared<ViewPlane>(defaultFboSettings, shader, tonemap, fxaa, world.primitives["view"], world);
-    //mViewFront = make_shared<ViewPlane>(defaultFboSettings, shader, tonemap, fxaa, world.primitives["view"], world);
+    mViewFront = make_shared<ViewPlane>(defaultFboSettings, shader, tonemap, fxaa, world.primitives["room.views.front"], world);
+    mViewSide = make_shared<ViewPlane>(defaultFboSettings, shader, tonemap, fxaa, world.primitives["room.views.side"], world);
 
+    mViewFront->pg.setName("Front View");
     pgGlobal.add(mViewFront->pg);
-    
+    mViewSide->pg.setName("Side View");
+    pgGlobal.add(mViewSide->pg);
+
     //PBR
     
     cam = &mProjectorFront->cam;
     scene = bind(&ofApp::pbrRenderScene, this);
     pbr.setup(scene, cam, 1024*4);
     
-    materials.resize(world.primitives["model"]->textureNames.size());
+    materials.resize(rootPrimitive->textureNames.size());
     
     int materialIndex = 0;
     for (auto & material : materials){
+        cout << "Generating material for: " << rootPrimitive->textureNames[materialIndex] << endl;
         material.baseColor.set(0.95, 1.0, 1.0);
         material.metallic = ofMap(materialIndex++, 0, materials.size(), 0.0, 1.0);
         material.roughness = 0.2;
@@ -260,10 +266,9 @@ void ofApp::update() {
     cubeMap.setRotation(pPbrEnvRotation);
     
     // MODELS
-    spaceModel.update();
-    fullModel.update();
-    if(world.primitives["model"] != nullptr){
-        world.primitives["model"]->update();
+    modelLoader.update();
+    if(world.primitives["view"] != nullptr){
+        world.primitives["view"]->update();
     }
     
     //PROJECTORS
@@ -275,10 +280,11 @@ void ofApp::update() {
                 projector.second->referencePoints.disableControlEvents();
                 if(projector.second->pAnimateCamera){
                     projector.second->cam.setGlobalPosition(3+(cos(ofGetElapsedTimef()*.5)*.5), 2, -2+sin(ofGetElapsedTimef()*.2));
-                    projector.second->cam.lookAt(mViewFront->plane.getPosition(), glm::vec3(0,1,0));
+                    projector.second->cam.lookAt(mViewFront->plane.getGlobalPosition(), glm::vec3(0,1,0));
                 }
                 if(projector.second->pTrackUserCamera){
                     mViewFront->cam.setGlobalPosition(projector.second->cam.getGlobalPosition());
+                    mViewSide->cam.setGlobalPosition(projector.second->cam.getGlobalPosition());
                 }
             }
         }
@@ -301,7 +307,23 @@ void ofApp::pbrRenderScene() {
     pbr.beginDefaultRenderer();
     {
         ofSetColor(255,255);
-        renderPrimitiveWithMaterialsRecursive(currentRenderPrimitive, materials, pbr);
+        
+        if(pbrRenderTextureIndexes->size() == 0){
+            for(auto textureMesh : world.textureMeshes){
+                materials[rootPrimitive->getTextureIndexFromName(textureMesh.first)].begin(&pbr);
+                textureMesh.second->draw();
+                materials[rootPrimitive->getTextureIndexFromName(textureMesh.first)].end();
+            }
+        } else {
+            for(auto textureIndex : *pbrRenderTextureIndexes){
+                materials[textureIndex].begin(&pbr);
+                world.textureMeshes[rootPrimitive->getTextureNameFromIndex(textureIndex)]->draw();
+                materials[textureIndex].end();
+            }
+        }
+        
+            // TO HEAVY...
+        //renderPrimitiveWithMaterialsRecursive(currentRenderPrimitive, materials, pbr);
     }
     pbr.endDefaultRenderer();
     glDisable(GL_CULL_FACE);
@@ -330,16 +352,36 @@ void ofApp::drawProjection(shared_ptr<Projector> & projector) {
 
 void ofApp::renderViews() {
     ofPushStyle();
-    
+
+    // HDR
+    mViewSide->begin(true, true);{
+        
+        pbrRenderTextureIndexes = getTextureIndexesContainingString("view.");
+        cam = &mViewSide->cam;
+        pbr.setMainCamera(cam);
+        pbr.setDrawEnvironment(true);
+        pbr.renderScene();
+/*
+        ofPushStyle();
+        ofSetColor(255,255,0,127);
+        world.meshes["view"]->draw();
+        ofPopStyle();
+ */
+    }mViewSide->end();
+
     // HDR
     mViewFront->begin(true, true);{
-        
-        currentRenderPrimitive = world.primitives["model"];
+        pbrRenderTextureIndexes = getTextureIndexesContainingString("view.");
         cam = &mViewFront->cam;
         pbr.setMainCamera(cam);
         pbr.setDrawEnvironment(true);
         pbr.renderScene();
-        
+        /*
+        ofPushStyle();
+        ofSetColor(0,127,255,127);
+        world.meshes["view"]->draw();
+        ofPopStyle();
+         */
     }mViewFront->end();
     
     // LDR overlays
@@ -385,7 +427,7 @@ void ofApp::draw() {
     for (auto projector : mProjectors){
         if(projector.second->pEnabled){
             
-            projector.second->renderCalibrationEditor(world.primitives["space"]);
+            projector.second->renderCalibrationEditor(world.primitives["room"]);
             
             if(!projector.second->pCalibrationEdit){
                 
@@ -399,11 +441,11 @@ void ofApp::draw() {
                     ofPushStyle();
                     ofEnableAlphaBlending();
                     ofEnableDepthTest();
-                    ofSetColor(0, 255);
-                    world.primitives["floor"]->recursiveDraw();
-                    world.primitives["walls"]->recursiveDraw();
+                    ofSetColor(ofColor(pPbrRoomColor.get()));
+                    world.primitives["room.floor"]->recursiveDraw();
+                    world.primitives["room.walls"]->recursiveDraw();
                     if(projector.first == "front"){
-                        world.primitives["truss"]->recursiveDraw();
+                        world.primitives["room.truss"]->recursiveDraw();
                     }
                     ofPopStyle();
                     
@@ -416,11 +458,18 @@ void ofApp::draw() {
                         ofPopStyle();
                     }
                     if(projector.first == "side" || projector.first == "first person"){
+                        // HDR view
+                        ofPushStyle();
+                        ofEnableAlphaBlending();
+                        ofEnableDepthTest();
+                        mViewSide->draw(true);
+                        ofPopStyle();
+                        
                         // PBR in space
                         ofPushStyle();
                         ofEnableAlphaBlending();
                         ofEnableDepthTest();
-                        currentRenderPrimitive = world.primitives["model"];
+                        pbrRenderTextureIndexes = getTextureIndexesContainingString("0.4.0-room.truss");
                         cam = &mViewFront->cam;
                         pbr.setMainCamera(cam);
                         pbr.setDrawEnvironment(false);
@@ -440,8 +489,8 @@ void ofApp::draw() {
                     ofEnableDepthTest();
                     ofSetColor(0, 255);
                     glColorMask(false, false, false, false);
-                    world.primitives["floor"]->recursiveDraw();
-                    world.primitives["walls"]->recursiveDraw();
+                    world.primitives["room.floor"]->recursiveDraw();
+                    world.primitives["room.walls"]->recursiveDraw();
                     glColorMask(true, true, true, true);
                     
                     ofPopStyle();
@@ -472,9 +521,6 @@ void ofApp::draw() {
                 ofDisableDepthTest();
                 ofSetColor(255, 64);
                 mViewFront->cam.drawFrustum(ofRectangle(0,0,mViewFront->output.getWidth(), mViewFront->output.getHeight()));
-                
-                ofDrawLine(mProjectorFront->cam.getGlobalPosition(), mViewFront->cam.getGlobalPosition());
-                
                 ofPopStyle();
                 projector.second->end();
             }
@@ -518,36 +564,93 @@ void ofApp::draw() {
     }
 }
 
-void ofApp::loadSpaceModel(string filename) {
+void ofApp::loadModel(string filename) {
     
     ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_NOTICE);
     
-    spaceModel.loadModel(filename, false, false);
+    modelLoader.loadModel(filename, true, false);
     
     // rotate the model to match the ofMeshes we get later...
-    spaceModel.setRotation(0, 180, 0, 0, 1.0);
+    modelLoader.setRotation(0, 180, 0, 0, 1.0);
     
     // make sure to load to scale
-    spaceModel.setScaleNormalization(false);
-    spaceModel.calculateDimensions();
+    modelLoader.setScaleNormalization(false);
+    modelLoader.calculateDimensions();
+    
+    rootPrimitive = modelLoader.getPrimitives();
+    rootPrimitive->setParent(world.origin);
+    
+    world.primitives["root"] = rootPrimitive;
+
+    world.primitives["room.calibration"] = rootPrimitive->getFirstPrimitiveWithTextureNameContaining("room.calibration");
+    world.primitives["room"] = (ofxAssimp3dPrimitive*) world.primitives["room.calibration"]->getParent()->getParent()->getParent();
+    world.primitives["view"] = (ofxAssimp3dPrimitive*) rootPrimitive->getFirstPrimitiveWithTextureNameContaining("view.")->getParent()->getParent()->getParent();
+    
+    rootPrimitive->setGlobalPosition(-world.primitives["room.calibration"]->getGlobalPosition());
+    
+    world.primitives["room.walls"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.walls");
+    world.primitives["room.floor"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.floor");
+    world.primitives["room.truss"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.truss");
+    world.primitives["room.views.front"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.views.front");
+    world.primitives["room.views.side"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.views.side");
+    world.primitives["room.calibration"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.calibration");
+    vector<ofMesh> meshes = world.primitives["room.calibration"]->getBakedMeshesRecursive();
+
+    // get room primitive out of the view drawing tree
+    auto roomPosition = world.primitives["room"]->getGlobalPosition();
+    auto roomOrientation = world.primitives["room"]->getGlobalOrientation();
+    auto roomScale = world.primitives["room"]->getGlobalScale();
+    world.primitives["room"]->clearParent();
+    world.primitives["room"]->setParent(world.origin);
+    world.primitives["room"]->setScale(roomScale);
+    world.primitives["room"]->setGlobalPosition(roomPosition);
+    world.primitives["room"]->setGlobalOrientation(roomOrientation);
+
+    // get calibration pritive out of the drawing tree
+    world.primitives["room.calibration"]->clearParent();
     
     
-    auto spaceModelPrimitive = spaceModel.getPrimitives();
-    spaceModelPrimitive->setParent(world.origin);
-    world.primitives["space"] = spaceModelPrimitive;
+    dispatch_queue_t dispatchQueue = dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+    dispatch_group_t dispatchGroup = dispatch_group_create();
+    dispatch_semaphore_t writeSemaphore = dispatch_semaphore_create(1);
+
+    // bake node meshes
+    cout << "baking node meshes" << endl;
+    for(auto p : world.primitives){
+        dispatch_group_async(dispatchGroup, dispatchQueue, ^{
+        auto meshes = p.second->getBakedMeshesRecursive();
+        shared_ptr<ofVboMesh> mergedMesh = make_shared<ofVboMesh>(joinMeshes(meshes));
+            dispatch_semaphore_wait(writeSemaphore, DISPATCH_TIME_FOREVER);
+            cout << "baked node mesh: \t" << p.first << endl;
+            world.meshes[p.first] = mergedMesh;
+            dispatch_semaphore_signal(writeSemaphore);
+        });
+    }
     
-    world.primitives["calibration"] = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.calibration");
-    vector<ofMesh> meshes = world.primitives["calibration"]->getBakedMeshesRecursive();
-    
-    world.primitives["walls"] = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.walls");
-    world.primitives["floor"] = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.floor");
-    world.primitives["approach"] = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("approach.deck");
-    world.primitives["truss"] = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.truss");
-    world.primitives["view"] = spaceModelPrimitive->getFirstPrimitiveWithTextureNameContaining("room.view");
-    
-    world.primitives["calibration"]->clearParent();
-    
-    // join all the meshes
+    // bake texture meshes
+    cout << "baking texture meshes" << endl;
+    for(auto t : rootPrimitive->textureNames){
+        dispatch_group_async(dispatchGroup, dispatchQueue, ^{
+        auto primitives = world.primitives["root"]->getPrimitivesWithTextureIndex(rootPrimitive->getTextureIndexFromName(t));
+        vector<ofMesh> texMeshes;
+        for(auto p : primitives){
+            auto pMeshes = p->getBakedMeshesRecursive();
+            texMeshes.push_back(joinMeshes(pMeshes));
+        }
+        shared_ptr<ofVboMesh> mergedTexMesh = make_shared<ofVboMesh>(joinMeshes(texMeshes));
+            dispatch_semaphore_wait(writeSemaphore, DISPATCH_TIME_FOREVER);
+            cout << "baked texture mesh: \t" << t << endl;
+        world.textureMeshes[t] = mergedTexMesh;
+            dispatch_semaphore_signal(writeSemaphore);
+
+        });
+    }
+
+    dispatch_wait(dispatchGroup, DISPATCH_TIME_FOREVER);
+    cout << "done" << endl;
+
+    // bake calibration meshe
+    cout << "baking calibration meshe" << endl;
     calibrationMesh = ofVboMesh();
     calibrationMesh = joinMeshes(meshes);
     ofVec3f cornerMin, cornerMax;
@@ -575,6 +678,7 @@ void ofApp::loadSpaceModel(string filename) {
     calibrationCornerMesh.setMode(OF_PRIMITIVE_POINTS);
 }
 
+/*
 void ofApp::loadFullModel(string filename) {
     
     ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_NOTICE);
@@ -595,6 +699,7 @@ void ofApp::loadFullModel(string filename) {
     
     
 }
+*/
 
 void ofApp::save(string name){
     ofJson j;
@@ -692,7 +797,9 @@ bool ofApp::imGui()
             ofxImGui::AddGroup(pgPbr, mainSettings);
             
             ofxImGui::AddGroup(mViewFront->pg, mainSettings);
-            
+
+            ofxImGui::AddGroup(mViewSide->pg, mainSettings);
+
             ofxImGui::AddGroup(pgScenes, mainSettings);
             
             ofxImGui::AddGroup(pgText, mainSettings);
@@ -766,7 +873,7 @@ bool ofApp::imGui()
                             ofxImGui::AddParameter(p->pCalibrationProjectorColor);
                             ImGui::SameLine();
                             vector<string> objectNames;
-                            for(auto str :world.primitives["space"]->textureNames){
+                            for(auto str :world.primitives["room"]->textureNames){
                                 string objectName = ofSplitString(str, "/").back();
                                 auto objectNameComponents = ofSplitString(objectName, ".");
                                 objectNameComponents.pop_back();

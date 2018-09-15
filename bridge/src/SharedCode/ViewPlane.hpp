@@ -32,6 +32,8 @@ public:
     ViewPlane(ofFbo::Settings & defaultFboSettings, ofShader & highlightShader, ofShader & tonemapShader, ofShader & fxaaShader, ofxAssimp3dPrimitive * viewNode, World & world)
     : defaultFboSettings(defaultFboSettings), highlightShader(highlightShader), tonemapShader(tonemapShader), fxaaShader(fxaaShader), viewNode(viewNode), world(world)
     {
+        float initialResolution = pViewResolution.get();
+        resizeFbos(initialResolution);
         pViewResolution.addListener(this, &ViewPlane::resizeFbos);
         cam.setParent(world.origin);
         cam.setScale(1,1,1);
@@ -41,37 +43,44 @@ public:
 
     }
     
-    void getBoundingBox(const ofMesh& mesh, ofVec3f& cornerMin, ofVec3f& cornerMax) {
-        const vector<glm::vec3>& vertices = mesh.getVertices();
-        if(vertices.size() > 0) {
-            cornerMin = vertices[0];
-            cornerMax = vertices[0];
-        }
-        for(int i = 0; i < vertices.size(); i++) {
-            cornerMin.x = MIN(cornerMin.x, vertices[i].x);
-            cornerMin.y = MIN(cornerMin.y, vertices[i].y);
-            cornerMin.z = MIN(cornerMin.z, vertices[i].z);
-            cornerMax.x = MAX(cornerMax.x, vertices[i].x);
-            cornerMax.y = MAX(cornerMax.y, vertices[i].y);
-            cornerMax.z = MAX(cornerMax.z, vertices[i].z);
-        }
-    }
-    
     void resizeFbos(float & resolution){
         
         ofVec3f viewCornerMin;
         ofVec3f viewCornerMax;
         
         // PLANE
+        // TODO: Orient planes
+
+        glm::vec2 planeSize;
+        float rotationZ = 0.0;
+        float rotationX = 0.0;
+        float translationX = 1.0;
+        auto boundingBoxSize = viewNode->boundingBox.getSize();
         
-        getBoundingBox(viewNode->getBakedMesh(), viewCornerMin, viewCornerMax);
-        plane.setWidth(fabs(viewCornerMax.z - viewCornerMin.z));
-        plane.setHeight(fabs(viewCornerMax.y - viewCornerMin.y));
-        plane.setGlobalOrientation(ofQuaternion(90, ofVec3f(0,1,0)));
-        plane.setPosition(0, plane.getHeight()/2.0, -plane.getWidth()/2.0);
+        boundingBoxSize *= viewNode->getGlobalScale();
+        if(boundingBoxSize.x == 0.0){
+            planeSize.x = boundingBoxSize.y;
+            planeSize.y = boundingBoxSize.z;
+            rotationZ = 90.;
+            rotationX = 90.;
+        } else if (boundingBoxSize.y == 0.0){
+            planeSize.x = boundingBoxSize.x;
+            planeSize.y = boundingBoxSize.z;
+            rotationZ = 180.;
+            rotationX = 90.;
+            translationX = -1.0;
+        }
         
         plane.setParent(world.origin);
-        
+        plane.setWidth(planeSize.x);
+        plane.setHeight(planeSize.y);
+        plane.setGlobalPosition(viewNode->getGlobalPosition());
+        plane.setGlobalOrientation(viewNode->getGlobalOrientation());
+        plane.rotateDeg(rotationZ, plane.getZAxis());
+        plane.truck(translationX*plane.getWidth()/2.0);
+        plane.dolly(plane.getHeight()/2.0);
+        plane.rotateDeg(rotationX, plane.getXAxis());
+
         // FBO's
         
         auto viewFboSettings = defaultFboSettings;
@@ -118,18 +127,18 @@ public:
         
         float width = plane.getWidth();
         float height = plane.getHeight();
-        ofVec3f windowTopLeft(0.0,
-                              height,
+        ofVec3f windowTopLeft(-width/2,
+                              height/2,
                               0.0);
-        //windowTopLeft = windowTopLeft * viewPlane.getLocalTransformMatrix();
-        ofVec3f windowBottomLeft(0.0,
-                                 0.0,
+        //windowTopLeft = windowTopLeft * plane.getLocalTransformMatrix();
+        ofVec3f windowBottomLeft(-width/2,
+                                 -height/2,
                                  0.0f);
-        //windowBottomLeft = windowBottomLeft * viewPlane.getLocalTransformMatrix();
-        ofVec3f  windowBottomRight(0.0,
-                                   0.0,
-                                   -width);
-        //windowBottomRight = windowBottomRight * viewPlane.getLocalTransformMatrix();
+        //windowBottomLeft = windowBottomLeft * plane.getLocalTransformMatrix();
+        ofVec3f  windowBottomRight(width/2,
+                                   height/2,
+                                   0);
+        //windowBottomRight = windowBottomRight * plane.getLocalTransformMatrix();
         
         // To setup off axis view portal we need to be in the plane's matrix. All window coordinates of the camera are relative to the plane.
         plane.ofPlanePrimitive::transformGL();
@@ -189,6 +198,7 @@ public:
     }
     
     void draw(bool hdr = false, bool ldr = false){
+        plane.drawAxes(1.0);
         ofPushStyle();
         if(hdr && !ldr){
             hdrPass.getTexture().bind();

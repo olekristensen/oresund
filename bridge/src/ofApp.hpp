@@ -81,8 +81,8 @@ public:
     void renderCalibration();
     void drawCalibrationEditor();
     
-    void loadSpaceModel(string filename);
-    void loadFullModel(string filename);
+    void loadModel(string filename);
+    //void loadFullModel(string filename);
     
     void save(string name);
     void load(string name);
@@ -115,7 +115,8 @@ public:
     ofParameter<float> pPbrEnvExposure{ "Environment Exposure", 1.0f, 0.0f, 2.0f };
     ofParameter<float> pPbrEnvRotation{ "Environment Rotation", 0.0f, 0.0f, TWO_PI };
     ofParameter<float> pPbrExposure{ "Exposure", 1.0f, 0.0f, 20.0f };
-    ofParameterGroup pgPbr{ "PBR", pPbrEnvLevel, pPbrEnvExposure, pPbrEnvRotation, pPbrExposure, pPbrGamma };
+    ofParameter<ofFloatColor> pPbrRoomColor{ "Room Color", ofFloatColor(0.,0.,0.,1.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
+    ofParameterGroup pgPbr{ "PBR", pPbrEnvLevel, pPbrEnvExposure, pPbrEnvRotation, pPbrRoomColor, pPbrExposure, pPbrGamma };
 
     ofParameterGroup pgProjectors;
 
@@ -139,8 +140,9 @@ public:
     World world;
     
     // MODELS
-    ofxAssimpModelLoader spaceModel;
-    ofxAssimpModelLoader fullModel;
+    ofxAssimpModelLoader modelLoader;
+    ofxAssimp3dPrimitive * rootPrimitive;
+    //ofxAssimpModelLoader fullModel;
     
     // CALIBRATION
     const float cornerRatio = 1.0;
@@ -188,12 +190,26 @@ public:
     ofxPBR pbr;
     
     ofCamera * cam;
-    ofxAssimp3dPrimitive * currentRenderPrimitive;
+    map < string, bool > pbrMaterialFlags;
+    shared_ptr< vector<int>> pbrRenderTextureIndexes ;
     
     ofFbo::Settings defaultFboSettings;
     
     ofAutoShader shader, tonemap, fxaa;
     
     function<void()> scene;
+    
+    shared_ptr< vector<int> > getTextureIndexesContainingString(string str){
+        shared_ptr< vector<int> > retVec = make_shared<vector<int> >();
+        int aTextureIndex = 0;
+        for(string name : rootPrimitive->textureNames){
+            if(ofStringTimesInString(name, str) > 0){
+                retVec->push_back(aTextureIndex);
+            }
+            aTextureIndex++;
+        }
+        return retVec;
+    }
+
 
 };

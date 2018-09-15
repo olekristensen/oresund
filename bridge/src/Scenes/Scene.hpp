@@ -13,7 +13,8 @@ class World {
 public:
     ofNode origin;
     map< string, ofxAssimp3dPrimitive * > primitives;
-    
+    map< string, shared_ptr< ofVboMesh> > meshes;
+    map< string, shared_ptr< ofVboMesh> > textureMeshes;
 };
 
 class Scene {

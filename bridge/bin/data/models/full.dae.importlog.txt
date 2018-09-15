@@ -1,0 +1,548 @@
+Info,  T0: Load /Users/ole/Development/openFrameworks/apps/oresund/bridge/bin/data/models/full.dae
+Debug, T0: Assimp 4.0.144438630 amd64 gcc shared singlethreaded
+Info,  T0: Found a matching importer for this file format: Collada Importer.
+Info,  T0: Import root directory is '/Users/ole/Development/openFrameworks/apps/oresund/bridge/bin/data/models/'
+Debug, T0: Collada schema version is 1.4.n
+Warn,  T0: Collada: Orthographic cameras are not supported.
+Debug, T0: ValidateDataStructureProcess begin
+Debug, T0: ValidateDataStructureProcess end
+Info,  T0: Entering post processing pipeline
+Debug, T0: FlipUVsProcess begin
+Debug, T0: FlipUVsProcess finished
+Debug, T0: FindDegeneratesProcess begin
+Warn,  T0: Found 3 degenerated primitives
+Debug, T0: FindDegeneratesProcess finished
+Debug, T0: TriangulateProcess begin
+Debug, T0: TriangulateProcess finished. There was nothing to be done.
+Debug, T0: SortByPTypeProcess begin
+Info,  T0: Points: 1X, Lines: 6370X, Triangles: 683, Polygons: 0 (Meshes, X = removed)
+Debug, T0: SortByPTypeProcess finished
+Debug, T0: FindInvalidDataProcess begin
+Debug, T0: FindInvalidDataProcess finished. Everything seems to be OK.
+Debug, T0: OptimizeMeshesProcess begin
+Info,  T0: OptimizeMeshesProcess finished. Input meshes: 683, Output meshes: 256
+Debug, T0: FixInfacingNormalsProcess begin
+Info,  T0: Mesh 219: Normals are facing inwards (or the mesh is planar)
+Debug, T0: FixInfacingNormalsProcess finished. Found issues.
+Debug, T0: SplitLargeMeshesProcess_Triangle begin
+Debug, T0: SplitLargeMeshesProcess_Triangle finished. There was nothing to do
+Debug, T0: GenFaceNormalsProcess begin
+Debug, T0: GenFaceNormalsProcess finished. Normals are already there
+Debug, T0: Generate spatially-sorted vertex cache
+Debug, T0: JoinVerticesProcess begin
+Debug, T0: Mesh 0 (ID514) | Verts in: 2322 out: 1350 | ~41.8605%
+Debug, T0: Mesh 1 (ID534) | Verts in: 1980 out: 1048 | ~47.0707%
+Debug, T0: Mesh 2 (ID542) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 3 (ID550) | Verts in: 672 out: 240 | ~64.2857%
+Debug, T0: Mesh 4 (ID558) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 5 (ID566) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 6 (ID574) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 7 (ID594) | Verts in: 2280 out: 1328 | ~41.7544%
+Debug, T0: Mesh 8 (ID602) | Verts in: 2832 out: 1520 | ~46.3277%
+Debug, T0: Mesh 9 (ID610) | Verts in: 1272 out: 432 | ~66.0377%
+Debug, T0: Mesh 10 (ID618) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 11 (ID626) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 12 (ID634) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 13 (ID642) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 14 (ID650) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 15 (ID658) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 16 (ID682) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 17 (ID690) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 18 (ID698) | Verts in: 672 out: 240 | ~64.2857%
+Debug, T0: Mesh 19 (ID706) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 20 (ID714) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 21 (ID738) | Verts in: 2280 out: 1328 | ~41.7544%
+Debug, T0: Mesh 22 (ID746) | Verts in: 2832 out: 1520 | ~46.3277%
+Debug, T0: Mesh 23 (ID754) | Verts in: 1272 out: 432 | ~66.0377%
+Debug, T0: Mesh 24 (ID762) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 25 (ID770) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 26 (ID778) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 27 (ID786) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 28 (ID818) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 29 (ID826) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 30 (ID834) | Verts in: 672 out: 240 | ~64.2857%
+Debug, T0: Mesh 31 (ID842) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 32 (ID850) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 33 (ID874) | Verts in: 2832 out: 1520 | ~46.3277%
+Debug, T0: Mesh 34 (ID882) | Verts in: 2280 out: 1328 | ~41.7544%
+Debug, T0: Mesh 35 (ID890) | Verts in: 1272 out: 432 | ~66.0377%
+Debug, T0: Mesh 36 (ID898) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 37 (ID906) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 38 (ID914) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 39 (ID922) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 40 (ID930) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 41 (ID938) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 42 (ID964) | Verts in: 576 out: 384 | ~33.3333%
+Debug, T0: Mesh 43 (ID972) | Verts in: 1296 out: 440 | ~66.0494%
+Debug, T0: Mesh 44 (ID980) | Verts in: 576 out: 384 | ~33.3333%
+Debug, T0: Mesh 45 (ID988) | Verts in: 1128 out: 576 | ~48.9362%
+Debug, T0: Mesh 46 (ID996) | Verts in: 1128 out: 576 | ~48.9362%
+Debug, T0: Mesh 47 (ID1012) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 48 (ID1020) | Verts in: 1980 out: 1048 | ~47.0707%
+Debug, T0: Mesh 49 (ID1028) | Verts in: 672 out: 240 | ~64.2857%
+Debug, T0: Mesh 50 (ID1036) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 51 (ID1044) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 52 (ID1068) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 53 (ID1076) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 54 (ID1084) | Verts in: 672 out: 240 | ~64.2857%
+Debug, T0: Mesh 55 (ID1092) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 56 (ID1100) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 57 (ID1124) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 58 (ID1132) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 59 (ID1140) | Verts in: 672 out: 240 | ~64.2857%
+Debug, T0: Mesh 60 (ID1148) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 61 (ID1156) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 62 (ID1182) | Verts in: 2322 out: 1350 | ~41.8605%
+Debug, T0: Mesh 63 (ID1195) | Verts in: 1980 out: 1048 | ~47.0707%
+Debug, T0: Mesh 64 (ID1203) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 65 (ID1211) | Verts in: 672 out: 240 | ~64.2857%
+Debug, T0: Mesh 66 (ID1219) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 67 (ID1227) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 68 (ID1235) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 69 (ID1255) | Verts in: 2280 out: 1328 | ~41.7544%
+Debug, T0: Mesh 70 (ID1263) | Verts in: 2832 out: 1520 | ~46.3277%
+Debug, T0: Mesh 71 (ID1271) | Verts in: 1272 out: 432 | ~66.0377%
+Debug, T0: Mesh 72 (ID1279) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 73 (ID1287) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 74 (ID1295) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 75 (ID1303) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 76 (ID1311) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 77 (ID1319) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 78 (ID1343) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 79 (ID1351) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 80 (ID1359) | Verts in: 672 out: 240 | ~64.2857%
+Debug, T0: Mesh 81 (ID1367) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 82 (ID1375) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 83 (ID1399) | Verts in: 2280 out: 1328 | ~41.7544%
+Debug, T0: Mesh 84 (ID1407) | Verts in: 2832 out: 1520 | ~46.3277%
+Debug, T0: Mesh 85 (ID1415) | Verts in: 1272 out: 432 | ~66.0377%
+Debug, T0: Mesh 86 (ID1423) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 87 (ID1431) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 88 (ID1439) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 89 (ID1447) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 90 (ID1479) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 91 (ID1487) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 92 (ID1495) | Verts in: 672 out: 240 | ~64.2857%
+Debug, T0: Mesh 93 (ID1503) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 94 (ID1511) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 95 (ID1535) | Verts in: 2832 out: 1520 | ~46.3277%
+Debug, T0: Mesh 96 (ID1543) | Verts in: 2280 out: 1328 | ~41.7544%
+Debug, T0: Mesh 97 (ID1551) | Verts in: 1272 out: 432 | ~66.0377%
+Debug, T0: Mesh 98 (ID1559) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 99 (ID1567) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 100 (ID1575) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 101 (ID1583) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 102 (ID1591) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 103 (ID1599) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 104 (ID1625) | Verts in: 576 out: 384 | ~33.3333%
+Debug, T0: Mesh 105 (ID1633) | Verts in: 1296 out: 440 | ~66.0494%
+Debug, T0: Mesh 106 (ID1641) | Verts in: 576 out: 384 | ~33.3333%
+Debug, T0: Mesh 107 (ID1649) | Verts in: 1128 out: 576 | ~48.9362%
+Debug, T0: Mesh 108 (ID1657) | Verts in: 1128 out: 576 | ~48.9362%
+Debug, T0: Mesh 109 (ID1673) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 110 (ID1681) | Verts in: 1980 out: 1048 | ~47.0707%
+Debug, T0: Mesh 111 (ID1689) | Verts in: 672 out: 240 | ~64.2857%
+Debug, T0: Mesh 112 (ID1697) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 113 (ID1705) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 114 (ID1729) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 115 (ID1737) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 116 (ID1745) | Verts in: 672 out: 240 | ~64.2857%
+Debug, T0: Mesh 117 (ID1753) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 118 (ID1761) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 119 (ID1785) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 120 (ID1793) | Verts in: 1704 out: 952 | ~44.1315%
+Debug, T0: Mesh 121 (ID1801) | Verts in: 672 out: 240 | ~64.2857%
+Debug, T0: Mesh 122 (ID1809) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 123 (ID1817) | Verts in: 276 out: 96 | ~65.2174%
+Debug, T0: Mesh 124 (ID1841) | Verts in: 600 out: 312 | ~48%
+Debug, T0: Mesh 125 (ID1854) | Verts in: 60 out: 40 | ~33.3333%
+Debug, T0: Mesh 126 (ID1865) | Verts in: 60 out: 40 | ~33.3333%
+Debug, T0: Mesh 127 (ID1878) | Verts in: 72 out: 48 | ~33.3333%
+Debug, T0: Mesh 128 (ID1886) | Verts in: 60 out: 40 | ~33.3333%
+Debug, T0: Mesh 129 (ID1894) | Verts in: 60 out: 40 | ~33.3333%
+Debug, T0: Mesh 130 (ID1902) | Verts in: 60 out: 40 | ~33.3333%
+Debug, T0: Mesh 131 (ID1910) | Verts in: 216 out: 80 | ~62.963%
+Debug, T0: Mesh 132 (ID1920) | Verts in: 66 out: 24 | ~63.6364%
+Debug, T0: Mesh 133 (ID1928) | Verts in: 66 out: 24 | ~63.6364%
+Debug, T0: Mesh 134 (ID1934) | Verts in: 66 out: 24 | ~63.6364%
+Debug, T0: Mesh 135 (ID1940) | Verts in: 66 out: 24 | ~63.6364%
+Debug, T0: Mesh 136 (ID1946) | Verts in: 66 out: 24 | ~63.6364%
+Debug, T0: Mesh 137 (ID1952) | Verts in: 66 out: 24 | ~63.6364%
+Debug, T0: Mesh 138 (ID1958) | Verts in: 66 out: 24 | ~63.6364%
+Debug, T0: Mesh 139 (ID1964) | Verts in: 66 out: 24 | ~63.6364%
+Debug, T0: Mesh 140 (ID1970) | Verts in: 66 out: 24 | ~63.6364%
+Debug, T0: Mesh 141 (ID1976) | Verts in: 66 out: 24 | ~63.6364%
+Debug, T0: Mesh 142 (ID1984) | Verts in: 600 out: 312 | ~48%
+Debug, T0: Mesh 143 (ID1992) | Verts in: 60 out: 40 | ~33.3333%
+Debug, T0: Mesh 144 (ID2006) | Verts in: 72 out: 48 | ~33.3333%
+Debug, T0: Mesh 145 (ID2021) | Verts in: 72 out: 48 | ~33.3333%
+Debug, T0: Mesh 146 (ID2031) | Verts in: 1236 out: 628 | ~49.1909%
+Debug, T0: Mesh 147 (ID2041) | Verts in: 42 out: 42 | ~0%
+Debug, T0: Mesh 148 (ID2056) | Verts in: 42 out: 42 | ~0%
+Debug, T0: Mesh 149 (ID2066) | Verts in: 1584 out: 1104 | ~30.303%
+Debug, T0: Mesh 150 (ID2076) | Verts in: 1584 out: 1104 | ~30.303%
+Debug, T0: Mesh 151 (ID2120) | Verts in: 168 out: 104 | ~38.0952%
+Debug, T0: Mesh 152 (ID2257) | Verts in: 8964 out: 3400 | ~62.0705%
+Debug, T0: Mesh 153 (ID2270) | Verts in: 3600 out: 1596 | ~55.6667%
+Debug, T0: Mesh 154 (ID2278) | Verts in: 8964 out: 3400 | ~62.0705%
+Debug, T0: Mesh 155 (ID2286) | Verts in: 3600 out: 1592 | ~55.7778%
+Debug, T0: Mesh 156 (ID2294) | Verts in: 6000 out: 2394 | ~60.1%
+Debug, T0: Mesh 157 (ID2302) | Verts in: 6000 out: 2388 | ~60.2%
+Debug, T0: Mesh 158 (ID2316) | Verts in: 4818 out: 1926 | ~60.0249%
+Debug, T0: Mesh 159 (ID2334) | Verts in: 168 out: 104 | ~38.0952%
+Debug, T0: Mesh 160 (ID2371) | Verts in: 2208 out: 1112 | ~49.6377%
+Debug, T0: Mesh 161 (ID4250) | Verts in: 8964 out: 3400 | ~62.0705%
+Debug, T0: Mesh 162 (ID4258) | Verts in: 3600 out: 1596 | ~55.6667%
+Debug, T0: Mesh 163 (ID4266) | Verts in: 8964 out: 3400 | ~62.0705%
+Debug, T0: Mesh 164 (ID4274) | Verts in: 3600 out: 1592 | ~55.7778%
+Debug, T0: Mesh 165 (ID4282) | Verts in: 6000 out: 2394 | ~60.1%
+Debug, T0: Mesh 166 (ID4290) | Verts in: 6000 out: 2388 | ~60.2%
+Debug, T0: Mesh 167 (ID4302) | Verts in: 4818 out: 1926 | ~60.0249%
+Debug, T0: Mesh 168 (ID4440) | Verts in: 2208 out: 1112 | ~49.6377%
+Debug, T0: Mesh 169 (ID29731) | Verts in: 72 out: 48 | ~33.3333%
+Debug, T0: Mesh 170 (ID29739) | Verts in: 96 out: 60 | ~37.5%
+Debug, T0: Mesh 171 (ID29747) | Verts in: 96 out: 60 | ~37.5%
+Debug, T0: Mesh 172 (ID29755) | Verts in: 96 out: 60 | ~37.5%
+Debug, T0: Mesh 173 (ID29763) | Verts in: 96 out: 60 | ~37.5%
+Debug, T0: Mesh 174 (ID29771) | Verts in: 72 out: 48 | ~33.3333%
+Debug, T0: Mesh 175 (ID29779) | Verts in: 96 out: 60 | ~37.5%
+Debug, T0: Mesh 176 (ID29787) | Verts in: 96 out: 60 | ~37.5%
+Debug, T0: Mesh 177 (ID29795) | Verts in: 816 out: 536 | ~34.3137%
+Debug, T0: Mesh 178 (ID29803) | Verts in: 756 out: 504 | ~33.3333%
+Debug, T0: Mesh 179 (ID29811) | Verts in: 684 out: 456 | ~33.3333%
+Debug, T0: Mesh 180 (ID29819) | Verts in: 756 out: 504 | ~33.3333%
+Debug, T0: Mesh 181 (ID29827) | Verts in: 684 out: 456 | ~33.3333%
+Debug, T0: Mesh 182 (ID29835) | Verts in: 756 out: 504 | ~33.3333%
+Debug, T0: Mesh 183 (ID29843) | Verts in: 684 out: 456 | ~33.3333%
+Debug, T0: Mesh 184 (ID29851) | Verts in: 756 out: 504 | ~33.3333%
+Debug, T0: Mesh 185 (ID29859) | Verts in: 756 out: 504 | ~33.3333%
+Debug, T0: Mesh 186 (ID29867) | Verts in: 684 out: 456 | ~33.3333%
+Debug, T0: Mesh 187 (ID29875) | Verts in: 756 out: 504 | ~33.3333%
+Debug, T0: Mesh 188 (ID29883) | Verts in: 684 out: 456 | ~33.3333%
+Debug, T0: Mesh 189 (ID29891) | Verts in: 684 out: 456 | ~33.3333%
+Debug, T0: Mesh 190 (ID29899) | Verts in: 756 out: 504 | ~33.3333%
+Debug, T0: Mesh 191 (ID29907) | Verts in: 816 out: 536 | ~34.3137%
+Debug, T0: Mesh 192 (ID29915) | Verts in: 756 out: 504 | ~33.3333%
+Debug, T0: Mesh 193 (ID29923) | Verts in: 684 out: 456 | ~33.3333%
+Debug, T0: Mesh 194 (ID29931) | Verts in: 756 out: 504 | ~33.3333%
+Debug, T0: Mesh 195 (ID29939) | Verts in: 684 out: 456 | ~33.3333%
+Debug, T0: Mesh 196 (ID29947) | Verts in: 756 out: 504 | ~33.3333%
+Debug, T0: Mesh 197 (ID29955) | Verts in: 684 out: 456 | ~33.3333%
+Debug, T0: Mesh 198 (ID29963) | Verts in: 756 out: 504 | ~33.3333%
+Debug, T0: Mesh 199 (ID29971) | Verts in: 756 out: 504 | ~33.3333%
+Debug, T0: Mesh 200 (ID29979) | Verts in: 684 out: 456 | ~33.3333%
+Debug, T0: Mesh 201 (ID29987) | Verts in: 756 out: 504 | ~33.3333%
+Debug, T0: Mesh 202 (ID29995) | Verts in: 684 out: 456 | ~33.3333%
+Debug, T0: Mesh 203 (ID30003) | Verts in: 684 out: 456 | ~33.3333%
+Debug, T0: Mesh 204 (ID30011) | Verts in: 756 out: 504 | ~33.3333%
+Debug, T0: Mesh 205 (ID30106) | Verts in: 240 out: 128 | ~46.6667%
+Debug, T0: Mesh 206 (ID30127) | Verts in: 96 out: 60 | ~37.5%
+Debug, T0: Mesh 207 (ID30137) | Verts in: 72 out: 48 | ~33.3333%
+Debug, T0: Mesh 208 (ID30147) | Verts in: 240 out: 128 | ~46.6667%
+Debug, T0: Mesh 209 (ID30161) | Verts in: 72 out: 48 | ~33.3333%
+Debug, T0: Mesh 210 (ID30171) | Verts in: 1626 out: 698 | ~57.0726%
+Debug, T0: Mesh 211 (ID30179) | Verts in: 222 out: 130 | ~41.4414%
+Debug, T0: Mesh 212 (ID30187) | Verts in: 84 out: 52 | ~38.0952%
+Debug, T0: Mesh 213 (ID30195) | Verts in: 96 out: 56 | ~41.6667%
+Debug, T0: Mesh 214 (ID30207) | Verts in: 1626 out: 698 | ~57.0726%
+Debug, T0: Mesh 215 (ID30215) | Verts in: 222 out: 130 | ~41.4414%
+Debug, T0: Mesh 216 (ID30223) | Verts in: 84 out: 52 | ~38.0952%
+Debug, T0: Mesh 217 (ID30231) | Verts in: 96 out: 56 | ~41.6667%
+Debug, T0: Mesh 218 (ID30243) | Verts in: 96 out: 60 | ~37.5%
+Debug, T0: Mesh 219 (unnamed) | Verts in: 21 out: 11 | ~47.619%
+Debug, T0: Mesh 220 (ID5) | Verts in: 228 out: 132 | ~42.1053%
+Debug, T0: Mesh 221 (ID34) | Verts in: 228 out: 132 | ~42.1053%
+Debug, T0: Mesh 222 (unnamed) | Verts in: 6180 out: 3556 | ~42.4595%
+Debug, T0: Mesh 223 (unnamed) | Verts in: 2880 out: 1500 | ~47.9167%
+Debug, T0: Mesh 224 (unnamed) | Verts in: 7020 out: 3400 | ~51.567%
+Debug, T0: Mesh 225 (unnamed) | Verts in: 1608 out: 792 | ~50.7463%
+Debug, T0: Mesh 226 (unnamed) | Verts in: 1560 out: 776 | ~50.2564%
+Debug, T0: Mesh 227 (ID2405) | Verts in: 1248 out: 620 | ~50.3205%
+Debug, T0: Mesh 228 (ID2427) | Verts in: 1104 out: 540 | ~51.087%
+Debug, T0: Mesh 229 (unnamed) | Verts in: 314064 out: 153576 | ~51.1004%
+Debug, T0: Mesh 230 (unnamed) | Verts in: 1560 out: 776 | ~50.2564%
+Debug, T0: Mesh 231 (unnamed) | Verts in: 1608 out: 792 | ~50.7463%
+Debug, T0: Mesh 232 (ID4414) | Verts in: 528 out: 276 | ~47.7273%
+Debug, T0: Mesh 233 (ID4429) | Verts in: 1248 out: 620 | ~50.3205%
+Debug, T0: Mesh 234 (ID4469) | Verts in: 168 out: 92 | ~45.2381%
+Debug, T0: Mesh 235 (unnamed) | Verts in: 2880 out: 1500 | ~47.9167%
+Debug, T0: Mesh 236 (unnamed) | Verts in: 7020 out: 3400 | ~51.567%
+Debug, T0: Mesh 237 (ID4618) | Verts in: 168 out: 92 | ~45.2381%
+Debug, T0: Mesh 238 (unnamed) | Verts in: 5244 out: 3036 | ~42.1053%
+Debug, T0: Mesh 239 (unnamed) | Verts in: 13056 out: 8016 | ~38.6029%
+Debug, T0: Mesh 240 (ID30042) | Verts in: 7308 out: 4412 | ~39.6278%
+Debug, T0: Mesh 241 (unnamed) | Verts in: 10092 out: 5342 | ~47.067%
+Debug, T0: Mesh 242 (unnamed) | Verts in: 51072 out: 32224 | ~36.9048%
+Debug, T0: Mesh 243 (unnamed) | Verts in: 660 out: 352 | ~46.6667%
+Debug, T0: Mesh 244 (unnamed) | Verts in: 528 out: 288 | ~45.4545%
+Debug, T0: Mesh 245 (unnamed) | Verts in: 660 out: 352 | ~46.6667%
+Debug, T0: Mesh 246 (ID30362) | Verts in: 36 out: 16 | ~55.5556%
+Debug, T0: Mesh 247 (ID30377) | Verts in: 72 out: 48 | ~33.3333%
+Debug, T0: Mesh 248 (ID30392) | Verts in: 36 out: 16 | ~55.5556%
+Debug, T0: Mesh 249 (ID30407) | Verts in: 12 out: 8 | ~33.3333%
+Debug, T0: Mesh 250 (ID30485) | Verts in: 4818 out: 1926 | ~60.0249%
+Debug, T0: Mesh 251 (unnamed) | Verts in: 37128 out: 14770 | ~60.2187%
+Debug, T0: Mesh 252 (unnamed) | Verts in: 157032 out: 76788 | ~51.1004%
+Debug, T0: Mesh 253 (ID31403) | Verts in: 336 out: 176 | ~47.619%
+Debug, T0: Mesh 254 (ID31418) | Verts in: 12 out: 8 | ~33.3333%
+Debug, T0: Mesh 255 (unnamed) | Verts in: 294 out: 150 | ~48.9796%
+Info,  T0: JoinVerticesProcess finished | Verts in: 879945 out: 435763 | ~50.5%
+Debug, T0: SplitLargeMeshesProcess_Vertex begin
+Debug, T0: SplitLargeMeshesProcess_Vertex finished. There was nothing to do
+Debug, T0: ImproveCacheLocalityProcess begin
+Debug, T0: Mesh 0 | ACMR in: 1.754522 out: 1.755814 | ~-0.1%
+Debug, T0: Mesh 1 | ACMR in: 1.600000 out: 1.587879 | ~0.8%
+Debug, T0: Mesh 2 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 3 | ACMR in: 1.218750 out: 1.160714 | ~4.8%
+Debug, T0: Mesh 4 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 5 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 6 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 7 | ACMR in: 1.768421 out: 1.747368 | ~1.2%
+Debug, T0: Mesh 8 | ACMR in: 1.627119 out: 1.610170 | ~1.0%
+Debug, T0: Mesh 9 | ACMR in: 1.165094 out: 1.122642 | ~3.6%
+Debug, T0: Mesh 10 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 11 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 12 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 13 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 14 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 15 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 16 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 17 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 18 | ACMR in: 1.205357 out: 1.165179 | ~3.3%
+Debug, T0: Mesh 19 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 20 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 21 | ACMR in: 1.768421 out: 1.747368 | ~1.2%
+Debug, T0: Mesh 22 | ACMR in: 1.627119 out: 1.610170 | ~1.0%
+Debug, T0: Mesh 23 | ACMR in: 1.162736 out: 1.113208 | ~4.3%
+Debug, T0: Mesh 24 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 25 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 26 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 27 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 28 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 29 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 30 | ACMR in: 1.218750 out: 1.160714 | ~4.8%
+Debug, T0: Mesh 31 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 32 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 33 | ACMR in: 1.627119 out: 1.610170 | ~1.0%
+Debug, T0: Mesh 34 | ACMR in: 1.768421 out: 1.747368 | ~1.2%
+Debug, T0: Mesh 35 | ACMR in: 1.162736 out: 1.113208 | ~4.3%
+Debug, T0: Mesh 36 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 37 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 38 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 39 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 40 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 41 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 42 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 43 | ACMR in: 1.166667 out: 1.092593 | ~6.3%
+Debug, T0: Mesh 44 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 45 | ACMR in: 1.531915 out: 1.531915 | ~0.0%
+Debug, T0: Mesh 46 | ACMR in: 1.531915 out: 1.531915 | ~0.0%
+Debug, T0: Mesh 47 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 48 | ACMR in: 1.600000 out: 1.587879 | ~0.8%
+Debug, T0: Mesh 49 | ACMR in: 1.209821 out: 1.156250 | ~4.4%
+Debug, T0: Mesh 50 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 51 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 52 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 53 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 54 | ACMR in: 1.209821 out: 1.165179 | ~3.7%
+Debug, T0: Mesh 55 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 56 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 57 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 58 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 59 | ACMR in: 1.218750 out: 1.160714 | ~4.8%
+Debug, T0: Mesh 60 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 61 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 62 | ACMR in: 1.754522 out: 1.755814 | ~-0.1%
+Debug, T0: Mesh 63 | ACMR in: 1.600000 out: 1.587879 | ~0.8%
+Debug, T0: Mesh 64 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 65 | ACMR in: 1.218750 out: 1.160714 | ~4.8%
+Debug, T0: Mesh 66 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 67 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 68 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 69 | ACMR in: 1.768421 out: 1.747368 | ~1.2%
+Debug, T0: Mesh 70 | ACMR in: 1.627119 out: 1.610170 | ~1.0%
+Debug, T0: Mesh 71 | ACMR in: 1.165094 out: 1.122642 | ~3.6%
+Debug, T0: Mesh 72 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 73 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 74 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 75 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 76 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 77 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 78 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 79 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 80 | ACMR in: 1.205357 out: 1.165179 | ~3.3%
+Debug, T0: Mesh 81 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 82 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 83 | ACMR in: 1.768421 out: 1.747368 | ~1.2%
+Debug, T0: Mesh 84 | ACMR in: 1.627119 out: 1.610170 | ~1.0%
+Debug, T0: Mesh 85 | ACMR in: 1.162736 out: 1.113208 | ~4.3%
+Debug, T0: Mesh 86 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 87 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 88 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 89 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 90 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 91 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 92 | ACMR in: 1.218750 out: 1.160714 | ~4.8%
+Debug, T0: Mesh 93 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 94 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 95 | ACMR in: 1.627119 out: 1.610170 | ~1.0%
+Debug, T0: Mesh 96 | ACMR in: 1.768421 out: 1.747368 | ~1.2%
+Debug, T0: Mesh 97 | ACMR in: 1.162736 out: 1.113208 | ~4.3%
+Debug, T0: Mesh 98 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 99 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 100 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 101 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 102 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 103 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 104 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 105 | ACMR in: 1.166667 out: 1.092593 | ~6.3%
+Debug, T0: Mesh 106 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 107 | ACMR in: 1.531915 out: 1.531915 | ~0.0%
+Debug, T0: Mesh 108 | ACMR in: 1.531915 out: 1.531915 | ~0.0%
+Debug, T0: Mesh 109 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 110 | ACMR in: 1.600000 out: 1.587879 | ~0.8%
+Debug, T0: Mesh 111 | ACMR in: 1.209821 out: 1.156250 | ~4.4%
+Debug, T0: Mesh 112 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 113 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 114 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 115 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 116 | ACMR in: 1.209821 out: 1.165179 | ~3.7%
+Debug, T0: Mesh 117 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 118 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 119 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 120 | ACMR in: 1.690141 out: 1.676056 | ~0.8%
+Debug, T0: Mesh 121 | ACMR in: 1.218750 out: 1.160714 | ~4.8%
+Debug, T0: Mesh 122 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 123 | ACMR in: 1.043478 out: 1.043478 | ~0.0%
+Debug, T0: Mesh 124 | ACMR in: 1.620000 out: 1.565000 | ~3.4%
+Debug, T0: Mesh 125 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 126 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 127 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 128 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 129 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 130 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 131 | ACMR in: 1.111111 out: 1.111111 | ~0.0%
+Debug, T0: Mesh 132 | ACMR in: 1.090909 out: 1.090909 | ~0.0%
+Debug, T0: Mesh 133 | ACMR in: 1.181818 out: 1.181818 | ~0.0%
+Debug, T0: Mesh 134 | ACMR in: 1.090909 out: 1.090909 | ~0.0%
+Debug, T0: Mesh 135 | ACMR in: 1.181818 out: 1.181818 | ~0.0%
+Debug, T0: Mesh 136 | ACMR in: 1.090909 out: 1.090909 | ~0.0%
+Debug, T0: Mesh 137 | ACMR in: 1.181818 out: 1.181818 | ~0.0%
+Debug, T0: Mesh 138 | ACMR in: 1.090909 out: 1.090909 | ~0.0%
+Debug, T0: Mesh 139 | ACMR in: 1.090909 out: 1.090909 | ~0.0%
+Debug, T0: Mesh 140 | ACMR in: 1.181818 out: 1.181818 | ~0.0%
+Debug, T0: Mesh 141 | ACMR in: 1.090909 out: 1.090909 | ~0.0%
+Debug, T0: Mesh 142 | ACMR in: 1.615000 out: 1.565000 | ~3.1%
+Debug, T0: Mesh 143 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 144 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 145 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 146 | ACMR in: 1.524272 out: 1.524272 | ~0.0%
+Warn,  T0: Mesh 147: Not suitable for vcache optimization
+Warn,  T0: Mesh 148: Not suitable for vcache optimization
+Debug, T0: Mesh 149 | ACMR in: 2.090909 out: 2.090909 | ~0.0%
+Debug, T0: Mesh 150 | ACMR in: 2.090909 out: 2.090909 | ~0.0%
+Debug, T0: Mesh 151 | ACMR in: 2.071429 out: 1.857143 | ~10.3%
+Debug, T0: Mesh 152 | ACMR in: 1.678715 out: 1.137885 | ~32.2%
+Debug, T0: Mesh 153 | ACMR in: 1.343333 out: 1.344167 | ~-0.1%
+Debug, T0: Mesh 154 | ACMR in: 1.678715 out: 1.137885 | ~32.2%
+Debug, T0: Mesh 155 | ACMR in: 1.340000 out: 1.340833 | ~-0.1%
+Debug, T0: Mesh 156 | ACMR in: 1.216500 out: 1.209000 | ~0.6%
+Debug, T0: Mesh 157 | ACMR in: 1.212500 out: 1.207000 | ~0.5%
+Debug, T0: Mesh 158 | ACMR in: 1.438979 out: 1.303861 | ~9.4%
+Debug, T0: Mesh 159 | ACMR in: 2.071429 out: 1.857143 | ~10.3%
+Debug, T0: Mesh 160 | ACMR in: 1.510870 out: 1.510870 | ~0.0%
+Debug, T0: Mesh 161 | ACMR in: 1.678715 out: 1.137885 | ~32.2%
+Debug, T0: Mesh 162 | ACMR in: 1.343333 out: 1.344167 | ~-0.1%
+Debug, T0: Mesh 163 | ACMR in: 1.678715 out: 1.137885 | ~32.2%
+Debug, T0: Mesh 164 | ACMR in: 1.340000 out: 1.340833 | ~-0.1%
+Debug, T0: Mesh 165 | ACMR in: 1.216500 out: 1.209000 | ~0.6%
+Debug, T0: Mesh 166 | ACMR in: 1.212500 out: 1.207000 | ~0.5%
+Debug, T0: Mesh 167 | ACMR in: 1.438979 out: 1.303861 | ~9.4%
+Debug, T0: Mesh 168 | ACMR in: 1.510870 out: 1.510870 | ~0.0%
+Debug, T0: Mesh 169 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 170 | ACMR in: 1.875000 out: 1.875000 | ~0.0%
+Debug, T0: Mesh 171 | ACMR in: 1.875000 out: 1.875000 | ~0.0%
+Debug, T0: Mesh 172 | ACMR in: 1.875000 out: 1.875000 | ~0.0%
+Debug, T0: Mesh 173 | ACMR in: 1.875000 out: 1.875000 | ~0.0%
+Debug, T0: Mesh 174 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 175 | ACMR in: 1.875000 out: 1.875000 | ~0.0%
+Debug, T0: Mesh 176 | ACMR in: 1.875000 out: 1.875000 | ~0.0%
+Debug, T0: Mesh 177 | ACMR in: 1.970588 out: 1.970588 | ~0.0%
+Debug, T0: Mesh 178 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 179 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 180 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 181 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 182 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 183 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 184 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 185 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 186 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 187 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 188 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 189 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 190 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 191 | ACMR in: 1.970588 out: 1.970588 | ~0.0%
+Debug, T0: Mesh 192 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 193 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 194 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 195 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 196 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 197 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 198 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 199 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 200 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 201 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 202 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 203 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 204 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 205 | ACMR in: 1.600000 out: 1.600000 | ~0.0%
+Debug, T0: Mesh 206 | ACMR in: 1.875000 out: 1.875000 | ~0.0%
+Debug, T0: Mesh 207 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 208 | ACMR in: 1.600000 out: 1.600000 | ~0.0%
+Debug, T0: Mesh 209 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 210 | ACMR in: 1.461255 out: 1.385609 | ~5.2%
+Debug, T0: Mesh 211 | ACMR in: 1.756757 out: 1.756757 | ~0.0%
+Debug, T0: Mesh 212 | ACMR in: 1.857143 out: 1.857143 | ~0.0%
+Debug, T0: Mesh 213 | ACMR in: 1.750000 out: 1.750000 | ~0.0%
+Debug, T0: Mesh 214 | ACMR in: 1.461255 out: 1.385609 | ~5.2%
+Debug, T0: Mesh 215 | ACMR in: 1.756757 out: 1.756757 | ~0.0%
+Debug, T0: Mesh 216 | ACMR in: 1.857143 out: 1.857143 | ~0.0%
+Debug, T0: Mesh 217 | ACMR in: 1.750000 out: 1.750000 | ~0.0%
+Debug, T0: Mesh 218 | ACMR in: 1.875000 out: 1.875000 | ~0.0%
+Debug, T0: Mesh 220 | ACMR in: 1.736842 out: 1.736842 | ~0.0%
+Debug, T0: Mesh 221 | ACMR in: 1.736842 out: 1.736842 | ~0.0%
+Debug, T0: Mesh 222 | ACMR in: 1.726214 out: 1.726214 | ~0.0%
+Debug, T0: Mesh 223 | ACMR in: 1.562500 out: 1.562500 | ~0.0%
+Debug, T0: Mesh 224 | ACMR in: 1.509829 out: 1.479487 | ~2.0%
+Debug, T0: Mesh 225 | ACMR in: 1.524254 out: 1.505597 | ~1.2%
+Debug, T0: Mesh 226 | ACMR in: 1.523077 out: 1.523077 | ~0.0%
+Debug, T0: Mesh 227 | ACMR in: 1.536058 out: 1.545673 | ~-0.6%
+Debug, T0: Mesh 228 | ACMR in: 1.559783 out: 1.543478 | ~1.0%
+Debug, T0: Mesh 229 | ACMR in: 1.534464 out: 1.510574 | ~1.6%
+Debug, T0: Mesh 230 | ACMR in: 1.523077 out: 1.523077 | ~0.0%
+Debug, T0: Mesh 231 | ACMR in: 1.524254 out: 1.505597 | ~1.2%
+Debug, T0: Mesh 232 | ACMR in: 1.613636 out: 1.590909 | ~1.4%
+Debug, T0: Mesh 233 | ACMR in: 1.536058 out: 1.545673 | ~-0.6%
+Debug, T0: Mesh 234 | ACMR in: 1.642857 out: 1.642857 | ~0.0%
+Debug, T0: Mesh 235 | ACMR in: 1.562500 out: 1.562500 | ~0.0%
+Debug, T0: Mesh 236 | ACMR in: 1.509829 out: 1.479487 | ~2.0%
+Debug, T0: Mesh 237 | ACMR in: 1.642857 out: 1.642857 | ~0.0%
+Debug, T0: Mesh 238 | ACMR in: 1.736842 out: 1.736842 | ~0.0%
+Debug, T0: Mesh 239 | ACMR in: 1.852941 out: 1.846507 | ~0.3%
+Debug, T0: Mesh 240 | ACMR in: 1.816502 out: 1.811987 | ~0.2%
+Debug, T0: Mesh 241 | ACMR in: 1.601962 out: 1.603448 | ~-0.1%
+Debug, T0: Mesh 242 | ACMR in: 1.897791 out: 1.900787 | ~-0.2%
+Debug, T0: Mesh 243 | ACMR in: 1.654545 out: 1.604545 | ~3.0%
+Debug, T0: Mesh 244 | ACMR in: 1.636364 out: 1.636364 | ~0.0%
+Debug, T0: Mesh 245 | ACMR in: 1.650000 out: 1.604545 | ~2.8%
+Debug, T0: Mesh 246 | ACMR in: 1.333333 out: 1.333333 | ~0.0%
+Debug, T0: Mesh 247 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
+Debug, T0: Mesh 248 | ACMR in: 1.333333 out: 1.333333 | ~0.0%
+Debug, T0: Mesh 250 | ACMR in: 1.438979 out: 1.303861 | ~9.4%
+Debug, T0: Mesh 251 | ACMR in: 1.463316 out: 1.200226 | ~18.0%
+Debug, T0: Mesh 252 | ACMR in: 1.534808 out: 1.510679 | ~1.6%
+Debug, T0: Mesh 253 | ACMR in: 1.598214 out: 1.571429 | ~1.7%
+Debug, T0: Mesh 255 | ACMR in: 1.724490 out: 1.540816 | ~10.7%
+Info,  T0: Cache relevant are 251 meshes (293272 faces). Average output ACMR is 1.515392
+Debug, T0: ImproveCacheLocalityProcess finished. 
+Info,  T0: Leaving post processing pipeline
