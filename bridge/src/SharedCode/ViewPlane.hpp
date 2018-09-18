@@ -29,6 +29,8 @@ public:
     ofParameter<float> pViewResolution {"Resolution", 200, 10, 1000};
     ofParameterGroup pg{ "View", pViewResolution };
     
+    ofVec3f windowTopLeft, windowBottomLeft, windowBottomRight;
+    
     ViewPlane(ofFbo::Settings & defaultFboSettings, ofShader & highlightShader, ofShader & tonemapShader, ofShader & fxaaShader, ofxAssimp3dPrimitive * viewNode, World & world)
     : defaultFboSettings(defaultFboSettings), highlightShader(highlightShader), tonemapShader(tonemapShader), fxaaShader(fxaaShader), viewNode(viewNode), world(world)
     {
@@ -39,7 +41,7 @@ public:
         cam.setScale(1,1,1);
         cam.setNearClip(0.1);
         cam.setFarClip(10000);
-        cam.setGlobalPosition(4.,2.0,-3.25);
+        cam.setPosition(ofVec3f(4.,2.0,-3.25));
 
     }
     
@@ -49,7 +51,6 @@ public:
         ofVec3f viewCornerMax;
         
         // PLANE
-        // TODO: Orient planes
 
         glm::vec2 planeSize;
         float rotationZ = 0.0;
@@ -62,12 +63,12 @@ public:
             planeSize.x = boundingBoxSize.y;
             planeSize.y = boundingBoxSize.z;
             rotationZ = 90.;
-            rotationX = 90.;
+            rotationX = -90.;
         } else if (boundingBoxSize.y == 0.0){
             planeSize.x = boundingBoxSize.x;
             planeSize.y = boundingBoxSize.z;
-            rotationZ = 180.;
-            rotationX = 90.;
+            rotationZ = -180.;
+            rotationX = -90.;
             translationX = -1.0;
         }
         
@@ -80,7 +81,8 @@ public:
         plane.truck(translationX*plane.getWidth()/2.0);
         plane.dolly(plane.getHeight()/2.0);
         plane.rotateDeg(rotationX, plane.getXAxis());
-
+        plane.rotateDeg(180, plane.getXAxis());
+        
         // FBO's
         
         auto viewFboSettings = defaultFboSettings;
@@ -114,8 +116,9 @@ public:
         
         // CAMERA
         
-        cam.lookAt(toOf(plane.getGlobalPosition()) * toOf(plane.getGlobalTransformMatrix()));
-        cam.setupPerspective();
+        //cam.lookAt(toOf(plane.getGlobalPosition()) * toOf(plane.getGlobalTransformMatrix()));
+
+        //cam.setupPerspective();
     }
     
     void begin(bool hdr = true, bool clear = true){
@@ -125,28 +128,30 @@ public:
         
         renderingHdr = hdr;
         
+        // TODO: Orient ViewPortal
+        
         float width = plane.getWidth();
         float height = plane.getHeight();
-        ofVec3f windowTopLeft(-width/2,
-                              height/2,
+        
+        
+        windowTopLeft.set(-width/2.,
+                              height/2.,
                               0.0);
-        //windowTopLeft = windowTopLeft * plane.getLocalTransformMatrix();
-        ofVec3f windowBottomLeft(-width/2,
-                                 -height/2,
+        windowTopLeft = windowTopLeft * plane.getGlobalTransformMatrix();
+        windowBottomLeft.set(-width/2.,
+                                 -height/2.,
                                  0.0f);
-        //windowBottomLeft = windowBottomLeft * plane.getLocalTransformMatrix();
-        ofVec3f  windowBottomRight(width/2,
-                                   height/2,
+        windowBottomLeft = windowBottomLeft * plane.getGlobalTransformMatrix();
+        windowBottomRight.set(width/2.,
+                                   -height/2.,
                                    0);
-        //windowBottomRight = windowBottomRight * plane.getLocalTransformMatrix();
+        windowBottomRight = windowBottomRight * plane.getGlobalTransformMatrix();
         
         // To setup off axis view portal we need to be in the plane's matrix. All window coordinates of the camera are relative to the plane.
-        plane.ofPlanePrimitive::transformGL();
         cam.setupOffAxisViewPortal(windowTopLeft , windowBottomLeft, windowBottomRight );
-        plane.ofPlanePrimitive::restoreTransformGL();
-        cam.setFarClip(10000);
-        cam.setNearClip(.1);
-        cam.setVFlip(false);
+        //cam.setFarClip(10000);
+        //cam.setNearClip(.1);
+        //cam.setVFlip(false);
         
         if(renderingHdr){
             hdrPass.begin();
@@ -196,9 +201,8 @@ public:
         ofPopView();
         ofPopStyle();
     }
-    
+        
     void draw(bool hdr = false, bool ldr = false){
-        plane.drawAxes(1.0);
         ofPushStyle();
         if(hdr && !ldr){
             hdrPass.getTexture().bind();
@@ -220,5 +224,32 @@ public:
         }
         ofPopStyle();
     }
+    
+    void drawCameraModel(){
+        ofPushStyle();
+        ofEnableDepthTest();
+        
+        ofPushMatrix();
+        
+        cam.transformGL();
+        
+        ofFill();
+        ofPushMatrix();
+        ofRotateXDeg(-90);
+        ofDrawCone(0,-.1,0, .1, .2);
+        ofPopMatrix();
+        
+        ofPushMatrix();
+        ofMultMatrix(toOf(cam.getProjectionMatrix()).getInverse());
+        ofNoFill();
+        ofDrawBox(2.0, 2.0, 2.0);
+        ofPopMatrix();
+        
+        cam.restoreTransformGL();
+        
+        ofPopMatrix();
+        ofPopStyle();
+    }
+
     
 };

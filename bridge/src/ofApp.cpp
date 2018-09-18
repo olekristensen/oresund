@@ -39,14 +39,9 @@ void ofApp::setup() {
     
     // MODELS
     
-    if(ofFile::doesFileExist("models/full.dae")) {
-        loadModel("models/full.dae");
-    }
-    /*
-    if(ofFile::doesFileExist("models/full.dae")) {
-        loadFullModel("models/full.dae");
-    }
-    */
+    loadNodeModel("models/nodes.dae"); //this needs to load first
+    loadRenderModel("models/nodes.dae");
+
     
     // FBOs
     
@@ -96,6 +91,8 @@ void ofApp::setup() {
             projector.second->pg.add(projector.second->pEnabled);
             projector.second->pg.add(projector.second->pTrackUserCamera);
             projector.second->pg.add(projector.second->pAnimateCamera);
+            projector.second->cam.setGlobalPosition(6.0,1.9, -2.0 );
+            projector.second->cam.lookAt(*world.primitives["room.views.front"]);
         }
         projector.second->pg.add(projector.second->pgCalibration);
         pgProjectors.add(projector.second->pg);
@@ -120,14 +117,29 @@ void ofApp::setup() {
     scene = bind(&ofApp::pbrRenderScene, this);
     pbr.setup(scene, cam, 1024*4);
     
-    materials.resize(rootPrimitive->textureNames.size());
+    materials.resize(renderPrimitive->textureNames.size());
     
     int materialIndex = 0;
     for (auto & material : materials){
-        cout << "Generating material for: " << rootPrimitive->textureNames[materialIndex] << endl;
+        string textureName = renderPrimitive->textureNames[materialIndex] ;
         material.baseColor.set(0.95, 1.0, 1.0);
         material.metallic = ofMap(materialIndex++, 0, materials.size(), 0.0, 1.0);
         material.roughness = 0.2;
+        if(ofIsStringInString(textureName, "truss")){
+            material.baseColor.set(0.01, 0.01, 0.01, 1.0);
+            material.metallic = 0.001;
+            material.roughness = 0.5;
+        }
+        if(ofIsStringInString(textureName, "pylon") || ofIsStringInString(textureName, "pier")){
+            material.baseColor.set(0.5, 0.5, 0.5, 1.0);
+            material.metallic = 0.0;
+            material.roughness = 0.9;
+        }
+        if(ofIsStringInString(textureName, "deck")){
+            material.baseColor.set(0.1, 0.1, 0.1, 1.0);
+            material.metallic = 0.0;
+            material.roughness = 1.0;
+        }
     }
     
     cubeMap.load("ofxPBRAssets/cubemaps/DH-AO-06.hdr", 1024, true, "ofxPBRAssets/cubemapCache");
@@ -218,6 +230,9 @@ void ofApp::setup() {
     style.Colors[ImGuiCol_TextSelectedBg]        = ImVec4(0.00f, 0.56f, 1.00f, 0.35f);
     style.Colors[ImGuiCol_ModalWindowDarkening]  = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
     
+    videoPlayer.setPixelFormat(OF_PIXELS_RGBA);
+    videoPlayer.load("videos/example_overlay_arup_alpha.mov");
+    
     load("default");
     
     // TIMELINE
@@ -257,6 +272,9 @@ void ofApp::startAnimation(){
 
 void ofApp::update() {
     
+    //VIDEO
+    videoPlayer.update();
+    
     // TIMELINE
     timeline.step(ofGetLastFrameTime());
     
@@ -266,28 +284,10 @@ void ofApp::update() {
     cubeMap.setRotation(pPbrEnvRotation);
     
     // MODELS
-    modelLoader.update();
+    renderModelLoader.update();
+    nodeModelLoader.update();
     if(world.primitives["view"] != nullptr){
         world.primitives["view"]->update();
-    }
-    
-    //PROJECTORS
-    for (auto projector : mProjectors){
-        if(projector.second->pEnabled){
-            projector.second->update(calibrationCornerMesh);
-            if(projector.first == "first person"){
-                projector.second->referencePoints.disableDrawEvent();
-                projector.second->referencePoints.disableControlEvents();
-                if(projector.second->pAnimateCamera){
-                    projector.second->cam.setGlobalPosition(3+(cos(ofGetElapsedTimef()*.5)*.5), 2, -2+sin(ofGetElapsedTimef()*.2));
-                    projector.second->cam.lookAt(mViewFront->plane.getGlobalPosition(), glm::vec3(0,1,0));
-                }
-                if(projector.second->pTrackUserCamera){
-                    mViewFront->cam.setGlobalPosition(projector.second->cam.getGlobalPosition());
-                    mViewSide->cam.setGlobalPosition(projector.second->cam.getGlobalPosition());
-                }
-            }
-        }
     }
     
     //SHADERS
@@ -306,25 +306,11 @@ void ofApp::pbrRenderScene() {
     glCullFace(GL_FRONT);
     pbr.beginDefaultRenderer();
     {
+
         ofSetColor(255,255);
-        
-        if(pbrRenderTextureIndexes->size() == 0){
-            for(auto textureMesh : world.textureMeshes){
-                materials[rootPrimitive->getTextureIndexFromName(textureMesh.first)].begin(&pbr);
-                textureMesh.second->draw();
-                materials[rootPrimitive->getTextureIndexFromName(textureMesh.first)].end();
-            }
-        } else {
-            for(auto textureIndex : *pbrRenderTextureIndexes){
-                materials[textureIndex].begin(&pbr);
-                world.textureMeshes[rootPrimitive->getTextureNameFromIndex(textureIndex)]->draw();
-                materials[textureIndex].end();
-            }
-        }
-        
-            // TO HEAVY...
-        //renderPrimitiveWithMaterialsRecursive(currentRenderPrimitive, materials, pbr);
+        renderPrimitiveWithMaterialsRecursive(currentRenderPrimitive, materials, pbr);
     }
+
     pbr.endDefaultRenderer();
     glDisable(GL_CULL_FACE);
     ofDisableDepthTest();
@@ -355,8 +341,7 @@ void ofApp::renderViews() {
 
     // HDR
     mViewSide->begin(true, true);{
-        
-        pbrRenderTextureIndexes = getTextureIndexesContainingString("view.");
+        currentRenderPrimitive = renderPrimitive;
         cam = &mViewSide->cam;
         pbr.setMainCamera(cam);
         pbr.setDrawEnvironment(true);
@@ -371,7 +356,7 @@ void ofApp::renderViews() {
 
     // HDR
     mViewFront->begin(true, true);{
-        pbrRenderTextureIndexes = getTextureIndexesContainingString("view.");
+        currentRenderPrimitive = renderPrimitive;
         cam = &mViewFront->cam;
         pbr.setMainCamera(cam);
         pbr.setDrawEnvironment(true);
@@ -391,10 +376,11 @@ void ofApp::renderViews() {
         ofDisableDepthTest();
         ofEnableAlphaBlending();
         ofFill();
-        ofTranslate(-mViewFront->plane.getWidth()/2., mViewFront->plane.getHeight()/2.0);
-        ofTranslate(0.1, -0.28);
+        ofTranslate(-mViewFront->plane.getWidth()/2.0, -mViewFront->plane.getHeight()/2.0);
         
+        /*
         ofPushMatrix();{
+            ofTranslate(0.1, -0.28);
             ofScale(0.10/fontHeader.getSize());
             
             ofSetColor(ofColor(pTextBodyColor.get()));
@@ -405,6 +391,12 @@ void ofApp::renderViews() {
             ofSetColor(ofColor(pTextHeaderColor.get()));
             fontHeader.drawString("Øresundsbroen", 0.0, 0.0);
         }ofPopMatrix();
+        */
+        
+        ofSetColor(ofColor(pTextBodyColor.get()));
+
+        videoPlayer.draw(0, 0, mViewFront->plane.getHeight()*videoPlayer.getWidth()*1.0/videoPlayer.getHeight(), mViewFront->plane.getHeight());
+        
         mViewFront->plane.restoreTransformGL();
         ofPopMatrix();
     }mViewFront->end();
@@ -419,6 +411,25 @@ void ofApp::draw() {
     ofEnableAlphaBlending();
     
     pbr.updateDepthMaps();
+    
+    //PROJECTORS NEED TO BE UPDATED IN DRAW
+    for (auto projector : mProjectors){
+        if(projector.second->pEnabled){
+            projector.second->update(calibrationCornerMesh);
+            if(projector.first == "first person"){
+                projector.second->referencePoints.disableDrawEvent();
+                projector.second->referencePoints.disableControlEvents();
+                if(projector.second->pAnimateCamera){
+                    projector.second->cam.setGlobalPosition(3+(cos(ofGetElapsedTimef()*.5)*.5), 2, -2+sin(ofGetElapsedTimef()*.2));
+                    projector.second->cam.lookAt(mViewFront->plane.getGlobalPosition(), glm::vec3(0,1,0));
+                }
+                if(projector.second->pTrackUserCamera){
+                    mViewFront->cam.setGlobalPosition(projector.second->cam.getGlobalPosition());
+                    mViewSide->cam.setGlobalPosition(projector.second->cam.getGlobalPosition());
+                }
+            }
+        }
+    }
     
     renderViews();
     
@@ -447,6 +458,9 @@ void ofApp::draw() {
                     if(projector.first == "front"){
                         world.primitives["room.truss"]->recursiveDraw();
                     }
+                    if(projector.first == "first person"){
+                        world.primitives["room.ceiling"]->recursiveDraw();
+                    }
                     ofPopStyle();
                     
                     if(projector.first == "front" || projector.first == "first person"){
@@ -456,6 +470,13 @@ void ofApp::draw() {
                         ofEnableDepthTest();
                         mViewFront->draw(true);
                         ofPopStyle();
+
+                        // PBR in space
+                        currentRenderPrimitive = world.primitives["room.pylon"];
+                        cam = &mViewFront->cam;
+                        pbr.setMainCamera(cam);
+                        pbr.setDrawEnvironment(false);
+                        pbr.renderScene();
                     }
                     if(projector.first == "side" || projector.first == "first person"){
                         // HDR view
@@ -469,7 +490,7 @@ void ofApp::draw() {
                         ofPushStyle();
                         ofEnableAlphaBlending();
                         ofEnableDepthTest();
-                        pbrRenderTextureIndexes = getTextureIndexesContainingString("0.4.0-room.truss");
+                        currentRenderPrimitive = world.primitives[(projector.first == "side" || !pPbrFullModelView)?"room.truss":"render"];
                         cam = &mViewFront->cam;
                         pbr.setMainCamera(cam);
                         pbr.setDrawEnvironment(false);
@@ -491,6 +512,10 @@ void ofApp::draw() {
                     glColorMask(false, false, false, false);
                     world.primitives["room.floor"]->recursiveDraw();
                     world.primitives["room.walls"]->recursiveDraw();
+                    world.primitives["room.truss"]->recursiveDraw();
+                    if(projector.first == "first person"){
+                        world.primitives["room.ceiling"]->recursiveDraw();
+                    }
                     glColorMask(true, true, true, true);
                     
                     ofPopStyle();
@@ -514,13 +539,39 @@ void ofApp::draw() {
                 
             }
             
-            if(projector.first == "first person" && !projector.second->pTrackUserCamera){
+            if((projector.first == "first person" && !projector.second->pTrackUserCamera) || (projector.first != "first person" && projector.second->pCalibrationEdit)){
                 projector.second->begin(false, false, false);
                 ofPushStyle();
                 ofEnableBlendMode(OF_BLENDMODE_ADD);
                 ofDisableDepthTest();
                 ofSetColor(255, 64);
-                mViewFront->cam.drawFrustum(ofRectangle(0,0,mViewFront->output.getWidth(), mViewFront->output.getHeight()));
+                mViewFront->drawCameraModel();
+                mViewSide->drawCameraModel();
+                
+                ofPushMatrix();
+                ofPushStyle();
+                ofDisableDepthTest();
+                ofSetColor(ofColor::red);
+                ofDrawSphere(mViewFront->windowTopLeft, 0.01);
+                ofSetColor(ofColor::green);
+                ofDrawSphere(mViewFront->windowBottomLeft, 0.01);
+                ofSetColor(ofColor::blue);
+                ofDrawSphere(mViewFront->windowBottomRight, 0.01);
+                ofPopStyle();
+                ofPopMatrix();
+
+                ofPushMatrix();
+                ofPushStyle();
+                ofDisableDepthTest();
+                ofSetColor(ofColor::red);
+                ofDrawSphere(mViewSide->windowTopLeft, 0.01);
+                ofSetColor(ofColor::green);
+                ofDrawSphere(mViewSide->windowBottomLeft, 0.01);
+                ofSetColor(ofColor::blue);
+                ofDrawSphere(mViewSide->windowBottomRight, 0.01);
+                ofPopStyle();
+                ofPopMatrix();
+
                 ofPopStyle();
                 projector.second->end();
             }
@@ -564,38 +615,71 @@ void ofApp::draw() {
     }
 }
 
-void ofApp::loadModel(string filename) {
+void ofApp::loadRenderModel(string filename) {
     
     ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_NOTICE);
     
-    modelLoader.loadModel(filename, true, false);
+    renderModelLoader.loadModel(filename, true, true);
     
     // rotate the model to match the ofMeshes we get later...
-    modelLoader.setRotation(0, 180, 0, 0, 1.0);
+    renderModelLoader.setRotation(0, 180, 0, 0, 1.0);
     
     // make sure to load to scale
-    modelLoader.setScaleNormalization(false);
-    modelLoader.calculateDimensions();
+    renderModelLoader.setScaleNormalization(false);
+    renderModelLoader.calculateDimensions();
     
-    rootPrimitive = modelLoader.getPrimitives();
-    rootPrimitive->setParent(world.origin);
+    renderPrimitive = renderModelLoader.getPrimitives();
+    renderPrimitive->setParent(world.origin);
     
-    world.primitives["root"] = rootPrimitive;
+    renderPrimitive->setGlobalPosition(world.offset.getPosition());
 
-    world.primitives["room.calibration"] = rootPrimitive->getFirstPrimitiveWithTextureNameContaining("room.calibration");
-    world.primitives["room"] = (ofxAssimp3dPrimitive*) world.primitives["room.calibration"]->getParent()->getParent()->getParent();
-    world.primitives["view"] = (ofxAssimp3dPrimitive*) rootPrimitive->getFirstPrimitiveWithTextureNameContaining("view.")->getParent()->getParent()->getParent();
+    world.primitives["render"] = renderPrimitive;
+
+    // get rid of room meshes by orphaning
+    for (auto textureName : renderPrimitive->textureNames){
+        if(ofIsStringInString(textureName, "-room")){
+            renderPrimitive->getFirstPrimitiveWithTextureNameContaining(textureName)->clearParent();
+        }
+    }
+}
+
+
+void ofApp::loadNodeModel(string filename) {
     
-    rootPrimitive->setGlobalPosition(-world.primitives["room.calibration"]->getGlobalPosition());
+    ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_NOTICE);
+
+    nodeModelLoader.loadModel(filename, true, false);
+    
+    // rotate the model to match the ofMeshes we get later...
+    nodeModelLoader.setRotation(0, 180, 0, 0, 1.0);
+    
+    // make sure to load to scale
+    nodeModelLoader.setScaleNormalization(false);
+    nodeModelLoader.calculateDimensions();
+    
+    nodePrimitive = nodeModelLoader.getPrimitives();
+    nodePrimitive->setParent(world.origin);
+    
+    world.primitives["root"] = nodePrimitive;
+    
+    world.primitives["room.calibration"] = nodePrimitive->getFirstPrimitiveWithTextureNameContaining("room.calibration");
+    world.primitives["room"] = (ofxAssimp3dPrimitive*) world.primitives["room.calibration"]->getParent()->getParent()->getParent();
+    
+    world.offset.setPosition(-world.primitives["room.calibration"]->getGlobalPosition());
+    
+    nodePrimitive->setGlobalPosition(world.offset.getPosition());
     
     world.primitives["room.walls"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.walls");
     world.primitives["room.floor"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.floor");
-    world.primitives["room.truss"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.truss");
+    world.primitives["room.ceiling"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.ceiling");
+    world.primitives["room.pylon"] = (ofxAssimp3dPrimitive*) world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.pylon.png")->getParent()->getParent()->getParent();
+    world.primitives["room.pylon.crossbrace"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.pylon.crossbrace");
+    world.primitives["room.truss"] = (ofxAssimp3dPrimitive*) world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.truss")->getParent()->getParent()->getParent();
     world.primitives["room.views.front"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.views.front");
     world.primitives["room.views.side"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.views.side");
     world.primitives["room.calibration"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.calibration");
-    vector<ofMesh> meshes = world.primitives["room.calibration"]->getBakedMeshesRecursive();
-
+    vector<ofMesh> calibrationMeshes = world.primitives["room.calibration"]->getBakedMeshesRecursive();
+    
     // get room primitive out of the view drawing tree
     auto roomPosition = world.primitives["room"]->getGlobalPosition();
     auto roomOrientation = world.primitives["room"]->getGlobalOrientation();
@@ -605,54 +689,14 @@ void ofApp::loadModel(string filename) {
     world.primitives["room"]->setScale(roomScale);
     world.primitives["room"]->setGlobalPosition(roomPosition);
     world.primitives["room"]->setGlobalOrientation(roomOrientation);
-
+    
     // get calibration pritive out of the drawing tree
     world.primitives["room.calibration"]->clearParent();
     
-    
-    dispatch_queue_t dispatchQueue = dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
-    dispatch_group_t dispatchGroup = dispatch_group_create();
-    dispatch_semaphore_t writeSemaphore = dispatch_semaphore_create(1);
-
-    // bake node meshes
-    cout << "baking node meshes" << endl;
-    for(auto p : world.primitives){
-        dispatch_group_async(dispatchGroup, dispatchQueue, ^{
-        auto meshes = p.second->getBakedMeshesRecursive();
-        shared_ptr<ofVboMesh> mergedMesh = make_shared<ofVboMesh>(joinMeshes(meshes));
-            dispatch_semaphore_wait(writeSemaphore, DISPATCH_TIME_FOREVER);
-            cout << "baked node mesh: \t" << p.first << endl;
-            world.meshes[p.first] = mergedMesh;
-            dispatch_semaphore_signal(writeSemaphore);
-        });
-    }
-    
-    // bake texture meshes
-    cout << "baking texture meshes" << endl;
-    for(auto t : rootPrimitive->textureNames){
-        dispatch_group_async(dispatchGroup, dispatchQueue, ^{
-        auto primitives = world.primitives["root"]->getPrimitivesWithTextureIndex(rootPrimitive->getTextureIndexFromName(t));
-        vector<ofMesh> texMeshes;
-        for(auto p : primitives){
-            auto pMeshes = p->getBakedMeshesRecursive();
-            texMeshes.push_back(joinMeshes(pMeshes));
-        }
-        shared_ptr<ofVboMesh> mergedTexMesh = make_shared<ofVboMesh>(joinMeshes(texMeshes));
-            dispatch_semaphore_wait(writeSemaphore, DISPATCH_TIME_FOREVER);
-            cout << "baked texture mesh: \t" << t << endl;
-        world.textureMeshes[t] = mergedTexMesh;
-            dispatch_semaphore_signal(writeSemaphore);
-
-        });
-    }
-
-    dispatch_wait(dispatchGroup, DISPATCH_TIME_FOREVER);
-    cout << "done" << endl;
-
     // bake calibration meshe
-    cout << "baking calibration meshe" << endl;
+    cout << "baking calibration mesh" << endl;
     calibrationMesh = ofVboMesh();
-    calibrationMesh = joinMeshes(meshes);
+    calibrationMesh = joinMeshes(calibrationMeshes);
     ofVec3f cornerMin, cornerMax;
     getBoundingBox(calibrationMesh, cornerMin, cornerMax);
     
@@ -661,8 +705,8 @@ void ofApp::loadModel(string filename) {
     // the wall of the bounding box, that point is a good control point
     
     calibrationCornerMesh = ofVboMesh();
-    for(int i = 0; i < meshes.size(); i++) {
-        ofMesh mergedMesh = mergeNearbyVertices(meshes[i], mergeTolerance);
+    for(int i = 0; i < calibrationMeshes.size(); i++) {
+        ofMesh mergedMesh = mergeNearbyVertices(calibrationMeshes[i], mergeTolerance);
         if(mergedMesh.getVertices().size() > cornerMinimum){
             vector<unsigned int> cornerIndices = getRankedCorners(mergedMesh);
             int n = cornerIndices.size() * cornerRatio;
@@ -677,29 +721,6 @@ void ofApp::loadModel(string filename) {
     calibrationCornerMesh = mergeNearbyVertices(calibrationCornerMesh, selectionMergeTolerance);
     calibrationCornerMesh.setMode(OF_PRIMITIVE_POINTS);
 }
-
-/*
-void ofApp::loadFullModel(string filename) {
-    
-    ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_NOTICE);
-    // load model, optimize and pretransform all vertices in the global space.
-    fullModel.loadModel(filename, false, false);
-    
-    // rotate the model to match the ofMeshes we get later...
-    fullModel.setRotation(0, 180, 0, 0, 1.0);
-    
-    // make sure to load to scale
-    fullModel.setScaleNormalization(false);
-    fullModel.calculateDimensions();
-    
-    world.primitives["model"] = fullModel.getPrimitives();
-    world.primitives["model"]->setParent(world.origin);
-    
-    currentRenderPrimitive = world.primitives["model"];
-    
-    
-}
-*/
 
 void ofApp::save(string name){
     ofJson j;
@@ -779,13 +800,23 @@ bool ofApp::imGui()
             
             ImGui::Separator();
             
-            if(ImGui::Button("Play")){
+            if(ImGui::Button("Play Timeline")){
                 startAnimation();
             }
-            ImGui::Separator();
+
+            ImGui::SameLine();
             
+            if(ImGui::Button("Play Video")){
+                videoPlayer.play();
+            }
+
+            ImGui::Separator();
+            /*
             bool guiShaderValid = shader.isValid;
             ImGui::Checkbox("Shader Valid", &guiShaderValid);
+            */
+            
+            
             
             ImGui::Separator();
             
