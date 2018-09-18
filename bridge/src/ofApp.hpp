@@ -116,8 +116,10 @@ public:
     ofParameter<float> pPbrEnvRotation{ "Environment Rotation", 0.0f, 0.0f, TWO_PI };
     ofParameter<float> pPbrExposure{ "Exposure", 1.0f, 0.0f, 20.0f };
     ofParameter<ofFloatColor> pPbrRoomColor{ "Room Color", ofFloatColor(0.,0.,0.,1.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
+    ofParameter<ofFloatColor> pPbrDirectionalLightColor{ "Directional Light Color", ofFloatColor(0.,0.,0.,0.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
+    ofParameter<ofFloatColor> pPbrSpotLightColor{ "Spot Light Color", ofFloatColor(0.,0.,0.,0.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
     ofParameter<bool> pPbrFullModelView { "Full model in first person", false};
-    ofParameterGroup pgPbr{ "PBR", pPbrEnvLevel, pPbrEnvExposure, pPbrEnvRotation, pPbrRoomColor, pPbrExposure, pPbrGamma, pPbrFullModelView};
+    ofParameterGroup pgPbr{ "PBR", pPbrEnvLevel, pPbrEnvExposure, pPbrEnvRotation, pPbrExposure, pPbrGamma, pPbrFullModelView, pPbrRoomColor, pPbrDirectionalLightColor, pPbrSpotLightColor};
 
     ofParameterGroup pgProjectors;
 
@@ -192,7 +194,7 @@ public:
     
     ofxPBRCubeMap cubeMap;
     vector<ofxPBRMaterial> materials;
-    ofxPBRLight pbrLight;
+    vector<ofxPBRLight> lights;
     ofxPBR pbr;
     ofxAssimp3dPrimitive * currentRenderPrimitive;
 

@@ -142,12 +142,29 @@ void ofApp::setup() {
         }
     }
     
-    cubeMap.load("ofxPBRAssets/cubemaps/DH-AO-06.hdr", 1024, true, "ofxPBRAssets/cubemapCache");
-    cubeMap.setEnvLevel(0.2);
+    cubeMap.load("ofxPBRAssets/cubemaps/DH-AO-12.hdr", 1024, true, "ofxPBRAssets/cubemapCache");
+    cubeMap.setEnvLevel(0.1);
     
     pbr.setCubeMap(&cubeMap);
     pbr.setDrawEnvironment(true);
     
+    lights.resize(2);
+    lights[0].setParent(world.origin);
+    lights[0].setLightType(LightType_Directional);
+    lights[0].setShadowType(ShadowType_None);
+    lights[0].setIntensity(1.0);
+
+    lights[1].setParent(world.origin);
+    lights[1].setLightType(LightType_Spot);
+    lights[1].setShadowType(ShadowType_None);
+    lights[1].setSpotLightDistance(100.0);
+    lights[1].setSpotLightGradient(0.75);
+    lights[1].setSpotLightCutoff(20.0);
+    lights[1].setIntensity(1.0);
+
+    pbr.addLight(&lights[0]);
+    pbr.addLight(&lights[1]);
+
     // FONTS
     
     fontHeader.load("fonts/OpenSans-Regular.ttf", 264, true, true, true);
@@ -231,7 +248,8 @@ void ofApp::setup() {
     style.Colors[ImGuiCol_ModalWindowDarkening]  = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
     
     videoPlayer.setPixelFormat(OF_PIXELS_RGBA);
-    videoPlayer.load("videos/example_overlay_arup_alpha.mov");
+    videoPlayer.load("videos/En bro mellem Danmark og Sverige_2.mov");
+    videoPlayer.setLoopState(OF_LOOP_NONE);
     
     load("default");
     
@@ -409,9 +427,7 @@ void ofApp::draw() {
     ofBackground(0);
     ofSetColor(255);
     ofEnableAlphaBlending();
-    
-    pbr.updateDepthMaps();
-    
+
     //PROJECTORS NEED TO BE UPDATED IN DRAW
     for (auto projector : mProjectors){
         if(projector.second->pEnabled){
@@ -430,6 +446,19 @@ void ofApp::draw() {
             }
         }
     }
+
+    // LGIHTS TOO
+    
+    lights[0].setColor(pPbrDirectionalLightColor);
+    lights[0].lookAt(mViewFront->plane.getGlobalPosition());
+    lights[0].setGlobalPosition(mViewFront->plane.getGlobalPosition() * 10);
+    
+    lights[1].setColor(pPbrSpotLightColor);
+    lights[1].lookAt(mViewFront->plane.getGlobalPosition()+glm::vec3(1.0,0.25,0.0));
+    lights[1].setGlobalPosition(mViewFront->cam.getGlobalPosition());
+
+    currentRenderPrimitive = renderPrimitive;
+    pbr.updateDepthMaps();
     
     renderViews();
     
