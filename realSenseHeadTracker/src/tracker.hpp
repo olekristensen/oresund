@@ -138,7 +138,7 @@ public:
     }
     
     void set( float radius, int resolution){
-        kalman.init(1/1000000000., 1/1000000.); // inverse of (smoothness, rapidness);
+        kalman.init(1/100000000., 1/10000000.); // inverse of (smoothness, rapidness);
         radiusSet = radius;
         ofIcoSpherePrimitive::set(radius, resolution);
         radiusSquared = radius*radius;
