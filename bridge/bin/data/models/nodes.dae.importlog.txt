@@ -62,13 +62,13 @@ Debug, T0: FindDegeneratesProcess begin
 Debug, T0: FindDegeneratesProcess finished
 Debug, T0: PretransformVerticesProcess begin
 Debug, T0: PretransformVerticesProcess finished
-Info,  T0: Removed 597 nodes and 0 animation channels (38 output nodes)
+Info,  T0: Removed 597 nodes and 0 animation channels (39 output nodes)
 Info,  T0: Kept 0 lights and 2 cameras
-Info,  T0: Moved 786 meshes to WCS (number of output meshes: 35)
+Info,  T0: Moved 789 meshes to WCS (number of output meshes: 36)
 Debug, T0: TriangulateProcess begin
 Debug, T0: TriangulateProcess finished. There was nothing to be done.
 Debug, T0: SortByPTypeProcess begin
-Info,  T0: Points: 0X, Lines: 10X, Triangles: 25, Polygons: 0 (Meshes, X = removed)
+Info,  T0: Points: 0X, Lines: 11X, Triangles: 25, Polygons: 0 (Meshes, X = removed)
 Debug, T0: SortByPTypeProcess finished
 Debug, T0: FindInvalidDataProcess begin
 Debug, T0: FindInvalidDataProcess finished. Everything seems to be OK.
@@ -98,7 +98,7 @@ Debug, T0: Mesh 11 (unnamed) | Verts in: 8412 out: 4952 | ~41.1317%
 Debug, T0: Mesh 12 (unnamed) | Verts in: 10620 out: 5618 | ~47.0998%
 Debug, T0: Mesh 13 (unnamed) | Verts in: 336 out: 184 | ~45.2381%
 Debug, T0: Mesh 14 (unnamed) | Verts in: 826656 out: 421888 | ~48.9645%
-Debug, T0: Mesh 15 (unnamed) | Verts in: 468 out: 296 | ~36.7521%
+Debug, T0: Mesh 15 (unnamed) | Verts in: 396 out: 264 | ~33.3333%
 Debug, T0: Mesh 16 (unnamed) | Verts in: 36 out: 16 | ~55.5556%
 Debug, T0: Mesh 17 (unnamed) | Verts in: 72 out: 48 | ~33.3333%
 Debug, T0: Mesh 18 (unnamed) | Verts in: 36 out: 16 | ~55.5556%
@@ -106,10 +106,10 @@ Debug, T0: Mesh 19 (unnamed) | Verts in: 12 out: 8 | ~33.3333%
 Debug, T0: Mesh 20 (unnamed) | Verts in: 46314 out: 18844 | ~59.3125%
 Debug, T0: Mesh 21 (unnamed) | Verts in: 336 out: 176 | ~47.619%
 Debug, T0: Mesh 22 (unnamed) | Verts in: 12 out: 8 | ~33.3333%
-Debug, T0: Mesh 23 (unnamed) | Verts in: 420 out: 158 | ~62.381%
+Debug, T0: Mesh 23 (unnamed) | Verts in: 276 out: 192 | ~30.4348%
 Debug, T0: Mesh 24 (unnamed) | Verts in: 7098 out: 2390 | ~66.3285%
 Debug, T0: Mesh 25 (unnamed) | Verts in: 11880 out: 6856 | ~42.2896%
-Info,  T0: JoinVerticesProcess finished | Verts in: 5639937 out: 2484939 | ~55.9%
+Info,  T0: JoinVerticesProcess finished | Verts in: 5639721 out: 2484941 | ~55.9%
 Debug, T0: SplitLargeMeshesProcess_Vertex begin
 Debug, T0: SplitLargeMeshesProcess_Vertex finished. There was nothing to do
 Debug, T0: ImproveCacheLocalityProcess begin
@@ -128,15 +128,15 @@ Debug, T0: Mesh 11 | ACMR in: 1.782810 out: 1.776747 | ~0.3%
 Debug, T0: Mesh 12 | ACMR in: 1.602542 out: 1.602825 | ~-0.0%
 Debug, T0: Mesh 13 | ACMR in: 1.642857 out: 1.642857 | ~0.0%
 Debug, T0: Mesh 14 | ACMR in: 1.620921 out: 1.558994 | ~3.8%
-Debug, T0: Mesh 15 | ACMR in: 1.948718 out: 1.897436 | ~2.6%
+Debug, T0: Mesh 15 | ACMR in: 2.060606 out: 2.000000 | ~2.9%
 Debug, T0: Mesh 16 | ACMR in: 1.333333 out: 1.333333 | ~0.0%
 Debug, T0: Mesh 17 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
 Debug, T0: Mesh 18 | ACMR in: 1.333333 out: 1.333333 | ~0.0%
 Debug, T0: Mesh 20 | ACMR in: 1.467094 out: 1.241029 | ~15.4%
 Debug, T0: Mesh 21 | ACMR in: 1.607143 out: 1.580357 | ~1.7%
-Debug, T0: Mesh 23 | ACMR in: 1.528571 out: 1.178571 | ~22.9%
+Debug, T0: Mesh 23 | ACMR in: 2.130435 out: 2.086957 | ~2.0%
 Debug, T0: Mesh 24 | ACMR in: 1.095520 out: 1.087067 | ~0.8%
 Debug, T0: Mesh 25 | ACMR in: 1.731313 out: 1.731313 | ~0.0%
-Info,  T0: Cache relevant are 24 meshes (1879971 faces). Average output ACMR is 1.342994
+Info,  T0: Cache relevant are 24 meshes (1879899 faces). Average output ACMR is 1.343042
 Debug, T0: ImproveCacheLocalityProcess finished. 
 Info,  T0: Leaving post processing pipeline

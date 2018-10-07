@@ -96,6 +96,7 @@ void ofApp::setup() {
             projector.second->cam.lookAt(*world.primitives["room.views.front"]);
         }
         projector.second->pg.add(projector.second->pgCalibration);
+        projector.second->pg.add(projector.second->mapamok.pg);
         pgProjectors.add(projector.second->pg);
         projector.second->load("calibrations/" + projector.first);
     }
@@ -196,12 +197,6 @@ void ofApp::setup() {
     fontBody.load("fonts/OpenSans-Light.ttf", 264, true, true, true);
     
     
-    // SCENES
-    
-    for( auto s : scenes) {
-        s->setupScene(&pgGlobal, &world, &scenes);
-    }
-    
     //GUI
     
     ofAddListener(ofGetWindowPtr()->events().keyPressed, this,
@@ -284,9 +279,7 @@ void ofApp::setup() {
     timelineFloatOutputs["envExposure"]().makeReferenceTo(pPbrEnvExposure);
     timelineFloatOutputs["envRotation"]().makeReferenceTo(pPbrEnvRotation);
     timelineFloatOutputs["pbrGamma"]().makeReferenceTo(pPbrGamma);
-    
-    timelineFloatColorOutputs["textHeaderColor"]().makeReferenceTo(pTextHeaderColor);
-    timelineFloatColorOutputs["textBodyColor"]().makeReferenceTo(pTextBodyColor);
+    timelineFloatColorOutputs["videoColor"]().makeReferenceTo(pVideoColor);
     
     
 }
@@ -308,7 +301,7 @@ void ofApp::startAnimation(){
     textHeaderColor.hold(10.0);
     textHeaderColor.then<RampTo>(ofFloatColor(1.,1.,1.,1.),20.f);
     */
-    auto textBodyColor = timeline.apply(&timelineFloatColorOutputs["textBodyColor"]);
+    auto textBodyColor = timeline.apply(&timelineFloatColorOutputs["videoColor"]);
     textBodyColor.set(ofFloatColor(1.,1.,1.,0.));
     textBodyColor.then<RampTo>(ofFloatColor(1.,1.,1.,1.), 20.f);
     //textBodyColor.cue( [] { videoPlayer.play(); }, 0.0f );
@@ -438,7 +431,7 @@ void ofApp::renderViews() {
         }ofPopMatrix();
         */
         
-        ofSetColor(ofColor(pTextBodyColor.get()));
+        ofSetColor(ofColor(pVideoColor.get()));
 
         videoPlayer.draw(0, 0, mViewFront->plane.getHeight()*videoPlayer.getWidth()*1.0/videoPlayer.getHeight(), mViewFront->plane.getHeight());
         
@@ -589,7 +582,7 @@ void ofApp::draw() {
                     
                     if(projector.first == "front" || projector.first == "first person"){
                         
-                        // TEXT
+                        // VIDEO
                         ofPushStyle();
                         ofEnableAlphaBlending();
                         ofEnableDepthTest();
@@ -905,10 +898,8 @@ bool ofApp::imGui()
             ofxImGui::AddGroup(mViewFront->pg, mainSettings);
 
             ofxImGui::AddGroup(mViewSide->pg, mainSettings);
-
-            ofxImGui::AddGroup(pgScenes, mainSettings);
             
-            ofxImGui::AddGroup(pgText, mainSettings);
+            ofxImGui::AddGroup(pgVideo, mainSettings);
             
             ofxImGui::EndWindow(mainSettings);
         }

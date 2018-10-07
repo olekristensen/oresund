@@ -76,7 +76,6 @@ public:
     {
         referencePoints.setClickRadius(5);
         referencePoints.setViewPort(viewPort);
-        pg.add(mapamok.pg);
         resizeFbos();
     }
     

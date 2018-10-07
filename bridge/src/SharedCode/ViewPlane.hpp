@@ -7,7 +7,7 @@
 //  Created by ole on 10/09/2018.
 //
 
-#import "Scene.hpp"
+#import "World.hpp"
 
 class ViewPlane {
 public:

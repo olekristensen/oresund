@@ -14,7 +14,7 @@
 #include "Projector.hpp"
 #include "ofAutoShader.hpp"
 #include "ofxPBR.h"
-#include "Scene.hpp"
+#include "World.hpp"
 #include "ViewPlane.hpp"
 #include "ofxChoreograph.h"
 
@@ -53,19 +53,6 @@ static const ImVec4 dark_sensor_bg = from_rgba(0x1b, 0x21, 0x25, 200);
 class ofApp : public ofBaseApp {
 public:
     
-    ofApp() {
-        
-        pgScenes.setName("Scenes");
-        
-        //scenes.push_back(make_shared<BoxSplit>());
-        
-        for( auto s : scenes) {
-            pgScenes.add(s->getParameters());
-        }
-        
-        pgGlobal.add(pgScenes);
-    }
-    
     void setup();
     void update();
     void extracted();
@@ -103,11 +90,6 @@ public:
     ofTrueTypeFont fontHeader;
     ofTrueTypeFont fontBody;
 
-    // SCENES
-    
-    vector<shared_ptr<Scene> > scenes;
-    ofParameterGroup pgScenes;
-
     // PARAMETERS
     
     ofParameter<float> pPbrGamma{ "Gamma", 2.2f, 0.0f, 5.0f };
@@ -124,11 +106,10 @@ public:
 
     ofParameterGroup pgProjectors;
 
-    ofParameter<ofFloatColor> pTextHeaderColor{ "Header Color", ofFloatColor(1.,1.,1.,1.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
-    ofParameter<ofFloatColor> pTextBodyColor{ "Body Color", ofFloatColor(1.,1.,1.,1.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
-    ofParameterGroup pgText{ "Text", pTextHeaderColor, pTextBodyColor };
+    ofParameter<ofFloatColor> pVideoColor{ "Color", ofFloatColor(1.,1.,1.,1.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
+    ofParameterGroup pgVideo{ "Video", pVideoColor };
     
-    ofParameterGroup pgGlobal{"Global", pgPbr, pgText};
+    ofParameterGroup pgGlobal{"Global", pgPbr, pgVideo};
 
     // TIMELINE
     ofxChoreograph::Timeline timeline;
