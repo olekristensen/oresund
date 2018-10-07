@@ -71,7 +71,7 @@ public:
     void extracted();
     
     void draw();
-    
+        
     void keyPressed(int key);
     void keycodePressed(ofKeyEventArgs& e);
     void windowResized(int w, int h);
@@ -119,7 +119,8 @@ public:
     ofParameter<ofFloatColor> pPbrDirectionalLightColor{ "Directional Light Color", ofFloatColor(0.,0.,0.,0.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
     ofParameter<ofFloatColor> pPbrSpotLightColor{ "Spot Light Color", ofFloatColor(0.,0.,0.,0.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
     ofParameter<bool> pPbrFullModelView { "Full model in first person", false};
-    ofParameterGroup pgPbr{ "PBR", pPbrEnvLevel, pPbrEnvExposure, pPbrEnvRotation, pPbrExposure, pPbrGamma, pPbrFullModelView, pPbrRoomColor, pPbrDirectionalLightColor, pPbrSpotLightColor};
+    ofParameterGroup pgPbrMaterials;
+    ofParameterGroup pgPbr{ "PBR", pPbrEnvLevel, pPbrEnvExposure, pPbrEnvRotation, pPbrExposure, pPbrGamma, pPbrFullModelView, pPbrRoomColor, pPbrDirectionalLightColor, pPbrSpotLightColor, pgPbrMaterials};
 
     ofParameterGroup pgProjectors;
 
@@ -156,7 +157,6 @@ public:
     ofVboMesh calibrationMesh, calibrationCornerMesh;
     
     // PROJECTORS
-    //glm::vec2 projectionResolution = {1280, 720};
     glm::vec2 projectionResolution = {1920, 1200};
     
     map<string, shared_ptr<Projector> > mProjectors;
@@ -204,7 +204,7 @@ public:
     
     ofFbo::Settings defaultFboSettings;
     
-    ofAutoShader shader, tonemap, fxaa;
+    ofAutoShader shader, videoShader, tonemap, fxaa;
     
     function<void()> scene;
     

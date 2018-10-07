@@ -35,13 +35,13 @@ public:
 		mouseStart = mouse;
 		cachePositions();
 	}
-	void mouseDragged(ofMouseEventArgs& mouse) {
-		ofVec2f offset = mouse - mouseStart;
-		for(set<unsigned int>::iterator itr = selected.begin(); itr != selected.end(); itr++) {
-			points[*itr].position = points[*itr].positionStart + offset;
+    void mouseDragged(ofMouseEventArgs& mouse) {
+        ofVec2f offset = mouse - mouseStart;
+        for(set<unsigned int>::iterator itr = selected.begin(); itr != selected.end(); itr++) {
+            points[*itr].position = points[*itr].positionStart + offset;
             dirty = true;
-		}
-	}
+        }
+    }
 	void mouseReleased(ofMouseEventArgs& mouse) {
 		cachePositions();
 	}
