@@ -107,9 +107,14 @@ public:
     ofParameterGroup pgProjectors;
 
     ofParameter<ofFloatColor> pVideoColor{ "Color", ofFloatColor(1.,1.,1.,1.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
-    ofParameterGroup pgVideo{ "Video", pVideoColor };
-    
-    ofParameterGroup pgGlobal{"Global", pgPbr, pgVideo};
+    ofParameter<bool> pVideoDrawTestChart{ "Test Chart", false};
+    ofParameter<glm::vec3> pVideoOrigin{ "Shader origin", glm::vec3(0.,0.,0.), glm::vec3(-100.,-100.,-100.), glm::vec3(100.,100.,100.)};
+    ofParameter<glm::vec2> pVideoOffset{ "Shader offset", glm::vec2(0.,0), glm::vec2(-1.,-1.), glm::vec2(1.,1.)};
+    ofParameterGroup pgVideo{ "Video", pVideoColor, pVideoDrawTestChart, pVideoOrigin, pVideoOffset };
+    ofParameter<glm::vec3> pHacksPylonOffset{ "Pylon offset", glm::vec3(0.,0.,0.), glm::vec3(-1.,-1.,-1.), glm::vec3(1.,1.,1.)};
+    ofParameterGroup pgHacks{ "Hacks", pHacksPylonOffset };
+
+    ofParameterGroup pgGlobal{"Global", pgPbr, pgVideo, pgHacks};
 
     // TIMELINE
     ofxChoreograph::Timeline timeline;
@@ -170,6 +175,7 @@ public:
     // VIDEO
     
     ofVideoPlayer videoPlayer;
+    ofImage videoTestChart;
     
     // PBR
     

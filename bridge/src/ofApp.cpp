@@ -129,7 +129,7 @@ void ofApp::setup() {
         ofParameterGroup pgMaterial;
         
         pgMaterial.setName(textureName);
-        pgPbrMaterials.add(pgMaterial);
+        //pgPbrMaterials.add(pgMaterial);
         /*
         pgMaterial.add(ofParameter<ofFloatColor>("Base Color", ofFloatColor(0.5,0.5,0.5,1.0), ofFloatColor(0.0,0.0,0.0,0.0), ofFloatColor(1.0,1.0,1.0,1.0)));
         */
@@ -271,6 +271,8 @@ void ofApp::setup() {
     videoPlayer.load("videos/default.mov");
     videoPlayer.setSpeed(0.25);
     videoPlayer.setLoopState(OF_LOOP_NONE);
+    
+    videoTestChart.load("images/hd test chart.png");
     
     load("default");
     
@@ -435,6 +437,10 @@ void ofApp::renderViews() {
 
         videoPlayer.draw(0, 0, mViewFront->plane.getHeight()*videoPlayer.getWidth()*1.0/videoPlayer.getHeight(), mViewFront->plane.getHeight());
         
+        if(pVideoDrawTestChart){
+            videoTestChart.draw(0,0, mViewFront->plane.getHeight()*videoTestChart.getWidth()*1.0/videoTestChart.getHeight(), mViewFront->plane.getHeight());
+        }
+        
         mViewFront->plane.restoreTransformGL();
         ofPopMatrix();
     }mViewFront->end();
@@ -574,7 +580,10 @@ void ofApp::draw() {
                         world.primitives["room.ceiling"]->recursiveDraw();
                     }
                     if(projector.first == "front"){
+                        ofPushMatrix();
+                        ofTranslate(pHacksPylonOffset);
                         world.primitives["room.pylon"]->recursiveDraw();
+                        ofPopMatrix();
                     }
                     glColorMask(true, true, true, true);
                     
@@ -591,13 +600,18 @@ void ofApp::draw() {
                         ofSetColor(255,255);
                         mViewFront->draw(false, true);
                         // UGLY HACK
+                        ofPushMatrix();
+                        ofTranslate(pHacksPylonOffset);
                         if(projector.first == "front") glClear(GL_DEPTH_BUFFER_BIT);
                         videoShader.begin();
                         videoShader.setUniformTexture("image", mViewFront->output.getTexture(), 0);
                         videoShader.setUniformMatrix4f("roomMatrix", world.primitives["room"]->getGlobalTransformMatrix());
+                        videoShader.setUniform4f("origin", glm::vec4(pVideoOrigin.get(),1.0));
                         videoShader.setUniform2f("videoDimensions", mViewFront->plane.getWidth(), mViewFront->plane.getHeight());
+                        videoShader.setUniform2f("videoOffset", pVideoOffset.get());
                         world.primitives["room.pylon"]->recursiveDraw();
                         videoShader.end();
+                        ofPopMatrix();
                         ofPopMatrix();
                         ofPopStyle();
                         
@@ -851,14 +865,6 @@ bool ofApp::imGui()
             ImGui::Columns(1);
             ImGui::Separator();
             
-            
-            //            ImGui::Checkbox("Fix principal point", &mapamok.bCV_CALIB_FIX_PRINCIPAL_POINT);
-            //            ImGui::Checkbox("Fix aspect ratio", &mapamok.bCV_CALIB_FIX_ASPECT_RATIO);
-            //            ImGui::Checkbox("Fix K1", &mapamok.bCV_CALIB_FIX_K1);
-            //            ImGui::Checkbox("Fix K2", &mapamok.bCV_CALIB_FIX_K2);
-            //            ImGui::Checkbox("Fix K3", &mapamok.bCV_CALIB_FIX_K3);
-            //            ImGui::Checkbox("Zero tangent dist", &mapamok.bCV_CALIB_ZERO_TANGENT_DIST);
-            
             if(ImGui::Button("Load")){
                 load("default");
             } ImGui::SameLine();
@@ -900,7 +906,9 @@ bool ofApp::imGui()
             ofxImGui::AddGroup(mViewSide->pg, mainSettings);
             
             ofxImGui::AddGroup(pgVideo, mainSettings);
-            
+
+            ofxImGui::AddGroup(pgHacks, mainSettings);
+
             ofxImGui::EndWindow(mainSettings);
         }
         
@@ -938,7 +946,7 @@ bool ofApp::imGui()
                 string uppercaseTitle = "";
                 std::transform(projector.first.begin(), projector.first.end(),uppercaseTitle.begin(), ::toupper);
                 
-                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6*6, 5));
+                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6*3, 5));
                 if(!mouseOverWindow) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 10.0);{
                     ImGui::PushFont(gui_font_header);
                     ImGui::TextUnformatted(uppercaseTitle.c_str());
@@ -960,6 +968,7 @@ bool ofApp::imGui()
                     
                     if(!mouseOverWindow) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.01);{
                         if(!p->pCalibrationEdit && mouseOverWindow) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, .25);{
+                            ImGui::PushItemWidth(60);
                             for (auto cvP : p->mapamok.pg){
                                 auto parameterBool = std::dynamic_pointer_cast<ofParameter<bool>>(cvP);
                                 if (parameterBool)
@@ -968,13 +977,16 @@ bool ofApp::imGui()
                                     ImGui::SameLine();
                                 }
                             }
+                            ImGui::PopItemWidth();
                             ofxImGui::AddParameter(p->pCalibrationDrawScales);
                             ImGui::SameLine();
-                            ImGui::PushItemWidth(200);
+                            ImGui::PushItemWidth(100);
                             ofxImGui::AddCombo(p->pCalibrationMeshDrawMode, p->CalibrationMeshDrawModeLabels);
                             ImGui::SameLine();
                             ofxImGui::AddCombo(p->pCalibrationMeshColorMode, p->CalibrationMeshColorModeLabels);
                             ImGui::SameLine();
+                            ImGui::PopItemWidth();
+                            ImGui::PushItemWidth(200);
                             ofxImGui::AddParameter(p->pCalibrationProjectorColor);
                             ImGui::SameLine();
                             vector<string> objectNames;

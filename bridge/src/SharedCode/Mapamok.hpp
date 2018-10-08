@@ -18,12 +18,12 @@ public:
     
     ofCamera cam;
     
-    ofParameter<bool> pCV_CALIB_FIX_PRINCIPAL_POINT {"Fix Principal Point", false};
-    ofParameter<bool> pCV_CALIB_FIX_ASPECT_RATIO {"Fix Aspect Ratio", true};
-    ofParameter<bool> pCV_CALIB_FIX_K1 {"Fix K1", true};
-    ofParameter<bool> pCV_CALIB_FIX_K2 {"Fix K2", true};
-    ofParameter<bool> pCV_CALIB_FIX_K3 {"Fix K3", true};
-    ofParameter<bool> pCV_CALIB_ZERO_TANGENT_DIST {"Zero Tangent Distance", false};
+    ofParameter<bool> pCV_CALIB_FIX_PRINCIPAL_POINT {"Principal", false};
+    ofParameter<bool> pCV_CALIB_FIX_ASPECT_RATIO {"Aspect", true};
+    ofParameter<bool> pCV_CALIB_FIX_K1 {"K1", true};
+    ofParameter<bool> pCV_CALIB_FIX_K2 {"K2", true};
+    ofParameter<bool> pCV_CALIB_FIX_K3 {"K3", true};
+    ofParameter<bool> pCV_CALIB_ZERO_TANGENT_DIST {"Zero", true};
     ofParameterGroup  pg {"Flags",
         pCV_CALIB_FIX_PRINCIPAL_POINT,
         pCV_CALIB_FIX_ASPECT_RATIO,
