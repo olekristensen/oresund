@@ -156,8 +156,8 @@ public:
     ofVboMesh calibrationMesh, calibrationCornerMesh;
     
     // PROJECTORS
-    //glm::vec2 projectionResolution = {1280, 720};
-    glm::vec2 projectionResolution = {1920, 1200};
+    glm::vec2 projectionResolution = {1280/2, 720/2};
+    //glm::vec2 projectionResolution = {1920, 1200};
     
     map<string, shared_ptr<Projector> > mProjectors;
     

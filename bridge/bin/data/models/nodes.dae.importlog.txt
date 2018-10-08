@@ -1,31 +1,86 @@
-Info,  T0: Load /Users/ole/Development/openFrameworks/apps/oresund/bridge/bin/data/models/nodes.dae
-Debug, T0: Assimp 4.0.144438630 amd64 gcc shared singlethreaded
+Info,  T0: Load /Users/ole/CloudStation/Development/openFrameworks/0.10.0/git/stable/apps/oresund/bridge/bin/data/models/nodes.dae
+Debug, T0: Assimp 4.0.216127495 amd64 gcc shared singlethreaded
 Info,  T0: Found a matching importer for this file format: Collada Importer.
-Info,  T0: Import root directory is '/Users/ole/Development/openFrameworks/apps/oresund/bridge/bin/data/models/'
+Info,  T0: Import root directory is '/Users/ole/CloudStation/Development/openFrameworks/0.10.0/git/stable/apps/oresund/bridge/bin/data/models/'
 Debug, T0: Collada schema version is 1.4.n
 Warn,  T0: Collada: Orthographic cameras are not supported.
+Skipping one or more lines with the same contents
 Debug, T0: ValidateDataStructureProcess begin
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6870 has only 0 UV channels
+Warn,  T0: Validation warning: Invalid UV index: 0 (key $tex.uvwsrc). Mesh 6874 has only 0 UV channels
 Debug, T0: ValidateDataStructureProcess end
 Info,  T0: Entering post processing pipeline
 Debug, T0: FlipUVsProcess begin
 Debug, T0: FlipUVsProcess finished
 Debug, T0: OptimizeGraphProcess begin
-Info,  T0: OptimizeGraphProcess finished; Input nodes: 2611, Output nodes: 1251
+Info,  T0: OptimizeGraphProcess finished; Input nodes: 2244, Output nodes: 1068
 Debug, T0: FindDegeneratesProcess begin
-Warn,  T0: Found 4 degenerated primitives
 Warn,  T0: Found 2 degenerated primitives
+Warn,  T0: Found 4 degenerated primitives
 Warn,  T0: Found 1 degenerated primitives
 Skipping one or more lines with the same contents
 Debug, T0: FindDegeneratesProcess finished
 Debug, T0: PretransformVerticesProcess begin
 Debug, T0: PretransformVerticesProcess finished
-Info,  T0: Removed 1252 nodes and 0 animation channels (38 output nodes)
-Info,  T0: Kept 0 lights and 1 cameras
-Info,  T0: Moved 7053 meshes to WCS (number of output meshes: 36)
+Info,  T0: Removed 1069 nodes and 0 animation channels (40 output nodes)
+Info,  T0: Kept 0 lights and 2 cameras
+Info,  T0: Moved 6950 meshes to WCS (number of output meshes: 37)
 Debug, T0: TriangulateProcess begin
 Debug, T0: TriangulateProcess finished. There was nothing to be done.
 Debug, T0: SortByPTypeProcess begin
-Info,  T0: Points: 1X, Lines: 8X, Triangles: 28, Polygons: 0 (Meshes, X = removed)
+Info,  T0: Points: 1X, Lines: 8X, Triangles: 29, Polygons: 0 (Meshes, X = removed)
 Debug, T0: SortByPTypeProcess finished
 Debug, T0: FindInvalidDataProcess begin
 Debug, T0: FindInvalidDataProcess finished. Everything seems to be OK.
@@ -43,17 +98,17 @@ Debug, T0: JoinVerticesProcess begin
 Debug, T0: Mesh 0 (unnamed) | Verts in: 2640 out: 1408 | ~46.6667%
 Debug, T0: Mesh 1 (unnamed) | Verts in: 1056 out: 576 | ~45.4545%
 Debug, T0: Mesh 2 (unnamed) | Verts in: 1341 out: 491 | ~63.3855%
-Debug, T0: Mesh 3 (unnamed) | Verts in: 404772 out: 260948 | ~35.5321%
-Debug, T0: Mesh 4 (unnamed) | Verts in: 7476 out: 7476 | ~0%
-Debug, T0: Mesh 5 (unnamed) | Verts in: 785952 out: 466968 | ~40.5857%
-Debug, T0: Mesh 6 (unnamed) | Verts in: 5760 out: 3000 | ~47.9167%
-Debug, T0: Mesh 7 (unnamed) | Verts in: 14040 out: 6800 | ~51.567%
-Debug, T0: Mesh 8 (unnamed) | Verts in: 1677840 out: 667840 | ~60.1964%
-Debug, T0: Mesh 9 (unnamed) | Verts in: 1677840 out: 667840 | ~60.1964%
-Debug, T0: Mesh 10 (unnamed) | Verts in: 6336 out: 3136 | ~50.505%
-Debug, T0: Mesh 11 (unnamed) | Verts in: 59904 out: 36672 | ~38.7821%
-Debug, T0: Mesh 12 (unnamed) | Verts in: 15552 out: 9246 | ~40.5478%
-Debug, T0: Mesh 13 (unnamed) | Verts in: 8412 out: 4952 | ~41.1317%
+Debug, T0: Mesh 3 (unnamed) | Verts in: 785952 out: 466968 | ~40.5857%
+Debug, T0: Mesh 4 (unnamed) | Verts in: 5760 out: 3000 | ~47.9167%
+Debug, T0: Mesh 5 (unnamed) | Verts in: 14040 out: 6800 | ~51.567%
+Debug, T0: Mesh 6 (unnamed) | Verts in: 1677840 out: 667840 | ~60.1964%
+Debug, T0: Mesh 7 (unnamed) | Verts in: 1677840 out: 667840 | ~60.1964%
+Debug, T0: Mesh 8 (unnamed) | Verts in: 6336 out: 3136 | ~50.505%
+Debug, T0: Mesh 9 (unnamed) | Verts in: 59904 out: 36672 | ~38.7821%
+Debug, T0: Mesh 10 (unnamed) | Verts in: 15552 out: 9246 | ~40.5478%
+Debug, T0: Mesh 11 (unnamed) | Verts in: 8412 out: 4952 | ~41.1317%
+Debug, T0: Mesh 12 (unnamed) | Verts in: 300168 out: 193512 | ~35.5321%
+Debug, T0: Mesh 13 (unnamed) | Verts in: 5544 out: 5544 | ~0%
 Debug, T0: Mesh 14 (unnamed) | Verts in: 19488 out: 9204 | ~52.7709%
 Debug, T0: Mesh 15 (unnamed) | Verts in: 1320 out: 704 | ~46.6667%
 Debug, T0: Mesh 16 (unnamed) | Verts in: 528 out: 288 | ~45.4545%
@@ -61,45 +116,47 @@ Debug, T0: Mesh 17 (unnamed) | Verts in: 36 out: 16 | ~55.5556%
 Debug, T0: Mesh 18 (unnamed) | Verts in: 72 out: 48 | ~33.3333%
 Debug, T0: Mesh 19 (unnamed) | Verts in: 36 out: 16 | ~55.5556%
 Debug, T0: Mesh 20 (unnamed) | Verts in: 12 out: 8 | ~33.3333%
-Debug, T0: Mesh 21 (unnamed) | Verts in: 198978 out: 93484 | ~53.0179%
+Debug, T0: Mesh 21 (unnamed) | Verts in: 46314 out: 18844 | ~59.3125%
 Debug, T0: Mesh 22 (unnamed) | Verts in: 336 out: 176 | ~47.619%
 Debug, T0: Mesh 23 (unnamed) | Verts in: 12 out: 8 | ~33.3333%
-Debug, T0: Mesh 24 (unnamed) | Verts in: 294 out: 150 | ~48.9796%
-Debug, T0: Mesh 25 (unnamed) | Verts in: 10620 out: 5618 | ~47.0998%
-Debug, T0: Mesh 26 (unnamed) | Verts in: 336 out: 184 | ~45.2381%
-Debug, T0: Mesh 27 (unnamed) | Verts in: 826656 out: 421888 | ~48.9645%
-Debug, T0: Mesh 28 (unnamed) | Verts in: 11880 out: 6856 | ~42.2896%
-Info,  T0: JoinVerticesProcess finished | Verts in: 5739525 out: 2676001 | ~53.4%
+Debug, T0: Mesh 24 (unnamed) | Verts in: 282 out: 134 | ~52.4823%
+Debug, T0: Mesh 25 (unnamed) | Verts in: 7098 out: 2390 | ~66.3285%
+Debug, T0: Mesh 26 (unnamed) | Verts in: 10620 out: 5618 | ~47.0998%
+Debug, T0: Mesh 27 (unnamed) | Verts in: 336 out: 184 | ~45.2381%
+Debug, T0: Mesh 28 (unnamed) | Verts in: 826656 out: 421888 | ~48.9645%
+Debug, T0: Mesh 29 (unnamed) | Verts in: 11880 out: 6856 | ~42.2896%
+Info,  T0: JoinVerticesProcess finished | Verts in: 5487411 out: 2534367 | ~53.8%
 Debug, T0: SplitLargeMeshesProcess_Vertex begin
 Debug, T0: SplitLargeMeshesProcess_Vertex finished. There was nothing to do
 Debug, T0: ImproveCacheLocalityProcess begin
 Debug, T0: Mesh 0 | ACMR in: 1.652273 out: 1.604545 | ~2.9%
 Debug, T0: Mesh 1 | ACMR in: 1.636364 out: 1.636364 | ~0.0%
 Debug, T0: Mesh 2 | ACMR in: 1.134228 out: 1.134228 | ~0.0%
-Debug, T0: Mesh 3 | ACMR in: 1.934037 out: 1.934037 | ~0.0%
-Warn,  T0: Mesh 4: Not suitable for vcache optimization
-Debug, T0: Mesh 5 | ACMR in: 1.811225 out: 1.799847 | ~0.6%
-Debug, T0: Mesh 6 | ACMR in: 1.562500 out: 1.562500 | ~0.0%
-Debug, T0: Mesh 7 | ACMR in: 1.509829 out: 1.479487 | ~2.0%
-Debug, T0: Mesh 8 | ACMR in: 1.460521 out: 1.212130 | ~17.0%
-Debug, T0: Mesh 9 | ACMR in: 1.460521 out: 1.212130 | ~17.0%
-Debug, T0: Mesh 10 | ACMR in: 1.523674 out: 1.514205 | ~0.6%
-Debug, T0: Mesh 11 | ACMR in: 1.840745 out: 1.843299 | ~-0.1%
-Debug, T0: Mesh 12 | ACMR in: 1.802083 out: 1.796489 | ~0.3%
-Debug, T0: Mesh 13 | ACMR in: 1.782810 out: 1.776747 | ~0.3%
+Debug, T0: Mesh 3 | ACMR in: 1.811225 out: 1.799847 | ~0.6%
+Debug, T0: Mesh 4 | ACMR in: 1.562500 out: 1.562500 | ~0.0%
+Debug, T0: Mesh 5 | ACMR in: 1.509829 out: 1.479487 | ~2.0%
+Debug, T0: Mesh 6 | ACMR in: 1.460163 out: 1.212273 | ~17.0%
+Debug, T0: Mesh 7 | ACMR in: 1.460163 out: 1.212273 | ~17.0%
+Debug, T0: Mesh 8 | ACMR in: 1.523674 out: 1.514205 | ~0.6%
+Debug, T0: Mesh 9 | ACMR in: 1.840745 out: 1.843299 | ~-0.1%
+Debug, T0: Mesh 10 | ACMR in: 1.802083 out: 1.796489 | ~0.3%
+Debug, T0: Mesh 11 | ACMR in: 1.782810 out: 1.776747 | ~0.3%
+Debug, T0: Mesh 12 | ACMR in: 1.934037 out: 1.934037 | ~0.0%
+Warn,  T0: Mesh 13: Not suitable for vcache optimization
 Debug, T0: Mesh 14 | ACMR in: 1.559113 out: 1.490456 | ~4.4%
 Debug, T0: Mesh 15 | ACMR in: 1.652273 out: 1.604545 | ~2.9%
 Debug, T0: Mesh 16 | ACMR in: 1.636364 out: 1.636364 | ~0.0%
 Debug, T0: Mesh 17 | ACMR in: 1.333333 out: 1.333333 | ~0.0%
 Debug, T0: Mesh 18 | ACMR in: 2.000000 out: 2.000000 | ~0.0%
 Debug, T0: Mesh 19 | ACMR in: 1.333333 out: 1.333333 | ~0.0%
-Debug, T0: Mesh 21 | ACMR in: 1.519148 out: 1.447743 | ~4.7%
-Debug, T0: Mesh 22 | ACMR in: 1.598214 out: 1.571429 | ~1.7%
-Debug, T0: Mesh 24 | ACMR in: 1.724490 out: 1.540816 | ~10.7%
-Debug, T0: Mesh 25 | ACMR in: 1.602542 out: 1.602825 | ~-0.0%
-Debug, T0: Mesh 26 | ACMR in: 1.642857 out: 1.642857 | ~0.0%
-Debug, T0: Mesh 27 | ACMR in: 1.620921 out: 1.558994 | ~3.8%
-Debug, T0: Mesh 28 | ACMR in: 1.731313 out: 1.731313 | ~0.0%
-Info,  T0: Cache relevant are 26 meshes (1910675 faces). Average output ACMR is 1.415438
+Debug, T0: Mesh 21 | ACMR in: 1.467094 out: 1.241029 | ~15.4%
+Debug, T0: Mesh 22 | ACMR in: 1.607143 out: 1.580357 | ~1.7%
+Debug, T0: Mesh 24 | ACMR in: 1.489362 out: 1.436170 | ~3.6%
+Debug, T0: Mesh 25 | ACMR in: 1.095520 out: 1.087067 | ~0.8%
+Debug, T0: Mesh 26 | ACMR in: 1.602542 out: 1.602825 | ~-0.0%
+Debug, T0: Mesh 27 | ACMR in: 1.642857 out: 1.642857 | ~0.0%
+Debug, T0: Mesh 28 | ACMR in: 1.620921 out: 1.558994 | ~3.8%
+Debug, T0: Mesh 29 | ACMR in: 1.731313 out: 1.731313 | ~0.0%
+Info,  T0: Cache relevant are 27 meshes (1827281 faces). Average output ACMR is 1.402553
 Debug, T0: ImproveCacheLocalityProcess finished. 
 Info,  T0: Leaving post processing pipeline

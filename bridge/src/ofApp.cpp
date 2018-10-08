@@ -140,9 +140,14 @@ void ofApp::setup() {
             material.metallic = 0.0;
             material.roughness = 1.0;
         }
+        if(ofIsStringInString(textureName, "landscape")){
+            material.baseColor.set(0.2, 0.2, 0.2, 1.0);
+            material.metallic = 0.0;
+            material.roughness = 1.0;
+        }
     }
     
-    cubeMap.load("ofxPBRAssets/cubemaps/DH-AO-12.hdr", 1024, true, "ofxPBRAssets/cubemapCache");
+    cubeMap.load("ofxPBRAssets/cubemaps/DH-AO-06.hdr", 1024, true, "ofxPBRAssets/cubemapCache");
     cubeMap.setEnvLevel(0.1);
     
     pbr.setCubeMap(&cubeMap);
@@ -162,8 +167,8 @@ void ofApp::setup() {
     lights[1].setSpotLightCutoff(20.0);
     lights[1].setIntensity(1.0);
 
-    pbr.addLight(&lights[0]);
-    pbr.addLight(&lights[1]);
+//    pbr.addLight(&lights[0]);
+//    pbr.addLight(&lights[1]);
 
     // FONTS
     
