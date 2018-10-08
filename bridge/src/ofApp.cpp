@@ -140,10 +140,10 @@ void ofApp::setup() {
         material.roughness = 0.2;
         if(ofIsStringInString(textureName, "truss")){
             material.baseColor.set(0.01, 0.01, 0.01, 1.0);
-            material.metallic = 0.003;
-            material.roughness = 0.5;
+            material.metallic = 0.01;
+            material.roughness = 0.3;
         }
-        if(ofIsStringInString(textureName, "pylon") || ofIsStringInString(textureName, "pier") || ofIsStringInString(textureName, "deck.road.png")){
+        if(ofIsStringInString(textureName, "pylon") || ofIsStringInString(textureName, "pier")){
             material.baseColor.set(0.5, 0.5, 0.5, 1.0);
             material.metallic = 0.0;
             material.roughness = 0.9;
@@ -153,13 +153,18 @@ void ofApp::setup() {
             material.metallic = 0.2;
             material.roughness = 1.0;
         }
+        if(ofIsStringInString(textureName, "deck.road")){
+            material.baseColor.set(0.5, 0.5, 0.5, 0.2);
+            material.metallic = 0.0;
+            material.roughness = 0.9;
+        }
         if(ofIsStringInString(textureName, "cable")){
             material.baseColor.set(0.1, 0.1, 0.1, 1.0);
             material.metallic = 0.0;
             material.roughness = 0.8;
         }
         if(ofIsStringInString(textureName, "road.cover")){
-            material.baseColor.set(0.15, 0.15, 0.15, 1.0);
+            material.baseColor.set(0.15, 0.15, 0.15, 0.0);
             material.metallic = 0.0;
             material.roughness = 1.0;
         }
@@ -168,7 +173,7 @@ void ofApp::setup() {
     string cubeMapCloudy = "ofxPBRAssets/cubemaps/DH-AO-12.hdr";
     string cubeMapNight = "ofxPBRAssets/cubemaps/DH-AO-06.hdr";
 
-    cubeMap.load(cubeMapCloudy, 1024, true, "ofxPBRAssets/cubemapCache");
+    cubeMap.load(cubeMapNight, 1024, true, "ofxPBRAssets/cubemapCache");
     cubeMap.setEnvLevel(0.1);
     
     pbr.setCubeMap(&cubeMap);
@@ -882,6 +887,13 @@ bool ofApp::imGui()
             
             if(ImGui::Button("Play Video")){
                 videoPlayer.play();
+            }
+
+            ImGui::SameLine();
+
+            if(ImGui::Button("Reload Video")){
+                videoPlayer.stop();
+                videoPlayer.load("videos/default.mov");
             }
 
             ImGui::Separator();
