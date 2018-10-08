@@ -17,7 +17,8 @@
 #include "World.hpp"
 #include "ViewPlane.hpp"
 #include "ofxChoreograph.h"
-
+#include "MeshTracker.hpp"
+#include <librealsense2/rs.hpp>
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
@@ -111,10 +112,25 @@ public:
     ofParameter<glm::vec3> pVideoOrigin{ "Shader origin", glm::vec3(0.,0.,0.), glm::vec3(-100.,-100.,-100.), glm::vec3(100.,100.,100.)};
     ofParameter<glm::vec2> pVideoOffset{ "Shader offset", glm::vec2(0.,0), glm::vec2(-1.,-1.), glm::vec2(1.,1.)};
     ofParameterGroup pgVideo{ "Video", pVideoColor, pVideoDrawTestChart, pVideoOrigin, pVideoOffset };
+
     ofParameter<glm::vec3> pHacksPylonOffset{ "Pylon offset", glm::vec3(0.,0.,0.), glm::vec3(-1.,-1.,-1.), glm::vec3(1.,1.,1.)};
     ofParameterGroup pgHacks{ "Hacks", pHacksPylonOffset };
 
-    ofParameterGroup pgGlobal{"Global", pgPbr, pgVideo, pgHacks};
+    ofParameter<bool> pTrackingEnabled{ "Enabled", false};
+    ofParameter<bool> pTrackingVisible{ "Visible", false};
+    ofParameter<float> pTrackingTimeout{ "Timeout", 30.0, 0.0, 5*60.0};
+    ofParameter<glm::vec3> pTrackingLookAt{ "Look at", glm::vec3(0.,0.,0.), glm::vec3(-10.,-10.,-10.), glm::vec3(10.,10.,10.)};
+    ofParameter<glm::vec3> pHeadPosition{ "Head Position", glm::vec3(0.,0.,0.), glm::vec3(-10.,-10.,-10.), glm::vec3(10.,10.,10.)};
+    ofParameter<glm::vec3> pTrackingCameraPosition{ "Tracking Camera Position", glm::vec3(0.,0.,0.), glm::vec3(-10.,-10.,-10.), glm::vec3(10.,10.,10.)};
+    ofParameter<glm::vec3> pTrackingCameraRotation{ "Tracking Camera Rotation", glm::vec3(0.,0.,0.), glm::vec3(-180.,-180.,-180.), glm::vec3(180.,180.,180.)};
+
+    ofParameter<glm::vec3> pTrackingBoxPosition{ "Tracking Box Position", glm::vec3(0.,0.,0.), glm::vec3(-10.,-10.,-10.), glm::vec3(10.,10.,10.)};
+    ofParameter<glm::vec3> pTrackingBoxRotation{ "Tracking Box Rotation", glm::vec3(0.,0.,0.), glm::vec3(-180.,-180.,-180.), glm::vec3(180.,180.,180.)};
+    ofParameter<glm::vec3> pTrackingBoxSize{ "Tracking Box Size", glm::vec3(1.,1.,1.), glm::vec3(0.,0.,0.), glm::vec3(10.,10.,10.)};
+
+    ofParameterGroup pgTracking{"Tracking", pTrackingEnabled, pTrackingVisible, pTrackingTimeout, pTrackingLookAt, pHeadPosition, pTrackingCameraPosition, pTrackingCameraRotation, pTrackingBoxPosition, pTrackingBoxRotation, pTrackingBoxSize};
+
+    ofParameterGroup pgGlobal{"Global", pgTracking, pgPbr, pgVideo, pgHacks};
 
     // TIMELINE
     ofxChoreograph::Timeline timeline;
@@ -207,5 +223,29 @@ public:
         return retVec;
     }
 
+    // TRACKING
+    
+    rs2::pipeline pipe;
+    rs2::device device;
+    rs2::pipeline_profile selection;
+    rs2::colorizer color_map;
+    rs2::frame colored_depth;
+    rs2::frame colored_filtered;
+    rs2_intrinsics intrinsics;
+    
+    rs2::decimation_filter dec_filter;
+    rs2::spatial_filter spat_filter;
+    rs2::temporal_filter temp_filter;
+    
+    rs2::points points;
+    rs2::pointcloud pc;
+    
+    ofVboMesh trackingMesh;
+    
+    ofBoxPrimitive trackingBox;
+    
+    ofCamera trackingCamera;
+    
+    MeshTracker tracker;
 
 };

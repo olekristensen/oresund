@@ -62,7 +62,7 @@ void ofApp::setup() {
     shader.bindDefaults();
     videoShader.loadAuto("shaders/videoshader");
     videoShader.bindDefaults();
-
+    
     // PROJECTORS
     
     mViewPort = ofRectangle(0, 0, projectionResolution.x, projectionResolution.y);
@@ -72,11 +72,11 @@ void ofApp::setup() {
     mProjectors.insert(make_pair("first person", mProjectorFirstPerson));
     
     mProjectorFront = make_shared<Projector>(ofRectangle(0, 0, projectionResolution.x, projectionResolution.y),
-                                            defaultFboSettings, shader, tonemap, fxaa);
+                                             defaultFboSettings, shader, tonemap, fxaa);
     mProjectors.insert(make_pair("front", mProjectorFront));
     
     mProjectorSide = make_shared<Projector>(ofRectangle(projectionResolution.x, 0, projectionResolution.x, projectionResolution.y),
-                                             defaultFboSettings, shader, tonemap, fxaa);
+                                            defaultFboSettings, shader, tonemap, fxaa);
     
     mProjectors.insert(make_pair("side", mProjectorSide));
     
@@ -107,12 +107,12 @@ void ofApp::setup() {
     
     mViewFront = make_shared<ViewPlane>(defaultFboSettings, shader, tonemap, fxaa, world.primitives["room.views.front"], world);
     mViewSide = make_shared<ViewPlane>(defaultFboSettings, shader, tonemap, fxaa, world.primitives["room.views.side"], world);
-
+    
     mViewFront->pg.setName("Front View");
     pgGlobal.add(mViewFront->pg);
     mViewSide->pg.setName("Side View");
     pgGlobal.add(mViewSide->pg);
-
+    
     //PBR
     
     cam = &mProjectorFront->cam;
@@ -131,8 +131,8 @@ void ofApp::setup() {
         pgMaterial.setName(textureName);
         //pgPbrMaterials.add(pgMaterial);
         /*
-        pgMaterial.add(ofParameter<ofFloatColor>("Base Color", ofFloatColor(0.5,0.5,0.5,1.0), ofFloatColor(0.0,0.0,0.0,0.0), ofFloatColor(1.0,1.0,1.0,1.0)));
-        */
+         pgMaterial.add(ofParameter<ofFloatColor>("Base Color", ofFloatColor(0.5,0.5,0.5,1.0), ofFloatColor(0.0,0.0,0.0,0.0), ofFloatColor(1.0,1.0,1.0,1.0)));
+         */
         
         ofLogNotice() << textureName;
         material.baseColor.set(0.95, 1.0, 1.0);
@@ -169,10 +169,10 @@ void ofApp::setup() {
             material.roughness = 1.0;
         }
     }
-
+    
     string cubeMapCloudy = "ofxPBRAssets/cubemaps/DH-AO-12.hdr";
     string cubeMapNight = "ofxPBRAssets/cubemaps/DH-AO-06.hdr";
-
+    
     cubeMap.load(cubeMapNight, 1024, true, "ofxPBRAssets/cubemapCache");
     cubeMap.setEnvLevel(0.1);
     
@@ -184,7 +184,7 @@ void ofApp::setup() {
     lights[0].setLightType(LightType_Directional);
     lights[0].setShadowType(ShadowType_None);
     lights[0].setIntensity(1.0);
-
+    
     lights[1].setParent(world.origin);
     lights[1].setLightType(LightType_Spot);
     lights[1].setShadowType(ShadowType_None);
@@ -192,10 +192,10 @@ void ofApp::setup() {
     lights[1].setSpotLightGradient(0.75);
     lights[1].setSpotLightCutoff(20.0);
     lights[1].setIntensity(1.0);
-
+    
     //pbr.addLight(&lights[0]);
     //pbr.addLight(&lights[1]);
-
+    
     // FONTS
     
     fontHeader.load("fonts/OpenSans-Regular.ttf", 264, true, true, true);
@@ -279,6 +279,73 @@ void ofApp::setup() {
     
     videoTestChart.load("images/hd test chart.png");
     
+    // TRACKING
+    
+    trackingMesh.setMode(OF_PRIMITIVE_POINTS);
+    rs2::config cfg;
+    cfg.enable_stream(RS2_STREAM_DEPTH, 848, 480, RS2_FORMAT_ANY, 60);
+    selection = pipe.start(cfg);
+    
+    // Find first depth sensor (devices can have zero or more then one)
+    auto depth_sensor = selection.get_device().first<rs2::depth_sensor>();
+    if (depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
+    {
+        depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f); // Enable emitter
+    }
+    if (depth_sensor.supports(RS2_OPTION_LASER_POWER))
+    {
+        // Query min and max values:
+        auto range = depth_sensor.get_option_range(RS2_OPTION_LASER_POWER);
+        depth_sensor.set_option(RS2_OPTION_LASER_POWER, range.max); // Set max power
+    }
+    
+    
+    auto scale =  depth_sensor.get_depth_scale();
+    
+    auto stream = pipe.get_active_profile().get_stream(RS2_STREAM_DEPTH);
+    if (auto video_stream = stream.as<rs2::video_stream_profile>())
+    {
+        try
+        {
+            //If the stream is indeed a video stream, we can now simply call get_intrinsics()
+            intrinsics = video_stream.get_intrinsics();
+            
+            auto principal_point = std::make_pair(intrinsics.ppx, intrinsics.ppy);
+            auto focal_length = std::make_pair(intrinsics.fx, intrinsics.fy);
+            rs2_distortion model = intrinsics.model;
+            
+            std::cout << "Principal Point         : " << principal_point.first << ", " << principal_point.second << std::endl;
+            std::cout << "Focal Length            : " << focal_length.first << ", " << focal_length.second << std::endl;
+            std::cout << "Distortion Model        : " << model << std::endl;
+            std::cout << "Distortion Coefficients : [" << intrinsics.coeffs[0] << "," << intrinsics.coeffs[1] << "," <<
+            intrinsics.coeffs[2] << "," << intrinsics.coeffs[3] << "," << intrinsics.coeffs[4] << "]" << std::endl;
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "Failed to get intrinsics for the given stream. " << e.what() << std::endl;
+        }
+    }
+    
+    dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, 2.0);
+    spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, 0.95f);
+    temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, 0.1f);
+    temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, 65.0f);
+    temp_filter.set_option(RS2_OPTION_HOLES_FILL, 7);
+    
+    tracker.set(4, 2, 4);
+    tracker.setGlobalPosition(0, 1, 0);
+    
+    trackingCamera.setParent(world.origin);
+    trackingCamera.setupPerspective();
+    trackingCamera.setAspectRatio(848.0/480.0);
+    trackingCamera.setFov(86.0);
+    trackingCamera.setNearClip(0.1);
+    trackingCamera.setFarClip(50.0);
+    tracker.setup(3, glm::vec3(1.95,1.0,-.85), trackingCamera, world.origin );
+    trackingBox.setParent(world.origin);
+    
+    // SETTINGS
+    
     load("default");
     
     // TIMELINE
@@ -298,16 +365,16 @@ void ofApp::startAnimation(){
     pbrGamma.then<RampTo>(2.2, 10., EaseOutQuad());
     
     /*auto envRotation = timeline.apply(&timelineFloatOutputs["envRotation"]);
-    envRotation.set(-.3);
-    envRotation.hold(5.0);
-    envRotation.then<RampTo>(.4, 10.f);
-    */
+     envRotation.set(-.3);
+     envRotation.hold(5.0);
+     envRotation.then<RampTo>(.4, 10.f);
+     */
     /*
-    auto textHeaderColor = timeline.apply(&timelineFloatColorOutputs["textHeaderColor"]);
-    textHeaderColor.set(ofFloatColor(1.,1.,1.,0.));
-    textHeaderColor.hold(10.0);
-    textHeaderColor.then<RampTo>(ofFloatColor(1.,1.,1.,1.),20.f);
-    */
+     auto textHeaderColor = timeline.apply(&timelineFloatColorOutputs["textHeaderColor"]);
+     textHeaderColor.set(ofFloatColor(1.,1.,1.,0.));
+     textHeaderColor.hold(10.0);
+     textHeaderColor.then<RampTo>(ofFloatColor(1.,1.,1.,1.),20.f);
+     */
     auto textBodyColor = timeline.apply(&timelineFloatColorOutputs["videoColor"]);
     textBodyColor.set(ofFloatColor(1.,1.,1.,0.));
     textBodyColor.then<RampTo>(ofFloatColor(1.,1.,1.,1.), 20.f);
@@ -342,6 +409,62 @@ void ofApp::update() {
     tonemap.setUniform1f("gamma", pPbrGamma);
     tonemap.end();
     
+    //TRACKER
+    trackingCamera.setPosition(pTrackingCameraPosition);
+    trackingCamera.setOrientation(pTrackingCameraRotation);
+    trackingBox.setPosition(pTrackingBoxPosition);
+    trackingBox.setOrientation(pTrackingBoxRotation);
+    trackingBox.set(pTrackingBoxSize.get().x, pTrackingBoxSize.get().y, pTrackingBoxSize.get().z);
+
+    
+    if(pTrackingEnabled){
+        // Get depth data from camera
+        auto frames = pipe.wait_for_frames();
+        auto depth = frames.get_depth_frame();
+        
+        rs2::frame filtered = depth;
+        // Note the concatenation of output/input frame to build up a chain
+        filtered = dec_filter.process(filtered);
+        filtered = spat_filter.process(filtered);
+        filtered = temp_filter.process(filtered);
+        
+        points = pc.calculate(filtered);
+        
+        // Create oF mesh
+        trackingMesh.clear();
+        int n = points.size();
+        if(n!=0){
+            const auto mat = trackingCamera.getGlobalTransformMatrix();
+            const rs2::vertex * vs = points.get_vertices();
+            for(int i=0; i<n; i++){
+                if(vs[i].z){
+                    const rs2::vertex v = vs[i];
+                    glm::vec3 v3(v.x,-v.y,-v.z);
+                    glm::vec4 cameraVec(v3, 1.0);
+                    glm::vec4 globalVec = mat * cameraVec;
+                    if(globalVec.z > -1.0){
+                    trackingMesh.addVertex(v3);
+                     int wasAdded = tracker.addVertex(v3);
+                     
+                     ofFloatColor c;
+                     if(wasAdded == 0){
+                     c = ofFloatColor::lightGray;
+                     } else if (wasAdded == 1){
+                     c = ofFloatColor::cyan;
+                     } else if (wasAdded == 2){
+                     c= ofFloatColor::green;
+                     } else if (wasAdded == 3){
+                     c = ofFloatColor::blueSteel;
+                     }
+                     
+                     trackingMesh.addColor(c);
+                    }
+                }
+            }
+            tracker.update();
+        }
+    }
+    
 }
 
 void ofApp::pbrRenderScene() {
@@ -351,11 +474,11 @@ void ofApp::pbrRenderScene() {
     glCullFace(GL_BACK);
     pbr.beginDefaultRenderer();
     {
-
+        
         ofSetColor(255,255);
         renderPrimitiveWithMaterialsRecursive(currentRenderPrimitive, materials, pbr);
     }
-
+    
     pbr.endDefaultRenderer();
     glDisable(GL_CULL_FACE);
     ofDisableDepthTest();
@@ -383,7 +506,7 @@ void ofApp::drawProjection(shared_ptr<Projector> & projector) {
 
 void ofApp::renderViews() {
     ofPushStyle();
-
+    
     // HDR
     mViewSide->begin(true, true);{
         currentRenderPrimitive = renderPrimitive;
@@ -391,14 +514,14 @@ void ofApp::renderViews() {
         pbr.setMainCamera(cam);
         pbr.setDrawEnvironment(true);
         pbr.renderScene();
-/*
-        ofPushStyle();
-        ofSetColor(255,255,0,127);
-        world.meshes["view"]->draw();
-        ofPopStyle();
- */
+        /*
+         ofPushStyle();
+         ofSetColor(255,255,0,127);
+         world.meshes["view"]->draw();
+         ofPopStyle();
+         */
     }mViewSide->end();
-
+    
     // HDR
     mViewFront->begin(true, true);{
         currentRenderPrimitive = renderPrimitive;
@@ -407,10 +530,10 @@ void ofApp::renderViews() {
         pbr.setDrawEnvironment(true);
         pbr.renderScene();
         /*
-        ofPushStyle();
-        ofSetColor(0,127,255,127);
-        world.meshes["view"]->draw();
-        ofPopStyle();
+         ofPushStyle();
+         ofSetColor(0,127,255,127);
+         world.meshes["view"]->draw();
+         ofPopStyle();
          */
     }mViewFront->end();
     
@@ -424,22 +547,22 @@ void ofApp::renderViews() {
         ofTranslate(-mViewFront->plane.getWidth()/2.0, -mViewFront->plane.getHeight()/2.0);
         
         /*
-        ofPushMatrix();{
-            ofTranslate(0.1, -0.28);
-            ofScale(0.10/fontHeader.getSize());
-            
-            ofSetColor(ofColor(pTextBodyColor.get()));
-            fontBody.drawString("The Oresund Bridge", 0.0, 0.0);
-            
-            ofTranslate(0, -fontHeader.getSize()*1.5);
-            
-            ofSetColor(ofColor(pTextHeaderColor.get()));
-            fontHeader.drawString("Øresundsbroen", 0.0, 0.0);
-        }ofPopMatrix();
-        */
+         ofPushMatrix();{
+         ofTranslate(0.1, -0.28);
+         ofScale(0.10/fontHeader.getSize());
+         
+         ofSetColor(ofColor(pTextBodyColor.get()));
+         fontBody.drawString("The Oresund Bridge", 0.0, 0.0);
+         
+         ofTranslate(0, -fontHeader.getSize()*1.5);
+         
+         ofSetColor(ofColor(pTextHeaderColor.get()));
+         fontHeader.drawString("Øresundsbroen", 0.0, 0.0);
+         }ofPopMatrix();
+         */
         
         ofSetColor(ofColor(pVideoColor.get()));
-
+        
         videoPlayer.draw(0, 0, mViewFront->plane.getHeight()*videoPlayer.getWidth()*1.0/videoPlayer.getHeight(), mViewFront->plane.getHeight());
         
         if(pVideoDrawTestChart){
@@ -458,7 +581,7 @@ void ofApp::draw() {
     ofBackground(0);
     ofSetColor(255);
     ofEnableAlphaBlending();
-
+    
     //PROJECTORS NEED TO BE UPDATED IN DRAW
     for (auto projector : mProjectors){
         if(projector.second->pEnabled){
@@ -477,21 +600,21 @@ void ofApp::draw() {
             }
         }
     }
-
+    
     // LGIHTS TOO
     
     /*
-    lights[0].setColor(pPbrDirectionalLightColor);
-    lights[0].lookAt(mViewFront->plane.getGlobalPosition());
-    lights[0].setGlobalPosition(mViewFront->plane.getGlobalPosition() * 10);
-    
-    lights[1].setColor(pPbrSpotLightColor);
-    lights[1].lookAt(mViewFront->plane.getGlobalPosition()+glm::vec3(1.0,0.25,0.0));
-    lights[1].setGlobalPosition(mViewFront->cam.getGlobalPosition());
-
-    currentRenderPrimitive = renderPrimitive;
-    pbr.updateDepthMaps();
-    */
+     lights[0].setColor(pPbrDirectionalLightColor);
+     lights[0].lookAt(mViewFront->plane.getGlobalPosition());
+     lights[0].setGlobalPosition(mViewFront->plane.getGlobalPosition() * 10);
+     
+     lights[1].setColor(pPbrSpotLightColor);
+     lights[1].lookAt(mViewFront->plane.getGlobalPosition()+glm::vec3(1.0,0.25,0.0));
+     lights[1].setGlobalPosition(mViewFront->cam.getGlobalPosition());
+     
+     currentRenderPrimitive = renderPrimitive;
+     pbr.updateDepthMaps();
+     */
     
     renderViews();
     
@@ -525,7 +648,7 @@ void ofApp::draw() {
                         world.primitives["room.views.front"]->recursiveDraw();
                     }
                     if(projector.first == "first person"){
-                        world.primitives["room.ceiling"]->recursiveDraw();
+                        //world.primitives["room.ceiling"]->recursiveDraw();
                     }
                     ofPopStyle();
                     
@@ -536,14 +659,14 @@ void ofApp::draw() {
                         ofEnableDepthTest();
                         mViewFront->draw(true);
                         ofPopStyle();
-
+                        
                         // PBR in space
-/*                        currentRenderPrimitive = world.primitives["room.pylon"];
-                        cam = &mViewFront->cam;
-                        pbr.setMainCamera(cam);
-                        pbr.setDrawEnvironment(false);
-                        pbr.renderScene();
-*/
+                        /*                        currentRenderPrimitive = world.primitives["room.pylon"];
+                         cam = &mViewFront->cam;
+                         pbr.setMainCamera(cam);
+                         pbr.setDrawEnvironment(false);
+                         pbr.renderScene();
+                         */
                         
                     }
                     if(projector.first == "side" || projector.first == "first person"){
@@ -582,7 +705,7 @@ void ofApp::draw() {
                     world.primitives["room.walls"]->recursiveDraw();
                     world.primitives["room.truss"]->recursiveDraw();
                     if(projector.first == "first person"){
-                        world.primitives["room.ceiling"]->recursiveDraw();
+                        //world.primitives["room.ceiling"]->recursiveDraw();
                     }
                     if(projector.first == "front"){
                         ofPushMatrix();
@@ -604,19 +727,21 @@ void ofApp::draw() {
                         ofTranslate(0.01, 0., 0.);
                         ofSetColor(255,255);
                         mViewFront->draw(false, true);
-                        // UGLY HACK
-                        ofPushMatrix();
-                        ofTranslate(pHacksPylonOffset);
-                        if(projector.first == "front") glClear(GL_DEPTH_BUFFER_BIT);
-                        videoShader.begin();
-                        videoShader.setUniformTexture("image", mViewFront->output.getTexture(), 0);
-                        videoShader.setUniformMatrix4f("roomMatrix", world.primitives["room"]->getGlobalTransformMatrix());
-                        videoShader.setUniform4f("origin", glm::vec4(pVideoOrigin.get(),1.0));
-                        videoShader.setUniform2f("videoDimensions", mViewFront->plane.getWidth(), mViewFront->plane.getHeight());
-                        videoShader.setUniform2f("videoOffset", pVideoOffset.get());
-                        world.primitives["room.pylon"]->recursiveDraw();
-                        videoShader.end();
-                        ofPopMatrix();
+                        if(projector.first == "front") {
+                            glClear(GL_DEPTH_BUFFER_BIT);
+                            // UGLY HACKS BEWARE
+                            ofPushMatrix();
+                            ofTranslate(pHacksPylonOffset);
+                            videoShader.begin();
+                            videoShader.setUniformTexture("image", mViewFront->output.getTexture(), 0);
+                            videoShader.setUniformMatrix4f("roomMatrix", world.primitives["room"]->getGlobalTransformMatrix());
+                            videoShader.setUniform4f("origin", glm::vec4(pVideoOrigin.get(),1.0));
+                            videoShader.setUniform2f("videoDimensions", mViewFront->plane.getWidth(), mViewFront->plane.getHeight());
+                            videoShader.setUniform2f("videoOffset", pVideoOffset.get());
+                            world.primitives["room.pylon"]->recursiveDraw();
+                            videoShader.end();
+                            ofPopMatrix();
+                        }
                         ofPopMatrix();
                         ofPopStyle();
                         
@@ -646,7 +771,7 @@ void ofApp::draw() {
                 ofDrawSphere(mViewFront->windowBottomRight, 0.01);
                 ofPopStyle();
                 ofPopMatrix();
-
+                
                 ofPushMatrix();
                 ofPushStyle();
                 ofDisableDepthTest();
@@ -658,7 +783,21 @@ void ofApp::draw() {
                 ofDrawSphere(mViewSide->windowBottomRight, 0.01);
                 ofPopStyle();
                 ofPopMatrix();
+                
+                if(projector.first == "first person" ){
+                    ofSetColor(255, 64);
+                    ofEnableDepthTest();
+                    trackingCamera.transformGL();
+                    ofDrawAxis(0.1);
+                    if(pTrackingVisible){
+                        trackingMesh.draw();
+                    }
+                    trackingCamera.restoreTransformGL();
+                    trackingCamera.drawFrustum();
+                    trackingBox.drawWireframe();
 
+                }
+                
                 ofPopStyle();
                 projector.second->end();
             }
@@ -719,9 +858,9 @@ void ofApp::loadRenderModel(string filename) {
     renderPrimitive->setParent(world.origin);
     
     renderPrimitive->setGlobalPosition(world.offset.getPosition());
-
+    
     world.primitives["render"] = renderPrimitive;
-
+    
     // get rid of room meshes by orphaning
     for (auto textureName : renderPrimitive->textureNames){
         if(ofIsStringInString(textureName, "-room")){
@@ -734,7 +873,7 @@ void ofApp::loadRenderModel(string filename) {
 void ofApp::loadNodeModel(string filename) {
     
     ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_NOTICE);
-
+    
     nodeModelLoader.loadModel(filename, true, false);
     
     // rotate the model to match the ofMeshes we get later...
@@ -882,25 +1021,25 @@ bool ofApp::imGui()
             if(ImGui::Button("Play Timeline")){
                 startAnimation();
             }
-
+            
             ImGui::SameLine();
             
             if(ImGui::Button("Play Video")){
                 videoPlayer.play();
             }
-
+            
             ImGui::SameLine();
-
+            
             if(ImGui::Button("Reload Video")){
                 videoPlayer.stop();
                 videoPlayer.load("videos/default.mov");
             }
-
+            
             ImGui::Separator();
             /*
-            bool guiShaderValid = shader.isValid;
-            ImGui::Checkbox("Shader Valid", &guiShaderValid);
-            */
+             bool guiShaderValid = shader.isValid;
+             ImGui::Checkbox("Shader Valid", &guiShaderValid);
+             */
             
             
             
@@ -911,16 +1050,18 @@ bool ofApp::imGui()
             if(guiShowTest)
                 ImGui::ShowTestWindow();
             
+            ofxImGui::AddGroup(pgTracking, mainSettings);
+            
             ofxImGui::AddGroup(pgPbr, mainSettings);
             
             ofxImGui::AddGroup(mViewFront->pg, mainSettings);
-
+            
             ofxImGui::AddGroup(mViewSide->pg, mainSettings);
             
             ofxImGui::AddGroup(pgVideo, mainSettings);
-
+            
             ofxImGui::AddGroup(pgHacks, mainSettings);
-
+            
             ofxImGui::EndWindow(mainSettings);
         }
         
