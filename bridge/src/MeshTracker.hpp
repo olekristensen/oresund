@@ -110,7 +110,7 @@ public:
             kalman.update(rawGlobalPosition+globalDirectionBias); // feed measurement
             auto gp = kalman.getEstimation();
             setGlobalPosition(gp);
-            auto newFloorP = glm::inverse(parent->getGlobalTransformMatrix()) * glm::vec4(gp.x, 0.0, gp.z, 1.0);
+            auto newFloorP = glm::inverse(getGlobalTransformMatrix()) * glm::vec4(gp.x, 0.0, gp.z, 1.0);
             localFloorPoint = glm::vec3(newFloorP) / newFloorP.w;
             radiusSquaredMax = 0.0;
             lastTimeTracking = now;
@@ -129,9 +129,11 @@ public:
                 radiusSquaredScale = radiusSquaredScaleReady;
                 setRadius(radiusSet);
                 auto gp = getGlobalPosition();
-                auto newFloorP = glm::inverse(parent->getGlobalTransformMatrix()) * glm::vec4(gp.x, 0.0, gp.z, 1.0);
+                auto newFloorP = glm::inverse(getGlobalTransformMatrix()) * glm::vec4(gp.x, 0.0, gp.z, 1.0);
                 localFloorPoint = glm::vec3(newFloorP) / newFloorP.w;
                 lastTimeTracking = now;
+            } else if(isReady()){
+                setGlobalPosition(startingPointNode.getGlobalPosition());
             }
         }
         

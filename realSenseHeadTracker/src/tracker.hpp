@@ -119,6 +119,7 @@ public:
             auto gp = getGlobalPosition();
             kalman.update(gp); // feed measurement
             if(isTracking()) radiusSquaredScale = radiusSquaredScaleTracking * 2.0;
+            if(isReady()) setGlobalPosition(startingPointNode.getGlobalPosition());
         }
         if(now - lastTimeTracking > ttl){
             if(isTracking()){

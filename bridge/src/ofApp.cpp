@@ -332,9 +332,6 @@ void ofApp::setup() {
     temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, 65.0f);
     temp_filter.set_option(RS2_OPTION_HOLES_FILL, 7);
     
-    tracker.set(4, 2, 4);
-    tracker.setGlobalPosition(0, 1, 0);
-    
     trackingCamera.setParent(world.origin);
     trackingCamera.setupPerspective();
     trackingCamera.setAspectRatio(848.0/480.0);
@@ -342,7 +339,6 @@ void ofApp::setup() {
     trackingCamera.setNearClip(0.1);
     trackingCamera.setFarClip(50.0);
     tracker.setup(3, glm::vec3(1.95,1.0,-.85), trackingCamera, world.origin );
-    trackingBox.setParent(world.origin);
     
     // SETTINGS
     
@@ -412,11 +408,14 @@ void ofApp::update() {
     //TRACKER
     trackingCamera.setPosition(pTrackingCameraPosition);
     trackingCamera.setOrientation(pTrackingCameraRotation);
-    trackingBox.setPosition(pTrackingBoxPosition);
-    trackingBox.setOrientation(pTrackingBoxRotation);
-    trackingBox.set(pTrackingBoxSize.get().x, pTrackingBoxSize.get().y, pTrackingBoxSize.get().z);
+    tracker.setPosition(pTrackingBoxPosition);
+    tracker.setOrientation(pTrackingBoxRotation);
+    tracker.set(pTrackingBoxSize.get().x, pTrackingBoxSize.get().y, pTrackingBoxSize.get().z);
+    tracker.startingPoint.setGlobalPosition(pTrackingStartPosition);
+    tracker.camera.setGlobalPosition(trackingCamera.getGlobalPosition());
+    tracker.camera.setGlobalOrientation(trackingCamera.getGlobalOrientation());
+    tracker.camera.setScale(trackingCamera.getScale());
 
-    
     if(pTrackingEnabled){
         // Get depth data from camera
         auto frames = pipe.wait_for_frames();
@@ -434,30 +433,39 @@ void ofApp::update() {
         trackingMesh.clear();
         int n = points.size();
         if(n!=0){
-            const auto mat = trackingCamera.getGlobalTransformMatrix();
+            const auto cameraGlobalMat = trackingCamera.getGlobalTransformMatrix();
+            const auto trackerInverse = glm::inverse(tracker.getGlobalTransformMatrix());
             const rs2::vertex * vs = points.get_vertices();
             for(int i=0; i<n; i++){
-                if(vs[i].z){
+                if(vs[i].z>0.5){ // save time on skipping the closest ones
                     const rs2::vertex v = vs[i];
                     glm::vec3 v3(v.x,-v.y,-v.z);
                     glm::vec4 cameraVec(v3, 1.0);
-                    glm::vec4 globalVec = mat * cameraVec;
-                    if(globalVec.z > -1.0){
-                    trackingMesh.addVertex(v3);
-                     int wasAdded = tracker.addVertex(v3);
-                     
-                     ofFloatColor c;
-                     if(wasAdded == 0){
-                     c = ofFloatColor::lightGray;
-                     } else if (wasAdded == 1){
-                     c = ofFloatColor::cyan;
-                     } else if (wasAdded == 2){
-                     c= ofFloatColor::green;
-                     } else if (wasAdded == 3){
-                     c = ofFloatColor::blueSteel;
-                     }
-                     
-                     trackingMesh.addColor(c);
+                    glm::vec4 globalVec = cameraGlobalMat * cameraVec;
+                    
+                    auto inversedVec = trackerInverse * globalVec;
+                    glm::vec3 trackerVec = glm::vec3(inversedVec) / inversedVec.w;
+                    
+                    if(fabs(trackerVec.x) < tracker.getWidth()/2.0 &&
+                       fabs(trackerVec.y) < tracker.getHeight()/2.0 &&
+                       fabs(trackerVec.z) < tracker.getDepth()/2.0){
+                        
+                        trackingMesh.addVertex(v3);
+                        
+                        int wasAdded = tracker.addVertex(v3);
+                        
+                        ofFloatColor c;
+                        if(wasAdded == 0){
+                            c = ofFloatColor::lightGray;
+                        } else if (wasAdded == 1){
+                            c = ofFloatColor::cyan;
+                        } else if (wasAdded == 2){
+                            c= ofFloatColor::green;
+                        } else if (wasAdded == 3){
+                            c = ofFloatColor::blueSteel;
+                        }
+                        
+                        trackingMesh.addColor(c);
                     }
                 }
             }
@@ -590,7 +598,10 @@ void ofApp::draw() {
         if(projector.first == "first person"){
             projector.second->referencePoints.disableDrawEvent();
             projector.second->referencePoints.disableControlEvents();
-            if(projector.second->pAnimateCamera){
+            if(pTrackingEnabled){
+                projector.second->cam.setGlobalPosition(tracker.heads.front().getGlobalPosition());
+                projector.second->cam.lookAt(mViewFront->plane.getGlobalPosition(), glm::vec3(0,1,0));
+            } else if(projector.second->pAnimateCamera){
                 projector.second->cam.setGlobalPosition(3+(cos(ofGetElapsedTimef()*.5)*.5), 2, -2+sin(ofGetElapsedTimef()*.2));
                 projector.second->cam.lookAt(mViewFront->plane.getGlobalPosition(), glm::vec3(0,1,0));
             }
@@ -600,6 +611,7 @@ void ofApp::draw() {
             }
         }
     }
+    
     
     // LGIHTS TOO
     
@@ -794,8 +806,8 @@ void ofApp::draw() {
                     }
                     trackingCamera.restoreTransformGL();
                     trackingCamera.drawFrustum();
-                    trackingBox.drawWireframe();
-
+                    tracker.draw();
+                    
                 }
                 
                 ofPopStyle();

@@ -128,7 +128,9 @@ public:
     ofParameter<glm::vec3> pTrackingBoxRotation{ "Tracking Box Rotation", glm::vec3(0.,0.,0.), glm::vec3(-180.,-180.,-180.), glm::vec3(180.,180.,180.)};
     ofParameter<glm::vec3> pTrackingBoxSize{ "Tracking Box Size", glm::vec3(1.,1.,1.), glm::vec3(0.,0.,0.), glm::vec3(10.,10.,10.)};
 
-    ofParameterGroup pgTracking{"Tracking", pTrackingEnabled, pTrackingVisible, pTrackingTimeout, pTrackingLookAt, pHeadPosition, pTrackingCameraPosition, pTrackingCameraRotation, pTrackingBoxPosition, pTrackingBoxRotation, pTrackingBoxSize};
+    ofParameter<glm::vec3> pTrackingStartPosition{ "Start Position", glm::vec3(0.,0.,0.), glm::vec3(-10.,-10.,-10.), glm::vec3(10.,10.,10.)};
+
+    ofParameterGroup pgTracking{"Tracking", pTrackingEnabled, pTrackingVisible, pTrackingTimeout, pTrackingLookAt, pHeadPosition, pTrackingCameraPosition, pTrackingCameraRotation, pTrackingBoxPosition, pTrackingBoxRotation, pTrackingBoxSize, pTrackingStartPosition};
 
     ofParameterGroup pgGlobal{"Global", pgTracking, pgPbr, pgVideo, pgHacks};
 
@@ -241,9 +243,7 @@ public:
     rs2::pointcloud pc;
     
     ofVboMesh trackingMesh;
-    
-    ofBoxPrimitive trackingBox;
-    
+        
     ofCamera trackingCamera;
     
     MeshTracker tracker;
