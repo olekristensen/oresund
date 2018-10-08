@@ -18,12 +18,20 @@ public:
     
     ofCamera cam;
     
-    bool bCV_CALIB_FIX_PRINCIPAL_POINT = false;
-    bool bCV_CALIB_FIX_ASPECT_RATIO = true;
-    bool bCV_CALIB_FIX_K1 = true;
-    bool bCV_CALIB_FIX_K2 = true;
-    bool bCV_CALIB_FIX_K3 = true;
-    bool bCV_CALIB_ZERO_TANGENT_DIST = false;
+    ofParameter<bool> pCV_CALIB_FIX_PRINCIPAL_POINT {"Principal", false};
+    ofParameter<bool> pCV_CALIB_FIX_ASPECT_RATIO {"Aspect", true};
+    ofParameter<bool> pCV_CALIB_FIX_K1 {"K1", true};
+    ofParameter<bool> pCV_CALIB_FIX_K2 {"K2", true};
+    ofParameter<bool> pCV_CALIB_FIX_K3 {"K3", true};
+    ofParameter<bool> pCV_CALIB_ZERO_TANGENT_DIST {"Zero", true};
+    ofParameterGroup  pg {"Flags",
+        pCV_CALIB_FIX_PRINCIPAL_POINT,
+        pCV_CALIB_FIX_ASPECT_RATIO,
+        pCV_CALIB_FIX_K1,
+        pCV_CALIB_FIX_K2,
+        pCV_CALIB_FIX_K3,
+        pCV_CALIB_ZERO_TANGENT_DIST
+    };
     
     void update(int width, int height, vector<ofVec2f>& imagePoints, vector<ofVec3f>& objectPoints) {
         int n = imagePoints.size();
@@ -51,12 +59,12 @@ public:
                                   0, 0, 1);
         int flags = CV_CALIB_USE_INTRINSIC_GUESS;
 
-        if (bCV_CALIB_FIX_PRINCIPAL_POINT) flags |= CV_CALIB_FIX_PRINCIPAL_POINT;
-        if (bCV_CALIB_FIX_ASPECT_RATIO) flags |= CV_CALIB_FIX_ASPECT_RATIO;
-        if (bCV_CALIB_FIX_K1) flags |= CV_CALIB_FIX_K1;
-        if (bCV_CALIB_FIX_K2) flags |= CV_CALIB_FIX_K2;
-        if (bCV_CALIB_FIX_K3) flags |= CV_CALIB_FIX_K3;
-        if (bCV_CALIB_ZERO_TANGENT_DIST) flags |= CV_CALIB_ZERO_TANGENT_DIST;
+        if (pCV_CALIB_FIX_PRINCIPAL_POINT) flags |= CV_CALIB_FIX_PRINCIPAL_POINT;
+        if (pCV_CALIB_FIX_ASPECT_RATIO) flags |= CV_CALIB_FIX_ASPECT_RATIO;
+        if (pCV_CALIB_FIX_K1) flags |= CV_CALIB_FIX_K1;
+        if (pCV_CALIB_FIX_K2) flags |= CV_CALIB_FIX_K2;
+        if (pCV_CALIB_FIX_K3) flags |= CV_CALIB_FIX_K3;
+        if (pCV_CALIB_ZERO_TANGENT_DIST) flags |= CV_CALIB_ZERO_TANGENT_DIST;
 
         calibrateCamera(objectPointsCv, imagePointsCv, imageSize, cameraMatrix, distCoeffs, rvecs, tvecs, flags);
         rvec = rvecs[0];

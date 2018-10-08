@@ -26,6 +26,7 @@ public:
     
     bool renderingHdr = false;
     bool forcingEasyCam = false;
+    bool inited = false;
     
     ofFbo::Settings & defaultFboSettings;
     
@@ -50,15 +51,23 @@ public:
     const vector<string> CalibrationMeshColorModeLabels = { "Projector", "Mesh" };
     
     ofParameter<bool> pCalibrationEdit {"Calibrate", true};
-    ofParameter<bool> pCalibrationDrawScales {"Draw Scales", true};
     ofParameter<int>  pCalibrationMeshDrawMode{ "Render Mode", static_cast<int>(CalibrationMeshDrawMode::Faces) };
     ofParameter<int>  pCalibrationMeshColorMode{ "Color Mode", static_cast<int>(CalibrationMeshColorMode::MeshColor) };
     ofParameter<ofFloatColor> pCalibrationProjectorColor{ "Projector color", ofFloatColor(1.0,1.0,1.0,1.0), ofFloatColor(0.0,0.0,0.0,0.0),ofFloatColor(1.0,1.0,1.0,1.0)};
+    ofParameter<bool>  pCalibrationDrawScales{ "Draw scales", true };
     ofParameter<int>  pCalibrationHighlightIndex{ "Highlight", 0, 0, 0 };
-    ofParameterGroup  pgCalibration{ "Calibration", pCalibrationEdit, pCalibrationDrawScales, pCalibrationMeshDrawMode, pCalibrationMeshColorMode,pCalibrationProjectorColor, pCalibrationHighlightIndex };
+    ofParameterGroup  pgCalibration{ "Calibration",
+        pCalibrationEdit,
+        pCalibrationDrawScales,
+        pCalibrationMeshDrawMode,
+        pCalibrationMeshColorMode,
+        pCalibrationProjectorColor,
+        pCalibrationHighlightIndex,
+    };
     ofParameter<bool> pAnimateCamera {"Animate Camera", false};
     ofParameter<bool> pTrackUserCamera {"Track User Camera", false};
     ofParameter<bool> pEnabled {"Enabled", true};
+
     ofParameterGroup pg;
     
     
@@ -67,7 +76,6 @@ public:
     {
         referencePoints.setClickRadius(5);
         referencePoints.setViewPort(viewPort);
-        
         resizeFbos();
     }
     
@@ -116,6 +124,8 @@ public:
             //referencePoints.disableDrawEvent();
         }
         
+        if(pCalibrationEdit || !inited){
+
         project(cornerMeshImage, cam, viewPort - viewPort.getPosition());
         
         if(cornerMesh.getNumVertices() != referencePoints.size()) {
@@ -146,7 +156,8 @@ public:
         }
         // should only calculate this when the points are updated
         mapamok.update(viewPort.width, viewPort.height, imagePoints, objectPoints);
-        
+            inited = true;
+        }
     }
     
     void project(ofMesh& mesh, const ofCamera& camera, ofRectangle viewport) {
@@ -333,7 +344,11 @@ public:
                     ofDrawLine(cur.position, cornerMeshImage.getVertex(i));
                     ofDrawCircle(cornerMeshImage.getVertex(i), 2);
                 }
-                
+                // mouse
+                ofSetColor(127,127);
+                ofDrawCircle(ofGetMouseX(), ofGetMouseY(), 4);
+                ofPopMatrix();
+
             } ofPopStyle();
             ofPopMatrix();
             ofPopView();
@@ -343,9 +358,8 @@ public:
             ofPushStyle();
             ofSetColor(255,255);
             referencePoints.draw(!calibrationReady());
-            
             ofPopStyle();
-            ofPopMatrix();
+            
             
             end();
         }

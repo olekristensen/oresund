@@ -14,7 +14,7 @@
 #include "Projector.hpp"
 #include "ofAutoShader.hpp"
 #include "ofxPBR.h"
-#include "Scene.hpp"
+#include "World.hpp"
 #include "ViewPlane.hpp"
 #include "ofxChoreograph.h"
 
@@ -53,25 +53,12 @@ static const ImVec4 dark_sensor_bg = from_rgba(0x1b, 0x21, 0x25, 200);
 class ofApp : public ofBaseApp {
 public:
     
-    ofApp() {
-        
-        pgScenes.setName("Scenes");
-        
-        //scenes.push_back(make_shared<BoxSplit>());
-        
-        for( auto s : scenes) {
-            pgScenes.add(s->getParameters());
-        }
-        
-        pgGlobal.add(pgScenes);
-    }
-    
     void setup();
     void update();
     void extracted();
     
     void draw();
-    
+        
     void keyPressed(int key);
     void keycodePressed(ofKeyEventArgs& e);
     void windowResized(int w, int h);
@@ -103,11 +90,6 @@ public:
     ofTrueTypeFont fontHeader;
     ofTrueTypeFont fontBody;
 
-    // SCENES
-    
-    vector<shared_ptr<Scene> > scenes;
-    ofParameterGroup pgScenes;
-
     // PARAMETERS
     
     ofParameter<float> pPbrGamma{ "Gamma", 2.2f, 0.0f, 5.0f };
@@ -119,15 +101,20 @@ public:
     ofParameter<ofFloatColor> pPbrDirectionalLightColor{ "Directional Light Color", ofFloatColor(0.,0.,0.,0.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
     ofParameter<ofFloatColor> pPbrSpotLightColor{ "Spot Light Color", ofFloatColor(0.,0.,0.,0.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
     ofParameter<bool> pPbrFullModelView { "Full model in first person", false};
-    ofParameterGroup pgPbr{ "PBR", pPbrEnvLevel, pPbrEnvExposure, pPbrEnvRotation, pPbrExposure, pPbrGamma, pPbrFullModelView, pPbrRoomColor, pPbrDirectionalLightColor, pPbrSpotLightColor};
+    ofParameterGroup pgPbrMaterials;
+    ofParameterGroup pgPbr{ "PBR", pPbrEnvLevel, pPbrEnvExposure, pPbrEnvRotation, pPbrExposure, pPbrGamma, pPbrFullModelView, pPbrRoomColor, pPbrDirectionalLightColor, pPbrSpotLightColor, pgPbrMaterials};
 
     ofParameterGroup pgProjectors;
 
-    ofParameter<ofFloatColor> pTextHeaderColor{ "Header Color", ofFloatColor(1.,1.,1.,1.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
-    ofParameter<ofFloatColor> pTextBodyColor{ "Body Color", ofFloatColor(1.,1.,1.,1.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
-    ofParameterGroup pgText{ "Text", pTextHeaderColor, pTextBodyColor };
-    
-    ofParameterGroup pgGlobal{"Global", pgPbr, pgText};
+    ofParameter<ofFloatColor> pVideoColor{ "Color", ofFloatColor(1.,1.,1.,1.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
+    ofParameter<bool> pVideoDrawTestChart{ "Test Chart", false};
+    ofParameter<glm::vec3> pVideoOrigin{ "Shader origin", glm::vec3(0.,0.,0.), glm::vec3(-100.,-100.,-100.), glm::vec3(100.,100.,100.)};
+    ofParameter<glm::vec2> pVideoOffset{ "Shader offset", glm::vec2(0.,0), glm::vec2(-1.,-1.), glm::vec2(1.,1.)};
+    ofParameterGroup pgVideo{ "Video", pVideoColor, pVideoDrawTestChart, pVideoOrigin, pVideoOffset };
+    ofParameter<glm::vec3> pHacksPylonOffset{ "Pylon offset", glm::vec3(0.,0.,0.), glm::vec3(-1.,-1.,-1.), glm::vec3(1.,1.,1.)};
+    ofParameterGroup pgHacks{ "Hacks", pHacksPylonOffset };
+
+    ofParameterGroup pgGlobal{"Global", pgPbr, pgVideo, pgHacks};
 
     // TIMELINE
     ofxChoreograph::Timeline timeline;
@@ -156,8 +143,7 @@ public:
     ofVboMesh calibrationMesh, calibrationCornerMesh;
     
     // PROJECTORS
-    glm::vec2 projectionResolution = {1280/2, 720/2};
-    //glm::vec2 projectionResolution = {1920, 1200};
+    glm::vec2 projectionResolution = {1920, 1200};
     
     map<string, shared_ptr<Projector> > mProjectors;
     
@@ -189,6 +175,7 @@ public:
     // VIDEO
     
     ofVideoPlayer videoPlayer;
+    ofImage videoTestChart;
     
     // PBR
     
@@ -204,7 +191,7 @@ public:
     
     ofFbo::Settings defaultFboSettings;
     
-    ofAutoShader shader, tonemap, fxaa;
+    ofAutoShader shader, videoShader, tonemap, fxaa;
     
     function<void()> scene;
     

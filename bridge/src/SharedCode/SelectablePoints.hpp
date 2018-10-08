@@ -46,9 +46,10 @@ public:
     
 	void mousePressed(ofMouseEventArgs& mouse) {
 		bool shift = ofGetKeyPressed(OF_KEY_SHIFT);
+        bool command = ofGetKeyPressed(OF_KEY_COMMAND);
 		bool hitAny = false;
         for(int i = 0; i < size(); i++) {
-            bool hit = points[i].isHit(mouse-mViewPort.getTopLeft(), clickRadiusSquared);
+            bool hit = points[i].isHit(mouse-mViewPort.getTopLeft(), clickRadiusSquared*(command?4.0:1.0));
 			if(hit && !hitAny) {
 				if(!points[i].selected) {
 					points[i].selected = true;

@@ -41,7 +41,6 @@ void ofApp::setup() {
     
     loadNodeModel("models/nodes.dae"); //this needs to load first
     loadRenderModel("models/nodes.dae");
-
     
     // FBOs
     
@@ -61,7 +60,9 @@ void ofApp::setup() {
     fxaa.loadAuto(shaderPath + "fxaa");
     shader.loadAuto("shaders/shader");
     shader.bindDefaults();
-    
+    videoShader.loadAuto("shaders/videoshader");
+    videoShader.bindDefaults();
+
     // PROJECTORS
     
     mViewPort = ofRectangle(0, 0, projectionResolution.x, projectionResolution.y);
@@ -95,6 +96,7 @@ void ofApp::setup() {
             projector.second->cam.lookAt(*world.primitives["room.views.front"]);
         }
         projector.second->pg.add(projector.second->pgCalibration);
+        projector.second->pg.add(projector.second->mapamok.pg);
         pgProjectors.add(projector.second->pg);
         projector.second->load("calibrations/" + projector.first);
     }
@@ -120,34 +122,53 @@ void ofApp::setup() {
     materials.resize(renderPrimitive->textureNames.size());
     
     int materialIndex = 0;
+    ofLogNotice() << "TEXTURE NAMES" ;
     for (auto & material : materials){
-        string textureName = renderPrimitive->textureNames[materialIndex] ;
+        
+        string textureName = ofSplitString(renderPrimitive->textureNames[materialIndex], "/").back();
+        ofParameterGroup pgMaterial;
+        
+        pgMaterial.setName(textureName);
+        //pgPbrMaterials.add(pgMaterial);
+        /*
+        pgMaterial.add(ofParameter<ofFloatColor>("Base Color", ofFloatColor(0.5,0.5,0.5,1.0), ofFloatColor(0.0,0.0,0.0,0.0), ofFloatColor(1.0,1.0,1.0,1.0)));
+        */
+        
+        ofLogNotice() << textureName;
         material.baseColor.set(0.95, 1.0, 1.0);
         material.metallic = ofMap(materialIndex++, 0, materials.size(), 0.0, 1.0);
         material.roughness = 0.2;
         if(ofIsStringInString(textureName, "truss")){
             material.baseColor.set(0.01, 0.01, 0.01, 1.0);
-            material.metallic = 0.001;
+            material.metallic = 0.003;
             material.roughness = 0.5;
         }
-        if(ofIsStringInString(textureName, "pylon") || ofIsStringInString(textureName, "pier")){
+        if(ofIsStringInString(textureName, "pylon") || ofIsStringInString(textureName, "pier") || ofIsStringInString(textureName, "deck.road.png")){
             material.baseColor.set(0.5, 0.5, 0.5, 1.0);
             material.metallic = 0.0;
             material.roughness = 0.9;
         }
         if(ofIsStringInString(textureName, "deck")){
             material.baseColor.set(0.1, 0.1, 0.1, 1.0);
-            material.metallic = 0.0;
+            material.metallic = 0.2;
             material.roughness = 1.0;
         }
-        if(ofIsStringInString(textureName, "landscape")){
-            material.baseColor.set(0.2, 0.2, 0.2, 1.0);
+        if(ofIsStringInString(textureName, "cable")){
+            material.baseColor.set(0.1, 0.1, 0.1, 1.0);
+            material.metallic = 0.0;
+            material.roughness = 0.8;
+        }
+        if(ofIsStringInString(textureName, "road.cover")){
+            material.baseColor.set(0.15, 0.15, 0.15, 1.0);
             material.metallic = 0.0;
             material.roughness = 1.0;
         }
     }
-    
-    cubeMap.load("ofxPBRAssets/cubemaps/DH-AO-06.hdr", 1024, true, "ofxPBRAssets/cubemapCache");
+
+    string cubeMapCloudy = "ofxPBRAssets/cubemaps/DH-AO-12.hdr";
+    string cubeMapNight = "ofxPBRAssets/cubemaps/DH-AO-06.hdr";
+
+    cubeMap.load(cubeMapCloudy, 1024, true, "ofxPBRAssets/cubemapCache");
     cubeMap.setEnvLevel(0.1);
     
     pbr.setCubeMap(&cubeMap);
@@ -167,20 +188,14 @@ void ofApp::setup() {
     lights[1].setSpotLightCutoff(20.0);
     lights[1].setIntensity(1.0);
 
-//    pbr.addLight(&lights[0]);
-//    pbr.addLight(&lights[1]);
+    //pbr.addLight(&lights[0]);
+    //pbr.addLight(&lights[1]);
 
     // FONTS
     
     fontHeader.load("fonts/OpenSans-Regular.ttf", 264, true, true, true);
     fontBody.load("fonts/OpenSans-Light.ttf", 264, true, true, true);
     
-    
-    // SCENES
-    
-    for( auto s : scenes) {
-        s->setupScene(&pgGlobal, &world, &scenes);
-    }
     
     //GUI
     
@@ -253,8 +268,11 @@ void ofApp::setup() {
     style.Colors[ImGuiCol_ModalWindowDarkening]  = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
     
     videoPlayer.setPixelFormat(OF_PIXELS_RGBA);
-    videoPlayer.load("videos/En bro mellem Danmark og Sverige_2.mov");
+    videoPlayer.load("videos/default.mov");
+    videoPlayer.setSpeed(0.25);
     videoPlayer.setLoopState(OF_LOOP_NONE);
+    
+    videoTestChart.load("images/hd test chart.png");
     
     load("default");
     
@@ -263,9 +281,7 @@ void ofApp::setup() {
     timelineFloatOutputs["envExposure"]().makeReferenceTo(pPbrEnvExposure);
     timelineFloatOutputs["envRotation"]().makeReferenceTo(pPbrEnvRotation);
     timelineFloatOutputs["pbrGamma"]().makeReferenceTo(pPbrGamma);
-    
-    timelineFloatColorOutputs["textHeaderColor"]().makeReferenceTo(pTextHeaderColor);
-    timelineFloatColorOutputs["textBodyColor"]().makeReferenceTo(pTextBodyColor);
+    timelineFloatColorOutputs["videoColor"]().makeReferenceTo(pVideoColor);
     
     
 }
@@ -276,20 +292,21 @@ void ofApp::startAnimation(){
     pbrGamma.hold(5.0);
     pbrGamma.then<RampTo>(2.2, 10., EaseOutQuad());
     
-    auto envRotation = timeline.apply(&timelineFloatOutputs["envRotation"]);
+    /*auto envRotation = timeline.apply(&timelineFloatOutputs["envRotation"]);
     envRotation.set(-.3);
     envRotation.hold(5.0);
     envRotation.then<RampTo>(.4, 10.f);
-    
+    */
+    /*
     auto textHeaderColor = timeline.apply(&timelineFloatColorOutputs["textHeaderColor"]);
     textHeaderColor.set(ofFloatColor(1.,1.,1.,0.));
     textHeaderColor.hold(10.0);
     textHeaderColor.then<RampTo>(ofFloatColor(1.,1.,1.,1.),20.f);
-    
-    auto textBodyColor = timeline.apply(&timelineFloatColorOutputs["textBodyColor"]);
+    */
+    auto textBodyColor = timeline.apply(&timelineFloatColorOutputs["videoColor"]);
     textBodyColor.set(ofFloatColor(1.,1.,1.,0.));
-    textHeaderColor.hold(10.0);
     textBodyColor.then<RampTo>(ofFloatColor(1.,1.,1.,1.), 20.f);
+    //textBodyColor.cue( [] { videoPlayer.play(); }, 0.0f );
 }
 
 
@@ -326,7 +343,7 @@ void ofApp::pbrRenderScene() {
     
     ofEnableDepthTest();
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
+    glCullFace(GL_BACK);
     pbr.beginDefaultRenderer();
     {
 
@@ -416,9 +433,13 @@ void ofApp::renderViews() {
         }ofPopMatrix();
         */
         
-        ofSetColor(ofColor(pTextBodyColor.get()));
+        ofSetColor(ofColor(pVideoColor.get()));
 
         videoPlayer.draw(0, 0, mViewFront->plane.getHeight()*videoPlayer.getWidth()*1.0/videoPlayer.getHeight(), mViewFront->plane.getHeight());
+        
+        if(pVideoDrawTestChart){
+            videoTestChart.draw(0,0, mViewFront->plane.getHeight()*videoTestChart.getWidth()*1.0/videoTestChart.getHeight(), mViewFront->plane.getHeight());
+        }
         
         mViewFront->plane.restoreTransformGL();
         ofPopMatrix();
@@ -437,23 +458,24 @@ void ofApp::draw() {
     for (auto projector : mProjectors){
         if(projector.second->pEnabled){
             projector.second->update(calibrationCornerMesh);
-            if(projector.first == "first person"){
-                projector.second->referencePoints.disableDrawEvent();
-                projector.second->referencePoints.disableControlEvents();
-                if(projector.second->pAnimateCamera){
-                    projector.second->cam.setGlobalPosition(3+(cos(ofGetElapsedTimef()*.5)*.5), 2, -2+sin(ofGetElapsedTimef()*.2));
-                    projector.second->cam.lookAt(mViewFront->plane.getGlobalPosition(), glm::vec3(0,1,0));
-                }
-                if(projector.second->pTrackUserCamera){
-                    mViewFront->cam.setGlobalPosition(projector.second->cam.getGlobalPosition());
-                    mViewSide->cam.setGlobalPosition(projector.second->cam.getGlobalPosition());
-                }
+        }
+        if(projector.first == "first person"){
+            projector.second->referencePoints.disableDrawEvent();
+            projector.second->referencePoints.disableControlEvents();
+            if(projector.second->pAnimateCamera){
+                projector.second->cam.setGlobalPosition(3+(cos(ofGetElapsedTimef()*.5)*.5), 2, -2+sin(ofGetElapsedTimef()*.2));
+                projector.second->cam.lookAt(mViewFront->plane.getGlobalPosition(), glm::vec3(0,1,0));
+            }
+            if(projector.second->pTrackUserCamera){
+                mViewFront->cam.setGlobalPosition(projector.second->cam.getGlobalPosition());
+                mViewSide->cam.setGlobalPosition(projector.second->cam.getGlobalPosition());
             }
         }
     }
 
     // LGIHTS TOO
     
+    /*
     lights[0].setColor(pPbrDirectionalLightColor);
     lights[0].lookAt(mViewFront->plane.getGlobalPosition());
     lights[0].setGlobalPosition(mViewFront->plane.getGlobalPosition() * 10);
@@ -464,6 +486,7 @@ void ofApp::draw() {
 
     currentRenderPrimitive = renderPrimitive;
     pbr.updateDepthMaps();
+    */
     
     renderViews();
     
@@ -491,6 +514,10 @@ void ofApp::draw() {
                     world.primitives["room.walls"]->recursiveDraw();
                     if(projector.first == "front"){
                         world.primitives["room.truss"]->recursiveDraw();
+                        world.primitives["room.views.side"]->recursiveDraw();
+                    }
+                    if(projector.first == "side"){
+                        world.primitives["room.views.front"]->recursiveDraw();
                     }
                     if(projector.first == "first person"){
                         world.primitives["room.ceiling"]->recursiveDraw();
@@ -506,11 +533,13 @@ void ofApp::draw() {
                         ofPopStyle();
 
                         // PBR in space
-                        currentRenderPrimitive = world.primitives["room.pylon"];
+/*                        currentRenderPrimitive = world.primitives["room.pylon"];
                         cam = &mViewFront->cam;
                         pbr.setMainCamera(cam);
                         pbr.setDrawEnvironment(false);
                         pbr.renderScene();
+*/
+                        
                     }
                     if(projector.first == "side" || projector.first == "first person"){
                         // HDR view
@@ -550,13 +579,19 @@ void ofApp::draw() {
                     if(projector.first == "first person"){
                         world.primitives["room.ceiling"]->recursiveDraw();
                     }
+                    if(projector.first == "front"){
+                        ofPushMatrix();
+                        ofTranslate(pHacksPylonOffset);
+                        world.primitives["room.pylon"]->recursiveDraw();
+                        ofPopMatrix();
+                    }
                     glColorMask(true, true, true, true);
                     
                     ofPopStyle();
                     
                     if(projector.first == "front" || projector.first == "first person"){
                         
-                        // TEXT
+                        // VIDEO
                         ofPushStyle();
                         ofEnableAlphaBlending();
                         ofEnableDepthTest();
@@ -564,6 +599,19 @@ void ofApp::draw() {
                         ofTranslate(0.01, 0., 0.);
                         ofSetColor(255,255);
                         mViewFront->draw(false, true);
+                        // UGLY HACK
+                        ofPushMatrix();
+                        ofTranslate(pHacksPylonOffset);
+                        if(projector.first == "front") glClear(GL_DEPTH_BUFFER_BIT);
+                        videoShader.begin();
+                        videoShader.setUniformTexture("image", mViewFront->output.getTexture(), 0);
+                        videoShader.setUniformMatrix4f("roomMatrix", world.primitives["room"]->getGlobalTransformMatrix());
+                        videoShader.setUniform4f("origin", glm::vec4(pVideoOrigin.get(),1.0));
+                        videoShader.setUniform2f("videoDimensions", mViewFront->plane.getWidth(), mViewFront->plane.getHeight());
+                        videoShader.setUniform2f("videoOffset", pVideoOffset.get());
+                        world.primitives["room.pylon"]->recursiveDraw();
+                        videoShader.end();
+                        ofPopMatrix();
                         ofPopMatrix();
                         ofPopStyle();
                         
@@ -707,7 +755,7 @@ void ofApp::loadNodeModel(string filename) {
     world.primitives["room.floor"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.floor");
     world.primitives["room.ceiling"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.ceiling");
     world.primitives["room.pylon"] = (ofxAssimp3dPrimitive*) world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.pylon.png")->getParent()->getParent()->getParent();
-    world.primitives["room.pylon.crossbrace"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.pylon.crossbrace");
+    //world.primitives["room.pylon.crossbrace"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.pylon.crossbrace");
     world.primitives["room.truss"] = (ofxAssimp3dPrimitive*) world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.truss")->getParent()->getParent()->getParent();
     world.primitives["room.views.front"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.views.front");
     world.primitives["room.views.side"] = world.primitives["room"]->getFirstPrimitiveWithTextureNameContaining("room.views.side");
@@ -817,14 +865,6 @@ bool ofApp::imGui()
             ImGui::Columns(1);
             ImGui::Separator();
             
-            
-            //            ImGui::Checkbox("Fix principal point", &mapamok.bCV_CALIB_FIX_PRINCIPAL_POINT);
-            //            ImGui::Checkbox("Fix aspect ratio", &mapamok.bCV_CALIB_FIX_ASPECT_RATIO);
-            //            ImGui::Checkbox("Fix K1", &mapamok.bCV_CALIB_FIX_K1);
-            //            ImGui::Checkbox("Fix K2", &mapamok.bCV_CALIB_FIX_K2);
-            //            ImGui::Checkbox("Fix K3", &mapamok.bCV_CALIB_FIX_K3);
-            //            ImGui::Checkbox("Zero tangent dist", &mapamok.bCV_CALIB_ZERO_TANGENT_DIST);
-            
             if(ImGui::Button("Load")){
                 load("default");
             } ImGui::SameLine();
@@ -864,11 +904,11 @@ bool ofApp::imGui()
             ofxImGui::AddGroup(mViewFront->pg, mainSettings);
 
             ofxImGui::AddGroup(mViewSide->pg, mainSettings);
+            
+            ofxImGui::AddGroup(pgVideo, mainSettings);
 
-            ofxImGui::AddGroup(pgScenes, mainSettings);
-            
-            ofxImGui::AddGroup(pgText, mainSettings);
-            
+            ofxImGui::AddGroup(pgHacks, mainSettings);
+
             ofxImGui::EndWindow(mainSettings);
         }
         
@@ -906,7 +946,7 @@ bool ofApp::imGui()
                 string uppercaseTitle = "";
                 std::transform(projector.first.begin(), projector.first.end(),uppercaseTitle.begin(), ::toupper);
                 
-                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6*6, 5));
+                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6*3, 5));
                 if(!mouseOverWindow) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 10.0);{
                     ImGui::PushFont(gui_font_header);
                     ImGui::TextUnformatted(uppercaseTitle.c_str());
@@ -928,13 +968,25 @@ bool ofApp::imGui()
                     
                     if(!mouseOverWindow) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.01);{
                         if(!p->pCalibrationEdit && mouseOverWindow) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, .25);{
+                            ImGui::PushItemWidth(60);
+                            for (auto cvP : p->mapamok.pg){
+                                auto parameterBool = std::dynamic_pointer_cast<ofParameter<bool>>(cvP);
+                                if (parameterBool)
+                                {
+                                    ofxImGui::AddParameter(*parameterBool);
+                                    ImGui::SameLine();
+                                }
+                            }
+                            ImGui::PopItemWidth();
                             ofxImGui::AddParameter(p->pCalibrationDrawScales);
                             ImGui::SameLine();
-                            ImGui::PushItemWidth(200);
+                            ImGui::PushItemWidth(100);
                             ofxImGui::AddCombo(p->pCalibrationMeshDrawMode, p->CalibrationMeshDrawModeLabels);
                             ImGui::SameLine();
                             ofxImGui::AddCombo(p->pCalibrationMeshColorMode, p->CalibrationMeshColorModeLabels);
                             ImGui::SameLine();
+                            ImGui::PopItemWidth();
+                            ImGui::PushItemWidth(200);
                             ofxImGui::AddParameter(p->pCalibrationProjectorColor);
                             ImGui::SameLine();
                             vector<string> objectNames;
