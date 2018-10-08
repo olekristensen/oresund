@@ -22,7 +22,8 @@ public:
     
     rs2::decimation_filter dec_filter;
     rs2::spatial_filter spat_filter;
-    
+    rs2::temporal_filter temp_filter;
+
     rs2::points points;
     rs2::pointcloud pc;
     
