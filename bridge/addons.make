@@ -1,6 +1,7 @@
 ofxAssimpModelLoader
+ofxChoreograph
 ofxCv
 ofxImGui
 ofxOpenCv
 ofxPBR
-ofxChoreograph
+ofxRealsense2

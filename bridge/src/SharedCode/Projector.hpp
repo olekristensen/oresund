@@ -64,8 +64,7 @@ public:
         pCalibrationProjectorColor,
         pCalibrationHighlightIndex,
     };
-    ofParameter<bool> pAnimateCamera {"Animate Camera", false};
-    ofParameter<bool> pTrackUserCamera {"Track User Camera", false};
+    ofParameter<bool> pFollowHead {"Follow Head", false};
     ofParameter<bool> pEnabled {"Enabled", true};
 
     ofParameterGroup pg;
