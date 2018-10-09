@@ -19,6 +19,7 @@ public:
     
     TRACKING_STATE state = TRACKING_STATE::READY;
     float lastTimeTracking;
+    float firstTimeTracking;
     float ttl = 2.0;
     glm::vec3 globalDirectionBias = {0,0.0375,0.0};
     
@@ -30,7 +31,7 @@ public:
     float radiusSet = 0.0;
     float radiusSquaredScale = 1.0;
     float radiusSquaredScaleTracking = 2.0;
-    float radiusSquaredScaleReady = 0.5;
+    float radiusSquaredScaleReady = 3.0;
     glm::vec3 localFloorPoint;
     float minFloorDistance = 0.5;
     int trackPointCount = 1;
@@ -100,6 +101,7 @@ public:
         if(trackPointWeighedCount > 800.0){
             if(isReady() || isLost()){
                 state = TRACKING_STATE::TRACKING;
+                if(isReady()) firstTimeTracking = now;
             }
             radiusSquaredScale = radiusSquaredScaleTracking;
             trackPointSum /= trackPointCount;
@@ -220,9 +222,9 @@ public:
         for(auto & head : heads){
             head.update(this->startingPoint);
         }
-        // make sure the first ones are the highest.
+        // make sure the first ones are the first.
         std::sort(heads.begin(), heads.end(), [](head a, head b) {
-            return a.getGlobalPosition().y > b.getGlobalPosition().y && a.state == head::TRACKING_STATE::TRACKING;
+            return a.firstTimeTracking > b.firstTimeTracking && a.state == head::TRACKING_STATE::TRACKING;
         });
         
     }

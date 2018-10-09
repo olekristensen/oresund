@@ -19,9 +19,17 @@
 #include "ofxChoreograph.h"
 #include "MeshTracker.hpp"
 #include <librealsense2/rs.hpp>
+#include <iostream>
+#include <type_traits>
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
+// to log enums
+template<typename T>
+std::ostream& operator<<(typename std::enable_if<std::is_enum<T>::value, std::ostream>::type& stream, const T& e)
+{
+    return stream << static_cast<typename std::underlying_type<T>::type>(e);
+}
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -50,6 +58,15 @@ static const ImVec4 device_info_color = from_rgba(33, 40, 46, 255);
 static const ImVec4 yellow = from_rgba(229, 195, 101, 255, true);
 static const ImVec4 green = from_rgba(0x20, 0xe0, 0x20, 0xff, true);
 static const ImVec4 dark_sensor_bg = from_rgba(0x1b, 0x21, 0x25, 200);
+
+// STATE
+
+enum class state {
+    STARTING=0,
+    WAITING=1,
+    TRACKING=2,
+    PLAYING=3
+};
 
 class ofApp : public ofBaseApp {
 public:
@@ -114,13 +131,19 @@ public:
     ofParameterGroup pgVideo{ "Video", pVideoColor, pVideoDrawTestChart, pVideoOrigin, pVideoOffset };
 
     ofParameter<glm::vec3> pHacksPylonOffset{ "Pylon offset", glm::vec3(0.,0.,0.), glm::vec3(-1.,-1.,-1.), glm::vec3(1.,1.,1.)};
-    ofParameterGroup pgHacks{ "Hacks", pHacksPylonOffset };
+
+    ofParameter<glm::vec3> pHacksBridgeOffset{ "Bridge offset", glm::vec3(0.,0.,0.), glm::vec3(-10.,-10.,-10.), glm::vec3(10.,10.,10.)};
+    ofParameter<glm::vec3> pHacksBridgeRotation{ "Bridge Rotation", glm::vec3(0.,0.,0.), glm::vec3(-180.,-180.,-180.), glm::vec3(180.,180.,180.)};
+    ofParameter<float> pHacksBridgeScale{ "Bridge Scale", 1.0, 0.0, 1.0};
+    ofParameter<float> pHacksBridgeLerp{ "Bridge Lerp", 0.0, 0.0, 1.0};
+
+    ofParameterGroup pgHacks{ "Hacks", pHacksPylonOffset, pHacksBridgeOffset, pHacksBridgeRotation, pHacksBridgeScale, pHacksBridgeLerp};
 
     ofParameter<bool> pTrackingEnabled{ "Enabled", false};
     ofParameter<bool> pTrackingVisible{ "Visible", false};
     ofParameter<float> pTrackingTimeout{ "Timeout", 30.0, 0.0, 5*60.0};
-    ofParameter<glm::vec3> pTrackingLookAt{ "Look at", glm::vec3(0.,0.,0.), glm::vec3(-10.,-10.,-10.), glm::vec3(10.,10.,10.)};
     ofParameter<glm::vec3> pHeadPosition{ "Head Position", glm::vec3(0.,0.,0.), glm::vec3(-10.,-10.,-10.), glm::vec3(10.,10.,10.)};
+    ofParameter<glm::vec3> pHeadOffset{ "Head Offset", glm::vec3(0.,0.,0.), glm::vec3(-1.,-1.,-1.), glm::vec3(1.,1.,1.)};
     ofParameter<glm::vec3> pTrackingCameraPosition{ "Tracking Camera Position", glm::vec3(0.,0.,0.), glm::vec3(-10.,-10.,-10.), glm::vec3(10.,10.,10.)};
     ofParameter<glm::vec3> pTrackingCameraRotation{ "Tracking Camera Rotation", glm::vec3(0.,0.,0.), glm::vec3(-180.,-180.,-180.), glm::vec3(180.,180.,180.)};
 
@@ -128,13 +151,26 @@ public:
     ofParameter<glm::vec3> pTrackingBoxRotation{ "Tracking Box Rotation", glm::vec3(0.,0.,0.), glm::vec3(-180.,-180.,-180.), glm::vec3(180.,180.,180.)};
     ofParameter<glm::vec3> pTrackingBoxSize{ "Tracking Box Size", glm::vec3(1.,1.,1.), glm::vec3(0.,0.,0.), glm::vec3(10.,10.,10.)};
 
+    ofParameter<glm::vec3> pTriggerBoxPosition{ "Trigger Box Position", glm::vec3(0.,0.,0.), glm::vec3(-10.,-10.,-10.), glm::vec3(10.,10.,10.)};
+    ofParameter<glm::vec3> pTriggerBoxRotation{ "Trigger Box Rotation", glm::vec3(0.,0.,0.), glm::vec3(-180.,-180.,-180.), glm::vec3(180.,180.,180.)};
+    ofParameter<glm::vec3> pTriggerBoxSize{ "Trigger Box Size", glm::vec3(1.,1.,1.), glm::vec3(0.,0.,0.), glm::vec3(10.,10.,10.)};
+    
     ofParameter<glm::vec3> pTrackingStartPosition{ "Start Position", glm::vec3(0.,0.,0.), glm::vec3(-10.,-10.,-10.), glm::vec3(10.,10.,10.)};
 
-    ofParameterGroup pgTracking{"Tracking", pTrackingEnabled, pTrackingVisible, pTrackingTimeout, pTrackingLookAt, pHeadPosition, pTrackingCameraPosition, pTrackingCameraRotation, pTrackingBoxPosition, pTrackingBoxRotation, pTrackingBoxSize, pTrackingStartPosition};
+    ofParameterGroup pgTracking{"Tracking", pTrackingEnabled, pTrackingVisible, pTrackingTimeout, pHeadPosition, pHeadOffset, pTrackingCameraPosition, pTrackingCameraRotation, pTrackingBoxPosition, pTrackingBoxRotation, pTrackingBoxSize, pTriggerBoxPosition, pTriggerBoxRotation, pTriggerBoxSize, pTrackingStartPosition};
 
-    ofParameterGroup pgGlobal{"Global", pgTracking, pgPbr, pgVideo, pgHacks};
+    ofParameter<float> pAudioWindVolume{"Wind volume", 1.0, 0.0, 1.0};
+    ofParameter<float> pAudioVideoVolume{"Video volume", 1.0, 0.0, 1.0};
+    ofParameter<float> pAudioEnteringVolume{"Entering volume", 1.0, 0.0, 1.0};
 
+    ofParameterGroup pgAudio{"Audio", pAudioWindVolume, pAudioVideoVolume, pAudioEnteringVolume};
+    
+    ofParameterGroup pgGlobal{"Global", pgAudio, pgVideo, pgTracking, pgPbr, pgHacks};
+    
     // TIMELINE
+    
+    state appState = state::STARTING;
+    
     ofxChoreograph::Timeline timeline;
     
     map< string, ofxChoreograph::Output<ofParameter<float> > > timelineFloatOutputs;
@@ -195,6 +231,10 @@ public:
     ofVideoPlayer videoPlayer;
     ofImage videoTestChart;
     
+    // AUDIO
+    ofSoundPlayer windLoopPlayer;
+    ofSoundPlayer enteringSoundPlayer;
+
     // PBR
     
     ofxPBRCubeMap cubeMap;
@@ -242,10 +282,11 @@ public:
     rs2::points points;
     rs2::pointcloud pc;
     
-    ofVboMesh trackingMesh;
+    ofMesh trackingMesh;
         
     ofCamera trackingCamera;
     
     MeshTracker tracker;
+    ofBoxPrimitive triggerBox;
 
 };

@@ -90,8 +90,7 @@ void ofApp::setup() {
         projector.second->pg.setName(projector.first);
         if(projector.first == "first person"){
             projector.second->pg.add(projector.second->pEnabled);
-            projector.second->pg.add(projector.second->pTrackUserCamera);
-            projector.second->pg.add(projector.second->pAnimateCamera);
+            projector.second->pg.add(projector.second->pFollowHead);
             projector.second->cam.setGlobalPosition(6.0,1.9, -2.0 );
             projector.second->cam.lookAt(*world.primitives["room.views.front"]);
         }
@@ -167,6 +166,11 @@ void ofApp::setup() {
             material.baseColor.set(0.15, 0.15, 0.15, 0.0);
             material.metallic = 0.0;
             material.roughness = 1.0;
+        }
+        if(ofIsStringInString(textureName, "landscape")){
+            material.baseColor.set(0.01, 0.01, 0.01, 1.0);
+            material.metallic = 0.0;
+            material.roughness = 0.2;
         }
     }
     
@@ -272,12 +276,21 @@ void ofApp::setup() {
     style.Colors[ImGuiCol_TextSelectedBg]        = ImVec4(0.00f, 0.56f, 1.00f, 0.35f);
     style.Colors[ImGuiCol_ModalWindowDarkening]  = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
     
+    // VIDEO
+    
     videoPlayer.setPixelFormat(OF_PIXELS_RGBA);
-    videoPlayer.load("videos/default.mov");
-    videoPlayer.setSpeed(0.25);
+    videoPlayer.load("videos/front.mov");
     videoPlayer.setLoopState(OF_LOOP_NONE);
     
     videoTestChart.load("images/hd test chart.png");
+    
+    // AUDIO
+    
+    windLoopPlayer.load("audio/windloop.wav");
+    windLoopPlayer.setLoop(true);
+    windLoopPlayer.play();
+    enteringSoundPlayer.load("audio/entering.wav");
+    enteringSoundPlayer.setLoop(false);
     
     // TRACKING
     
@@ -292,13 +305,26 @@ void ofApp::setup() {
     {
         depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f); // Enable emitter
     }
+    if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+    {
+        depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.f);
+    }
+
+/*    if (depth_sensor.supports(RS2_OPTION_GAIN))
+    {
+        depth_sensor.set_option(RS2_OPTION_GAIN, 32.f);
+    }
+    if (depth_sensor.supports(RS2_OPTION_EXPOSURE))
+    {
+        depth_sensor.set_option(RS2_OPTION_EXPOSURE, 4000.f);
+    }
+*/
     if (depth_sensor.supports(RS2_OPTION_LASER_POWER))
     {
         // Query min and max values:
         auto range = depth_sensor.get_option_range(RS2_OPTION_LASER_POWER);
         depth_sensor.set_option(RS2_OPTION_LASER_POWER, range.max); // Set max power
     }
-    
     
     auto scale =  depth_sensor.get_depth_scale();
     
@@ -340,6 +366,8 @@ void ofApp::setup() {
     trackingCamera.setFarClip(50.0);
     tracker.setup(3, glm::vec3(1.95,1.0,-.85), trackingCamera, world.origin );
     
+    triggerBox.setParent(world.origin);
+    
     // SETTINGS
     
     load("default");
@@ -347,10 +375,16 @@ void ofApp::setup() {
     // TIMELINE
     
     timelineFloatOutputs["envExposure"]().makeReferenceTo(pPbrEnvExposure);
-    timelineFloatOutputs["envRotation"]().makeReferenceTo(pPbrEnvRotation);
+    timelineFloatOutputs["envLevel"]().makeReferenceTo(pPbrEnvLevel);
     timelineFloatOutputs["pbrGamma"]().makeReferenceTo(pPbrGamma);
-    timelineFloatColorOutputs["videoColor"]().makeReferenceTo(pVideoColor);
+    timelineFloatOutputs["pbrExposure"]().makeReferenceTo(pPbrExposure);
+    timelineFloatOutputs["pbrRotation"]().makeReferenceTo(pPbrEnvRotation);
+
+    timelineFloatOutputs["videoVolume"]().makeReferenceTo(pAudioVideoVolume);
+    timelineFloatOutputs["windVolume"]().makeReferenceTo(pAudioWindVolume);
+    timelineFloatOutputs["enteringVolume"]().makeReferenceTo(pAudioEnteringVolume);
     
+    timelineFloatColorOutputs["videoColor"]().makeReferenceTo(pVideoColor);
     
 }
 
@@ -377,11 +411,15 @@ void ofApp::startAnimation(){
     //textBodyColor.cue( [] { videoPlayer.play(); }, 0.0f );
 }
 
-
 void ofApp::update() {
     
     //VIDEO
     videoPlayer.update();
+    videoPlayer.setVolume(pAudioVideoVolume);
+
+    //AUDIO
+    windLoopPlayer.setVolume(pAudioWindVolume);
+    enteringSoundPlayer.setVolume(pAudioEnteringVolume);
     
     // TIMELINE
     timeline.step(ofGetLastFrameTime());
@@ -416,6 +454,14 @@ void ofApp::update() {
     tracker.camera.setGlobalOrientation(trackingCamera.getGlobalOrientation());
     tracker.camera.setScale(trackingCamera.getScale());
 
+    triggerBox.setPosition(pTriggerBoxPosition);
+    triggerBox.setOrientation(pTriggerBoxRotation);
+    triggerBox.set(pTriggerBoxSize.get().x, pTriggerBoxSize.get().y, pTriggerBoxSize.get().z);
+
+    const auto cameraGlobalMat = trackingCamera.getGlobalTransformMatrix();
+    const auto trackerInverse = glm::inverse(tracker.getGlobalTransformMatrix());
+    const auto triggerBoxInverse = glm::inverse(triggerBox.getGlobalTransformMatrix());
+
     if(pTrackingEnabled){
         // Get depth data from camera
         auto frames = pipe.wait_for_frames();
@@ -433,8 +479,6 @@ void ofApp::update() {
         trackingMesh.clear();
         int n = points.size();
         if(n!=0){
-            const auto cameraGlobalMat = trackingCamera.getGlobalTransformMatrix();
-            const auto trackerInverse = glm::inverse(tracker.getGlobalTransformMatrix());
             const rs2::vertex * vs = points.get_vertices();
             for(int i=0; i<n; i++){
                 if(vs[i].z>0.5){ // save time on skipping the closest ones
@@ -449,27 +493,137 @@ void ofApp::update() {
                     if(fabs(trackerVec.x) < tracker.getWidth()/2.0 &&
                        fabs(trackerVec.y) < tracker.getHeight()/2.0 &&
                        fabs(trackerVec.z) < tracker.getDepth()/2.0){
-                        
-                        trackingMesh.addVertex(v3);
-                        
+
                         int wasAdded = tracker.addVertex(v3);
                         
-                        ofFloatColor c;
-                        if(wasAdded == 0){
-                            c = ofFloatColor::lightGray;
-                        } else if (wasAdded == 1){
-                            c = ofFloatColor::cyan;
-                        } else if (wasAdded == 2){
-                            c= ofFloatColor::green;
-                        } else if (wasAdded == 3){
-                            c = ofFloatColor::blueSteel;
+                        if(pTrackingVisible){
+
+                            trackingMesh.addVertex(v3);
+
+                            ofFloatColor c;
+                            if(wasAdded == 0){
+                                c = ofFloatColor::lightGray;
+                            } else if (wasAdded == 1){
+                                c = ofFloatColor::cyan;
+                            } else if (wasAdded == 2){
+                                c= ofFloatColor::green;
+                            } else if (wasAdded == 3){
+                                c = ofFloatColor::blueSteel;
+                            }
+                            
+                            trackingMesh.addColor(c);
                         }
-                        
-                        trackingMesh.addColor(c);
+
                     }
                 }
             }
             tracker.update();
+        }
+        pHeadPosition.set(tracker.heads.front().getGlobalPosition()+pHeadOffset.get());
+    }
+    
+    // STATE manipulation
+    
+    auto formerState = appState;
+    auto & oldestTracker = tracker.heads.front();
+    
+    if(oldestTracker.isTracking() || oldestTracker.isLost()) {
+        if(formerState == state::WAITING){
+            appState = state::TRACKING;
+        } else if( formerState == state::TRACKING ) {
+            glm::vec4 globalVec = glm::vec4(pHeadPosition.get(),1.0);
+            auto inversedVec = triggerBoxInverse * globalVec;
+            glm::vec3 triggerVec = glm::vec3(inversedVec) / inversedVec.w;
+            if(fabs(triggerVec.x) < triggerBox.getWidth()/2.0 &&
+               fabs(triggerVec.y) < triggerBox.getHeight()/2.0 &&
+               fabs(triggerVec.z) < triggerBox.getDepth()/2.0){
+                appState = state::PLAYING;
+            }
+        }
+
+    } else if (oldestTracker.isReady()){
+        if(formerState == state::TRACKING){
+            appState = state::WAITING;
+        }
+        if(formerState == state::PLAYING){
+            // maybe wait for video to stop?
+            appState = state::WAITING;
+        }
+    }
+    
+    if(formerState == state::STARTING){
+        appState = state::WAITING;
+    }
+    
+    // handle state changes
+    if(formerState != appState){
+        
+        ofLogNotice("STATE CHANGE") << formerState << " -> " << appState;
+        
+        if(appState == state::WAITING){
+            //stop and fade down
+            auto videoColor = timeline.apply(&timelineFloatColorOutputs["videoColor"]);
+            videoColor.then<RampTo>(ofFloatColor(0.,0.,0.,0.), 100.f);
+            auto videoVolume = timeline.apply(&timelineFloatOutputs["videoVolume"]);
+            videoVolume.then<RampTo>(0.0, 100.f);
+            auto windVolume = timeline.apply(&timelineFloatOutputs["windVolume"]);
+            windVolume.then<RampTo>(0.75, 100.f);
+            auto enteringVolume = timeline.apply(&timelineFloatOutputs["enteringVolume"]);
+            enteringVolume.then<RampTo>(0.0, 100.f);
+            
+            auto pbrGamma = timeline.apply(&timelineFloatOutputs["pbrGamma"]);
+            pbrGamma.then<RampTo>(0.096, 100.f, EaseOutQuad());
+            auto pbrExposure = timeline.apply(&timelineFloatOutputs["pbrExposure"]);
+            pbrExposure.then<RampTo>(10.0, 100.f, EaseOutQuad());
+            auto pbrRotation = timeline.apply(&timelineFloatOutputs["pbrRotation"]);
+            pbrRotation.then<RampTo>(6., 100.f, EaseOutQuad());
+            auto envLevel = timeline.apply(&timelineFloatOutputs["envLevel"]);
+            envLevel.then<RampTo>(0.53, 100.f, EaseOutQuad());
+            
+            timeline.cue([this] {
+                videoPlayer.stop();
+                ofLogNotice("WAITING") << "stopped videoPlayer";
+            }, 10.f);
+            timeline.cue([this] { enteringSoundPlayer.stop(); }, 10.f);
+
+        }
+        if(appState == state::TRACKING){
+            //entrance sound
+            timeline.cue([this] { enteringSoundPlayer.play(); }, 0.0f);
+            auto windVolume = timeline.apply(&timelineFloatOutputs["windVolume"]);
+            windVolume.then<RampTo>(0.0, 100.f);
+            auto enteringVolume = timeline.apply(&timelineFloatOutputs["enteringVolume"]);
+            enteringVolume.then<RampTo>(10.0, 100.f);
+            auto pbrGamma = timeline.apply(&timelineFloatOutputs["pbrGamma"]);
+            pbrGamma.hold(5.0);
+            pbrGamma.then<RampTo>(2.2, 50.f, EaseInOutQuad());
+            auto pbrExposure = timeline.apply(&timelineFloatOutputs["pbrExposure"]);
+            pbrExposure.hold(5.0);
+            pbrExposure.then<RampTo>(1.0, 50.f, EaseInOutQuad());
+            auto pbrRotation = timeline.apply(&timelineFloatOutputs["pbrRotation"]);
+            pbrRotation.hold(5.0);
+            pbrRotation.then<RampTo>(1.09, 50.f, EaseInOutQuad());
+            auto envLevel = timeline.apply(&timelineFloatOutputs["envLevel"]);
+            envLevel.hold(5.0);
+            envLevel.then<RampTo>(.171, 50.f, EaseInOutQuad());
+
+
+        }
+        if(appState == state::PLAYING){
+            auto videoColor = timeline.apply(&timelineFloatColorOutputs["videoColor"]);
+            videoColor.then<RampTo>(ofFloatColor(1.,1.,1.,1.), 100.f);
+            auto videoVolume = timeline.apply(&timelineFloatOutputs["videoVolume"]);
+            videoVolume.then<RampTo>(1.0, 100.f);
+            auto windVolume = timeline.apply(&timelineFloatOutputs["windVolume"]);
+            windVolume.then<RampTo>(0.2, 100.f);
+            auto enteringVolume = timeline.apply(&timelineFloatOutputs["enteringVolume"]);
+            enteringVolume.then<RampTo>(0.0, 100.f);
+            timeline.cue([this] { videoPlayer.play(); }, 0.0f);
+            timeline.cue([this] {
+                enteringSoundPlayer.stop();
+                ofLogNotice("PLAYING") << "stopped enteringSoundPlayer";
+            }, 100.f);
+
         }
     }
     
@@ -521,7 +675,14 @@ void ofApp::renderViews() {
         cam = &mViewSide->cam;
         pbr.setMainCamera(cam);
         pbr.setDrawEnvironment(true);
+        ofPushMatrix();
+        ofTranslate(pHacksBridgeOffset.get()*pHacksBridgeLerp.get());
+        ofRotateXDeg((pHacksBridgeRotation.get()*pHacksBridgeLerp.get()).x);
+        ofRotateYDeg((pHacksBridgeRotation.get()*pHacksBridgeLerp.get()).y);
+        ofRotateZDeg((pHacksBridgeRotation.get()*pHacksBridgeLerp.get()).z);
+        ofScale((pHacksBridgeScale.get()*pHacksBridgeLerp.get())+(1.0-pHacksBridgeLerp.get()));
         pbr.renderScene();
+        ofPopMatrix();
         /*
          ofPushStyle();
          ofSetColor(255,255,0,127);
@@ -536,7 +697,14 @@ void ofApp::renderViews() {
         cam = &mViewFront->cam;
         pbr.setMainCamera(cam);
         pbr.setDrawEnvironment(true);
+        ofPushMatrix();
+        ofTranslate(pHacksBridgeOffset.get()*pHacksBridgeLerp.get());
+        ofRotateXDeg((pHacksBridgeRotation.get()*pHacksBridgeLerp.get()).x);
+        ofRotateYDeg((pHacksBridgeRotation.get()*pHacksBridgeLerp.get()).y);
+        ofRotateZDeg((pHacksBridgeRotation.get()*pHacksBridgeLerp.get()).z);
+        ofScale((pHacksBridgeScale.get()*pHacksBridgeLerp.get())+(1.0-pHacksBridgeLerp.get()));
         pbr.renderScene();
+        ofPopMatrix();
         /*
          ofPushStyle();
          ofSetColor(0,127,255,127);
@@ -599,19 +767,20 @@ void ofApp::draw() {
             projector.second->referencePoints.disableDrawEvent();
             projector.second->referencePoints.disableControlEvents();
             if(pTrackingEnabled){
-                projector.second->cam.setGlobalPosition(tracker.heads.front().getGlobalPosition());
-                projector.second->cam.lookAt(mViewFront->plane.getGlobalPosition(), glm::vec3(0,1,0));
-            } else if(projector.second->pAnimateCamera){
-                projector.second->cam.setGlobalPosition(3+(cos(ofGetElapsedTimef()*.5)*.5), 2, -2+sin(ofGetElapsedTimef()*.2));
-                projector.second->cam.lookAt(mViewFront->plane.getGlobalPosition(), glm::vec3(0,1,0));
-            }
-            if(projector.second->pTrackUserCamera){
-                mViewFront->cam.setGlobalPosition(projector.second->cam.getGlobalPosition());
-                mViewSide->cam.setGlobalPosition(projector.second->cam.getGlobalPosition());
+                if(projector.second->pFollowHead){
+                    projector.second->cam.setGlobalPosition(pHeadPosition);
+                    projector.second->cam.lookAt(mViewFront->plane.getGlobalPosition(), glm::vec3(0,1,0));
+                }
+            } else {
+                if(projector.second->pFollowHead){
+                    pHeadPosition = projector.second->cam.getGlobalPosition();
+                }
             }
         }
     }
-    
+    mViewFront->cam.setGlobalPosition(pHeadPosition);
+    mViewSide->cam.setGlobalPosition(pHeadPosition);
+
     
     // LGIHTS TOO
     
@@ -763,7 +932,7 @@ void ofApp::draw() {
                 
             }
             
-            if((projector.first == "first person" && !projector.second->pTrackUserCamera) || (projector.first != "first person" && projector.second->pCalibrationEdit)){
+            if((projector.first == "first person" && !projector.second->pFollowHead) || (projector.first != "first person" && projector.second->pCalibrationEdit)){
                 projector.second->begin(false, false, false);
                 ofPushStyle();
                 ofEnableBlendMode(OF_BLENDMODE_ADD);
@@ -807,6 +976,9 @@ void ofApp::draw() {
                     trackingCamera.restoreTransformGL();
                     trackingCamera.drawFrustum();
                     tracker.draw();
+                    ofSetColor(0,255,0, 64);
+                    triggerBox.draw();
+
                     
                 }
                 
@@ -1030,11 +1202,39 @@ bool ofApp::imGui()
             
             ImGui::Separator();
             
-            if(ImGui::Button("Play Timeline")){
-                startAnimation();
+            ImGui::TextUnformatted("State");
+            ImGui::SameLine();
+
+            switch (appState) {
+                case state::STARTING:
+                    ImGui::TextColored(redish, "STARTING");
+                    break;
+                case state::WAITING:
+                    ImGui::TextColored(yellow, "WAITING");
+                    break;
+                case state::TRACKING:
+                    ImGui::TextColored(light_blue, "TRACKING");
+                    break;
+                case state::PLAYING:
+                    ImGui::TextColored(green, "PLAYING");
+                    break;
             }
             
-            ImGui::SameLine();
+/*            static bool guiShowTest;
+            ImGui::Checkbox("Show Test Window", &guiShowTest);
+            if(guiShowTest)
+                ImGui::ShowTestWindow();
+*/
+            
+            ImGui::Separator();
+            ofxImGui::AddGroup(pgVideo, mainSettings);
+
+            float videoDuration = videoPlayer.getDuration();
+            float videoPosition = videoPlayer.getPosition() * videoDuration;
+            
+            if(ImGui::SliderFloat("Playhead", &videoPosition, 0.0, videoDuration)){
+                videoPlayer.setPosition(videoPosition/videoDuration);
+            }
             
             if(ImGui::Button("Play Video")){
                 videoPlayer.play();
@@ -1044,33 +1244,19 @@ bool ofApp::imGui()
             
             if(ImGui::Button("Reload Video")){
                 videoPlayer.stop();
-                videoPlayer.load("videos/default.mov");
+                videoPlayer.load("videos/front.mov");
             }
-            
+
             ImGui::Separator();
-            /*
-             bool guiShaderValid = shader.isValid;
-             ImGui::Checkbox("Shader Valid", &guiShaderValid);
-             */
-            
-            
-            
-            ImGui::Separator();
-            
-            static bool guiShowTest;
-            ImGui::Checkbox("Show Test Window", &guiShowTest);
-            if(guiShowTest)
-                ImGui::ShowTestWindow();
-            
+            ofxImGui::AddGroup(pgAudio, mainSettings);
+
             ofxImGui::AddGroup(pgTracking, mainSettings);
-            
-            ofxImGui::AddGroup(pgPbr, mainSettings);
             
             ofxImGui::AddGroup(mViewFront->pg, mainSettings);
             
             ofxImGui::AddGroup(mViewSide->pg, mainSettings);
             
-            ofxImGui::AddGroup(pgVideo, mainSettings);
+            ofxImGui::AddGroup(pgPbr, mainSettings);
             
             ofxImGui::AddGroup(pgHacks, mainSettings);
             
@@ -1123,9 +1309,7 @@ bool ofApp::imGui()
                     if(projector.first == "first person"){
                         ofxImGui::AddParameter(p->pEnabled);
                         ImGui::SameLine();
-                        ofxImGui::AddParameter(p->pTrackUserCamera);
-                        ImGui::SameLine();
-                        ofxImGui::AddParameter(p->pAnimateCamera);
+                        ofxImGui::AddParameter(p->pFollowHead);
                         ImGui::SameLine();
                     }
                     ofxImGui::AddParameter(p->pCalibrationEdit);
