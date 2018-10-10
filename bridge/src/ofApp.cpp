@@ -125,15 +125,16 @@ void ofApp::setup() {
     for (auto & material : materials){
         
         string textureName = ofSplitString(renderPrimitive->textureNames[materialIndex], "/").back();
-        ofParameterGroup pgMaterial;
-        
-        pgMaterial.setName(textureName);
-        //pgPbrMaterials.add(pgMaterial);
         /*
-         pgMaterial.add(ofParameter<ofFloatColor>("Base Color", ofFloatColor(0.5,0.5,0.5,1.0), ofFloatColor(0.0,0.0,0.0,0.0), ofFloatColor(1.0,1.0,1.0,1.0)));
+         ofParameterGroup pgMaterial;
+         
+         pgMaterial.setName(textureName);
+         pgPbrMaterials.add(pgMaterial);
+         auto baseColor = ofParameter<ofFloatColor>("Base Color", ofFloatColor(0.5,0.5,0.5,1.0), ofFloatColor(0.0,0.0,0.0,0.0), ofFloatColor(1.0,1.0,1.0,1.0));
+         pgMaterial.add(baseColor);
          */
-        
         ofLogNotice() << textureName;
+        
         material.baseColor.set(0.95, 1.0, 1.0);
         material.metallic = ofMap(materialIndex++, 0, materials.size(), 0.0, 1.0);
         material.roughness = 0.2;
@@ -152,8 +153,8 @@ void ofApp::setup() {
             material.metallic = 0.2;
             material.roughness = 1.0;
         }
-        if(ofIsStringInString(textureName, "deck.road")){
-            material.baseColor.set(0.5, 0.5, 0.5, 0.2);
+        if(ofIsStringInString(textureName, "deck.road") || ofIsStringInString(textureName, "road.cover")){
+            material.baseColor.set(0.5, 0.5, 0.5, 1.0);
             material.metallic = 0.0;
             material.roughness = 0.9;
         }
@@ -162,13 +163,8 @@ void ofApp::setup() {
             material.metallic = 0.0;
             material.roughness = 0.8;
         }
-        if(ofIsStringInString(textureName, "road.cover")){
-            material.baseColor.set(0.15, 0.15, 0.15, 0.0);
-            material.metallic = 0.0;
-            material.roughness = 1.0;
-        }
         if(ofIsStringInString(textureName, "landscape")){
-            material.baseColor.set(0.01, 0.01, 0.01, 1.0);
+            material.baseColor.set(0.1, 0.1, 0.1, 1.0);
             material.metallic = 0.0;
             material.roughness = 0.2;
         }
@@ -280,7 +276,7 @@ void ofApp::setup() {
     
     videoPlayer.setPixelFormat(OF_PIXELS_RGBA);
     videoPlayer.load("videos/front.mov");
-    videoPlayer.setLoopState(OF_LOOP_NONE);
+    videoPlayer.setLoopState(OF_LOOP_NORMAL);
     
     videoTestChart.load("images/hd test chart.png");
     
@@ -309,16 +305,16 @@ void ofApp::setup() {
     {
         depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.f);
     }
-
-/*    if (depth_sensor.supports(RS2_OPTION_GAIN))
-    {
-        depth_sensor.set_option(RS2_OPTION_GAIN, 32.f);
-    }
-    if (depth_sensor.supports(RS2_OPTION_EXPOSURE))
-    {
-        depth_sensor.set_option(RS2_OPTION_EXPOSURE, 4000.f);
-    }
-*/
+    
+    /*    if (depth_sensor.supports(RS2_OPTION_GAIN))
+     {
+     depth_sensor.set_option(RS2_OPTION_GAIN, 32.f);
+     }
+     if (depth_sensor.supports(RS2_OPTION_EXPOSURE))
+     {
+     depth_sensor.set_option(RS2_OPTION_EXPOSURE, 4000.f);
+     }
+     */
     if (depth_sensor.supports(RS2_OPTION_LASER_POWER))
     {
         // Query min and max values:
@@ -379,12 +375,15 @@ void ofApp::setup() {
     timelineFloatOutputs["pbrGamma"]().makeReferenceTo(pPbrGamma);
     timelineFloatOutputs["pbrExposure"]().makeReferenceTo(pPbrExposure);
     timelineFloatOutputs["pbrRotation"]().makeReferenceTo(pPbrEnvRotation);
-
+    
+    timelineFloatOutputs["bridgeLerp"]().makeReferenceTo(pHacksBridgeLerp);
+    
     timelineFloatOutputs["videoVolume"]().makeReferenceTo(pAudioVideoVolume);
     timelineFloatOutputs["windVolume"]().makeReferenceTo(pAudioWindVolume);
     timelineFloatOutputs["enteringVolume"]().makeReferenceTo(pAudioEnteringVolume);
     
     timelineFloatColorOutputs["videoColor"]().makeReferenceTo(pVideoColor);
+    timelineFloatOutputs["videoPylonsAlpha"]().makeReferenceTo(pVideoPylonsAlpha);
     
 }
 
@@ -416,7 +415,7 @@ void ofApp::update() {
     //VIDEO
     videoPlayer.update();
     videoPlayer.setVolume(pAudioVideoVolume);
-
+    
     //AUDIO
     windLoopPlayer.setVolume(pAudioWindVolume);
     enteringSoundPlayer.setVolume(pAudioEnteringVolume);
@@ -453,15 +452,15 @@ void ofApp::update() {
     tracker.camera.setGlobalPosition(trackingCamera.getGlobalPosition());
     tracker.camera.setGlobalOrientation(trackingCamera.getGlobalOrientation());
     tracker.camera.setScale(trackingCamera.getScale());
-
+    
     triggerBox.setPosition(pTriggerBoxPosition);
     triggerBox.setOrientation(pTriggerBoxRotation);
     triggerBox.set(pTriggerBoxSize.get().x, pTriggerBoxSize.get().y, pTriggerBoxSize.get().z);
-
+    
     const auto cameraGlobalMat = trackingCamera.getGlobalTransformMatrix();
     const auto trackerInverse = glm::inverse(tracker.getGlobalTransformMatrix());
     const auto triggerBoxInverse = glm::inverse(triggerBox.getGlobalTransformMatrix());
-
+    
     if(pTrackingEnabled){
         // Get depth data from camera
         auto frames = pipe.wait_for_frames();
@@ -493,13 +492,13 @@ void ofApp::update() {
                     if(fabs(trackerVec.x) < tracker.getWidth()/2.0 &&
                        fabs(trackerVec.y) < tracker.getHeight()/2.0 &&
                        fabs(trackerVec.z) < tracker.getDepth()/2.0){
-
+                        
                         int wasAdded = tracker.addVertex(v3);
                         
                         if(pTrackingVisible){
-
+                            
                             trackingMesh.addVertex(v3);
-
+                            
                             ofFloatColor c;
                             if(wasAdded == 0){
                                 c = ofFloatColor::lightGray;
@@ -513,7 +512,7 @@ void ofApp::update() {
                             
                             trackingMesh.addColor(c);
                         }
-
+                        
                     }
                 }
             }
@@ -540,7 +539,7 @@ void ofApp::update() {
                 appState = state::PLAYING;
             }
         }
-
+        
     } else if (oldestTracker.isReady()){
         if(formerState == state::TRACKING){
             appState = state::WAITING;
@@ -572,58 +571,98 @@ void ofApp::update() {
             enteringVolume.then<RampTo>(0.0, 100.f);
             
             auto pbrGamma = timeline.apply(&timelineFloatOutputs["pbrGamma"]);
-            pbrGamma.then<RampTo>(0.096, 100.f, EaseOutQuad());
+            pbrGamma.then<RampTo>(0.824, 100.f, EaseInOutQuad());
             auto pbrExposure = timeline.apply(&timelineFloatOutputs["pbrExposure"]);
-            pbrExposure.then<RampTo>(10.0, 100.f, EaseOutQuad());
+            pbrExposure.then<RampTo>(0.304, 100.f, EaseInOutQuad());
             auto pbrRotation = timeline.apply(&timelineFloatOutputs["pbrRotation"]);
-            pbrRotation.then<RampTo>(6., 100.f, EaseOutQuad());
+            pbrRotation.then<RampTo>(5.94, 100.f, EaseInOutQuad());
             auto envLevel = timeline.apply(&timelineFloatOutputs["envLevel"]);
-            envLevel.then<RampTo>(0.53, 100.f, EaseOutQuad());
+            envLevel.then<RampTo>(0.512, 100.f, EaseInOutQuad());
+            
+            auto videoPylonsAlpha = timeline.apply(&timelineFloatOutputs["videoPylonsAlpha"]);
+            videoPylonsAlpha.then<RampTo>(1.0, 20.f, EaseInOutQuad());
+            
+            auto bridgeLerp = timeline.apply(&timelineFloatOutputs["bridgeLerp"]);
+            bridgeLerp.then<RampTo>(1.0, 20.f, EaseInOutQuad());
             
             timeline.cue([this] {
                 videoPlayer.stop();
                 ofLogNotice("WAITING") << "stopped videoPlayer";
             }, 10.f);
             timeline.cue([this] { enteringSoundPlayer.stop(); }, 10.f);
-
+            
         }
         if(appState == state::TRACKING){
+            
+            float holdTime = 10.0;
+            
             //entrance sound
             timeline.cue([this] { enteringSoundPlayer.play(); }, 0.0f);
             auto windVolume = timeline.apply(&timelineFloatOutputs["windVolume"]);
             windVolume.then<RampTo>(0.0, 100.f);
             auto enteringVolume = timeline.apply(&timelineFloatOutputs["enteringVolume"]);
-            enteringVolume.then<RampTo>(10.0, 100.f);
+            enteringVolume.then<RampTo>(1.0, 100.f);
             auto pbrGamma = timeline.apply(&timelineFloatOutputs["pbrGamma"]);
-            pbrGamma.hold(5.0);
-            pbrGamma.then<RampTo>(2.2, 50.f, EaseInOutQuad());
+            pbrGamma.hold(holdTime);
+            pbrGamma.then<RampTo>(0.9, 50.f, EaseInOutQuad());
             auto pbrExposure = timeline.apply(&timelineFloatOutputs["pbrExposure"]);
-            pbrExposure.hold(5.0);
-            pbrExposure.then<RampTo>(1.0, 50.f, EaseInOutQuad());
+            pbrExposure.hold(holdTime);
+            pbrExposure.then<RampTo>(3.0, 50.f, EaseInOutQuad());
             auto pbrRotation = timeline.apply(&timelineFloatOutputs["pbrRotation"]);
-            pbrRotation.hold(5.0);
-            pbrRotation.then<RampTo>(1.09, 50.f, EaseInOutQuad());
+            pbrRotation.hold(holdTime);
+            pbrRotation.then<RampTo>(5.41, 50.f, EaseInOutQuad());
             auto envLevel = timeline.apply(&timelineFloatOutputs["envLevel"]);
-            envLevel.hold(5.0);
-            envLevel.then<RampTo>(.171, 50.f, EaseInOutQuad());
-
-
+            envLevel.hold(holdTime);
+            envLevel.then<RampTo>(.116, 50.f, EaseInOutQuad());
+            
+            auto bridgeLerp = timeline.apply(&timelineFloatOutputs["bridgeLerp"]);
+            bridgeLerp.hold(holdTime);
+            bridgeLerp.then<RampTo>(0.0, 100.f, EaseInOutQuad());
+            
+            auto videoPylonsAlpha = timeline.apply(&timelineFloatOutputs["videoPylonsAlpha"]);
+            videoPylonsAlpha.hold(holdTime-0.5);
+            videoPylonsAlpha.then<RampTo>(0.0, 10.f, EaseInOutQuad());
+            
         }
         if(appState == state::PLAYING){
+            
+            float holdTime = 5.0;
+            
             auto videoColor = timeline.apply(&timelineFloatColorOutputs["videoColor"]);
+            videoColor.hold(holdTime);
             videoColor.then<RampTo>(ofFloatColor(1.,1.,1.,1.), 100.f);
             auto videoVolume = timeline.apply(&timelineFloatOutputs["videoVolume"]);
+            videoVolume.hold(holdTime);
             videoVolume.then<RampTo>(1.0, 100.f);
             auto windVolume = timeline.apply(&timelineFloatOutputs["windVolume"]);
+            windVolume.hold(holdTime);
             windVolume.then<RampTo>(0.2, 100.f);
             auto enteringVolume = timeline.apply(&timelineFloatOutputs["enteringVolume"]);
+            enteringVolume.hold(holdTime);
             enteringVolume.then<RampTo>(0.0, 100.f);
-            timeline.cue([this] { videoPlayer.play(); }, 0.0f);
+            
+            auto pbrGamma = timeline.apply(&timelineFloatOutputs["pbrGamma"]);
+            pbrGamma.then<RampTo>(2.2, 50.f, EaseInOutQuad());
+            auto pbrExposure = timeline.apply(&timelineFloatOutputs["pbrExposure"]);
+            pbrExposure.then<RampTo>(1.0, 50.f, EaseInOutQuad());
+            auto pbrRotation = timeline.apply(&timelineFloatOutputs["pbrRotation"]);
+            pbrRotation.then<RampTo>(1.0, 50.f, EaseInOutQuad());
+            auto envLevel = timeline.apply(&timelineFloatOutputs["envLevel"]);
+            envLevel.then<RampTo>(.173, 50.f, EaseInOutQuad());
+            
+            auto bridgeLerp = timeline.apply(&timelineFloatOutputs["bridgeLerp"]);
+            bridgeLerp.then<RampTo>(0.0, 20.f, EaseInOutQuad());
+            
+            auto videoPylonsAlpha = timeline.apply(&timelineFloatOutputs["videoPylonsAlpha"]);
+            videoPylonsAlpha.hold(holdTime);
+            videoPylonsAlpha.then<RampTo>(1.0, 50.f, EaseInOutQuad());
+            
+            timeline.cue([this] { videoPlayer.play(); }, holdTime);
             timeline.cue([this] {
                 enteringSoundPlayer.stop();
                 ofLogNotice("PLAYING") << "stopped enteringSoundPlayer";
-            }, 100.f);
-
+            }, 10.f+holdTime);
+            
         }
     }
     
@@ -780,7 +819,7 @@ void ofApp::draw() {
     }
     mViewFront->cam.setGlobalPosition(pHeadPosition);
     mViewSide->cam.setGlobalPosition(pHeadPosition);
-
+    
     
     // LGIHTS TOO
     
@@ -919,6 +958,7 @@ void ofApp::draw() {
                             videoShader.setUniform4f("origin", glm::vec4(pVideoOrigin.get(),1.0));
                             videoShader.setUniform2f("videoDimensions", mViewFront->plane.getWidth(), mViewFront->plane.getHeight());
                             videoShader.setUniform2f("videoOffset", pVideoOffset.get());
+                            videoShader.setUniform1f("alpha", pVideoPylonsAlpha.get());
                             world.primitives["room.pylon"]->recursiveDraw();
                             videoShader.end();
                             ofPopMatrix();
@@ -978,7 +1018,7 @@ void ofApp::draw() {
                     tracker.draw();
                     ofSetColor(0,255,0, 64);
                     triggerBox.draw();
-
+                    
                     
                 }
                 
@@ -1204,7 +1244,7 @@ bool ofApp::imGui()
             
             ImGui::TextUnformatted("State");
             ImGui::SameLine();
-
+            
             switch (appState) {
                 case state::STARTING:
                     ImGui::TextColored(redish, "STARTING");
@@ -1220,15 +1260,19 @@ bool ofApp::imGui()
                     break;
             }
             
-/*            static bool guiShowTest;
-            ImGui::Checkbox("Show Test Window", &guiShowTest);
-            if(guiShowTest)
-                ImGui::ShowTestWindow();
-*/
+            if(ImGui::Button("Reset timed events")){
+                timeline.clear();
+            }
+            
+            /*            static bool guiShowTest;
+             ImGui::Checkbox("Show Test Window", &guiShowTest);
+             if(guiShowTest)
+             ImGui::ShowTestWindow();
+             */
             
             ImGui::Separator();
             ofxImGui::AddGroup(pgVideo, mainSettings);
-
+            
             float videoDuration = videoPlayer.getDuration();
             float videoPosition = videoPlayer.getPosition() * videoDuration;
             
@@ -1246,10 +1290,10 @@ bool ofApp::imGui()
                 videoPlayer.stop();
                 videoPlayer.load("videos/front.mov");
             }
-
+            
             ImGui::Separator();
             ofxImGui::AddGroup(pgAudio, mainSettings);
-
+            
             ofxImGui::AddGroup(pgTracking, mainSettings);
             
             ofxImGui::AddGroup(mViewFront->pg, mainSettings);

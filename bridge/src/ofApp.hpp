@@ -126,9 +126,10 @@ public:
 
     ofParameter<ofFloatColor> pVideoColor{ "Color", ofFloatColor(1.,1.,1.,1.), ofFloatColor(0.,0.,0.,0.), ofFloatColor(1.,1.,1.,1.)};
     ofParameter<bool> pVideoDrawTestChart{ "Test Chart", false};
+    ofParameter<float> pVideoPylonsAlpha{ "Pylons Alpha", 1.0, 0.0, 1.0};
     ofParameter<glm::vec3> pVideoOrigin{ "Shader origin", glm::vec3(0.,0.,0.), glm::vec3(-100.,-100.,-100.), glm::vec3(100.,100.,100.)};
     ofParameter<glm::vec2> pVideoOffset{ "Shader offset", glm::vec2(0.,0), glm::vec2(-1.,-1.), glm::vec2(1.,1.)};
-    ofParameterGroup pgVideo{ "Video", pVideoColor, pVideoDrawTestChart, pVideoOrigin, pVideoOffset };
+    ofParameterGroup pgVideo{ "Video", pVideoColor, pVideoPylonsAlpha, pVideoDrawTestChart, pVideoOrigin, pVideoOffset };
 
     ofParameter<glm::vec3> pHacksPylonOffset{ "Pylon offset", glm::vec3(0.,0.,0.), glm::vec3(-1.,-1.,-1.), glm::vec3(1.,1.,1.)};
 

@@ -146,7 +146,7 @@ public:
     }
     
     void set( float radius, int resolution){
-        kalman.init(1/10000000000., 1/10000000.); // inverse of (smoothness, rapidness);
+        kalman.init(1/20000000000., 1/10000000.); // inverse of (smoothness, rapidness);
         radiusSet = radius;
         ofIcoSpherePrimitive::set(radius, resolution);
         radiusSquared = radius*radius;
@@ -171,7 +171,7 @@ public:
     float headRadius = 0.3/2.;
     vector<head> heads;
     
-    int maxHeads = 3;
+    int maxHeads = 5;
     
     void setup(int maxHeads, glm::vec3 startingPoint, ofNode & camera, ofNode & origin ){
         
@@ -224,9 +224,13 @@ public:
         }
         // make sure the first ones are the first.
         std::sort(heads.begin(), heads.end(), [](head a, head b) {
-            return a.firstTimeTracking > b.firstTimeTracking && a.state == head::TRACKING_STATE::TRACKING;
+            return a.firstTimeTracking < b.firstTimeTracking;
         });
-        
+
+        std::sort(heads.begin(), heads.end(), [](head a, head b) {
+            return a.state == head::TRACKING_STATE::TRACKING && b.state != head::TRACKING_STATE::TRACKING;
+        });
+
     }
 
     void draw(){
