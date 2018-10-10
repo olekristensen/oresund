@@ -566,7 +566,7 @@ void ofApp::update() {
             auto videoVolume = timeline.apply(&timelineFloatOutputs["videoVolume"]);
             videoVolume.then<RampTo>(0.0, 100.f);
             auto windVolume = timeline.apply(&timelineFloatOutputs["windVolume"]);
-            windVolume.then<RampTo>(0.75, 100.f);
+            windVolume.then<RampTo>(1.0, 100.f);
             auto enteringVolume = timeline.apply(&timelineFloatOutputs["enteringVolume"]);
             enteringVolume.then<RampTo>(0.0, 100.f);
             
@@ -586,10 +586,10 @@ void ofApp::update() {
             bridgeLerp.then<RampTo>(1.0, 20.f, EaseInOutQuad());
             
             timeline.cue([this] {
+                windLoopPlayer.play();
                 videoPlayer.stop();
-                ofLogNotice("WAITING") << "stopped videoPlayer";
+                enteringSoundPlayer.stop();
             }, 10.f);
-            timeline.cue([this] { enteringSoundPlayer.stop(); }, 10.f);
             
         }
         if(appState == state::TRACKING){
@@ -622,6 +622,7 @@ void ofApp::update() {
             auto videoPylonsAlpha = timeline.apply(&timelineFloatOutputs["videoPylonsAlpha"]);
             videoPylonsAlpha.hold(holdTime-0.5);
             videoPylonsAlpha.then<RampTo>(0.0, 10.f, EaseInOutQuad());
+            
             
         }
         if(appState == state::PLAYING){
@@ -660,7 +661,6 @@ void ofApp::update() {
             timeline.cue([this] { videoPlayer.play(); }, holdTime);
             timeline.cue([this] {
                 enteringSoundPlayer.stop();
-                ofLogNotice("PLAYING") << "stopped enteringSoundPlayer";
             }, 10.f+holdTime);
             
         }
