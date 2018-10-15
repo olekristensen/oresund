@@ -14,7 +14,14 @@
 #import <Cocoa/Cocoa.h>
 
 int main() {
+
     
+    string logFileName = ofFilePath::getUserHomeDir() + "/logs/" + ofGetTimestampString("%Y-%m-%d") + " bridge.log";
+    ofLogToFile(logFileName, true);
+    const string timestampFormat = "%Y-%m-%d %H:%M:%S.%i";
+
+    ofLogNotice(ofGetTimestampString(timestampFormat)) << "STARTUP";
+
     ofGLFWWindowSettings controlWindowSettings;
     ofGLFWWindowSettings projectorWindowSettings;
     controlWindowSettings.setGLVersion(4, 1);
@@ -35,10 +42,10 @@ int main() {
     int numDisplays= displayCount;
     
     // print display info.
-    cout<<numDisplays<<" display(s) detected."<<endl;
+    ofLogNotice("DISPLAYS") << numDisplays << " display(s) detected.";
     
     for (int i = 0; i < displayCount; i++){
-        cout << displays[i] << "\t(" << CGDisplayPixelsWide(displays[i]) << "x" << CGDisplayPixelsHigh(displays[i]) << ")"<< endl;
+        ofLogNotice("DISPLAYS") << displays[i] << "\t(" << CGDisplayPixelsWide(displays[i]) << "x" << CGDisplayPixelsHigh(displays[i]) << ")";
     }
     
     CGRect mainDisplayBounds= CGDisplayBounds ( displays[0] );
@@ -67,7 +74,7 @@ int main() {
         projectorLeftWindow = ofCreateWindow(projectorWindowSettings);
         projectorRightWindow = ofCreateWindow(projectorWindowSettings);
 
-        cout << "configured default one display setup" << endl;
+        ofLogNotice("DISPLAYS") << "configured default one display setup";
         
     } else if (numDisplays == 2){
         
@@ -95,7 +102,7 @@ int main() {
         NSWindow * rightWindow = (NSWindow *)projectorRightWindow->getCocoaWindow();
         [rightWindow setLevel:CGShieldingWindowLevel()];
 
-        cout << "configured two display setup" << endl;
+        ofLogNotice("DISPLAYS") << "configured two display setup";
         
     } else if (numDisplays > 2){
         
@@ -117,7 +124,7 @@ int main() {
         
         projectorRightWindow = ofCreateWindow(projectorWindowSettings);
         
-        cout << "configured three display setup" << endl;
+        ofLogNotice("DISPLAYS") << "configured three display setup";
         
     }
 

@@ -55,6 +55,8 @@ void ofApp::setup() {
     
     // SHADERS
     
+    ofSetLogLevel("ofAutoShader", OF_LOG_WARNING);
+    
     string shaderPath = "shaders/postEffect/";
     tonemap.loadAuto(shaderPath + "tonemap");
     fxaa.loadAuto(shaderPath + "fxaa");
@@ -121,7 +123,7 @@ void ofApp::setup() {
     materials.resize(renderPrimitive->textureNames.size());
     
     int materialIndex = 0;
-    ofLogNotice() << "TEXTURE NAMES" ;
+
     for (auto & material : materials){
         
         string textureName = ofSplitString(renderPrimitive->textureNames[materialIndex], "/").back();
@@ -133,7 +135,7 @@ void ofApp::setup() {
          auto baseColor = ofParameter<ofFloatColor>("Base Color", ofFloatColor(0.5,0.5,0.5,1.0), ofFloatColor(0.0,0.0,0.0,0.0), ofFloatColor(1.0,1.0,1.0,1.0));
          pgMaterial.add(baseColor);
          */
-        ofLogNotice() << textureName;
+        ofLogNotice("TEXTURE NAMES") << textureName;
         
         material.baseColor.set(0.95, 1.0, 1.0);
         material.metallic = ofMap(materialIndex++, 0, materials.size(), 0.0, 1.0);
@@ -290,6 +292,8 @@ void ofApp::setup() {
     
     // TRACKING
     
+    trackingKalman.init(1/100000000., 1/50000.); // inverse of (smoothness, rapidness);
+
     trackingMesh.setMode(OF_PRIMITIVE_POINTS);
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_DEPTH, 848, 480, RS2_FORMAT_ANY, 60);
@@ -335,12 +339,13 @@ void ofApp::setup() {
             auto principal_point = std::make_pair(intrinsics.ppx, intrinsics.ppy);
             auto focal_length = std::make_pair(intrinsics.fx, intrinsics.fy);
             rs2_distortion model = intrinsics.model;
-            
+            /*
             std::cout << "Principal Point         : " << principal_point.first << ", " << principal_point.second << std::endl;
             std::cout << "Focal Length            : " << focal_length.first << ", " << focal_length.second << std::endl;
             std::cout << "Distortion Model        : " << model << std::endl;
             std::cout << "Distortion Coefficients : [" << intrinsics.coeffs[0] << "," << intrinsics.coeffs[1] << "," <<
             intrinsics.coeffs[2] << "," << intrinsics.coeffs[3] << "," << intrinsics.coeffs[4] << "]" << std::endl;
+             */
         }
         catch (const std::exception& e)
         {
@@ -518,7 +523,8 @@ void ofApp::update() {
             }
             tracker.update();
         }
-        pHeadPosition.set(tracker.heads.front().getGlobalPosition()+pHeadOffset.get());
+        trackingKalman.update(tracker.heads.front().getGlobalPosition()); // feed measurement
+        pHeadPosition.set(trackingKalman.getEstimation()+pHeadOffset.get());
     }
     
     // STATE manipulation
@@ -535,7 +541,11 @@ void ofApp::update() {
             glm::vec3 triggerVec = glm::vec3(inversedVec) / inversedVec.w;
             if(fabs(triggerVec.x) < triggerBox.getWidth()/2.0 &&
                fabs(triggerVec.y) < triggerBox.getHeight()/2.0 &&
-               fabs(triggerVec.z) < triggerBox.getDepth()/2.0){
+               fabs(triggerVec.z) < triggerBox.getDepth()/2.0 &&
+               ofGetElapsedTimef() - oldestTracker.firstTimeTracking > 10. && oldestTracker.firstTimeTracking > 0
+               ){
+                appState = state::PLAYING;
+            } else if (ofGetElapsedTimef() - oldestTracker.firstTimeTracking > 40. && oldestTracker.firstTimeTracking > 0) {
                 appState = state::PLAYING;
             }
         }
@@ -544,8 +554,7 @@ void ofApp::update() {
         if(formerState == state::TRACKING){
             appState = state::WAITING;
         }
-        if(formerState == state::PLAYING){
-            // maybe wait for video to stop?
+        if(formerState == state::PLAYING && ofGetElapsedTimef() - oldestTracker.lastTimeTracking > 10.){
             appState = state::WAITING;
         }
     }
@@ -557,7 +566,7 @@ void ofApp::update() {
     // handle state changes
     if(formerState != appState){
         
-        ofLogNotice("STATE CHANGE") << formerState << " -> " << appState;
+        ofLogNotice(ofGetTimestampString(timestampFormat)) << "STATE CHANGE: " << formerState << " -> " << appState;
         
         if(appState == state::WAITING){
             //stop and fade down
@@ -594,10 +603,10 @@ void ofApp::update() {
         }
         if(appState == state::TRACKING){
             
-            float holdTime = 10.0;
+            float holdTime = 20.0;
             
             //entrance sound
-            timeline.cue([this] { enteringSoundPlayer.play(); }, 0.0f);
+            timeline.cue([this] { enteringSoundPlayer.play(); }, 10.0f);
             auto windVolume = timeline.apply(&timelineFloatOutputs["windVolume"]);
             windVolume.then<RampTo>(0.0, 100.f);
             auto enteringVolume = timeline.apply(&timelineFloatOutputs["enteringVolume"]);
@@ -1067,7 +1076,7 @@ void ofApp::draw() {
 
 void ofApp::loadRenderModel(string filename) {
     
-    ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_NOTICE);
+    ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_WARNING);
     
     renderModelLoader.loadModel(filename, true, true);
     
@@ -1096,7 +1105,7 @@ void ofApp::loadRenderModel(string filename) {
 
 void ofApp::loadNodeModel(string filename) {
     
-    ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_NOTICE);
+    ofSetLogLevel("ofxAssimpModelLoader", OF_LOG_WARNING);
     
     nodeModelLoader.loadModel(filename, true, false);
     
@@ -1144,7 +1153,7 @@ void ofApp::loadNodeModel(string filename) {
     world.primitives["room.calibration"]->clearParent();
     
     // bake calibration meshe
-    cout << "baking calibration mesh" << endl;
+    ofLogNotice("loadNodeModel") << ofGetTimestampString(timestampFormat)<<"\t" << "baking calibration mesh";
     calibrationMesh = ofVboMesh();
     calibrationMesh = joinMeshes(calibrationMeshes);
     ofVec3f cornerMin, cornerMax;

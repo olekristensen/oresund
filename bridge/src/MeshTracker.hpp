@@ -9,7 +9,11 @@
 #include "ofMain.h"
 #include "ofxCv.h"
 
+
 class head : public ofIcoSpherePrimitive {
+
+    string timestampFormat = "%Y-%m-%d %H:%M:%S.%i";
+
 public:
     enum class TRACKING_STATE {
         READY,
@@ -18,13 +22,15 @@ public:
     };
     
     TRACKING_STATE state = TRACKING_STATE::READY;
-    float lastTimeTracking;
-    float firstTimeTracking;
-    float ttl = 2.0;
+    float lastTimeTracking = 0;
+    float firstTimeTracking = 0;
+    float ttl = 4.0;
     glm::vec3 globalDirectionBias = {0,0.0375,0.0};
     
     ofxCv::KalmanPosition kalman;
 
+    int id = 0;
+    
     glm::vec3 trackPointSum;
     glm::vec3 rawGlobalPosition;
     float radiusSquaredMax = 0.0;
@@ -100,8 +106,10 @@ public:
 
         if(trackPointWeighedCount > 800.0){
             if(isReady() || isLost()){
-                state = TRACKING_STATE::TRACKING;
                 if(isReady()) firstTimeTracking = now;
+                if(isReady()) ofLogNotice(ofGetTimestampString(timestampFormat)) << "TRACKER (" << id << ") NEW";
+                if(isLost()) ofLogNotice(ofGetTimestampString(timestampFormat)) << "TRACKER (" << id << ") FOUND";
+                state = TRACKING_STATE::TRACKING;
             }
             radiusSquaredScale = radiusSquaredScaleTracking;
             trackPointSum /= trackPointCount;
@@ -125,6 +133,7 @@ public:
             if(isTracking()){
                 state = TRACKING_STATE::LOST;
                 lastTimeTracking = now;
+                ofLogNotice(ofGetTimestampString(timestampFormat)) << "TRACKER (" << id << ") LOST";
             } else if (isLost()) {
                 setGlobalPosition(startingPointNode.getGlobalPosition());
                 state = TRACKING_STATE::READY;
@@ -134,8 +143,11 @@ public:
                 auto newFloorP = glm::inverse(getGlobalTransformMatrix()) * glm::vec4(gp.x, 0.0, gp.z, 1.0);
                 localFloorPoint = glm::vec3(newFloorP) / newFloorP.w;
                 lastTimeTracking = now;
+                ofLogNotice(ofGetTimestampString(timestampFormat)) << "TRACKER (" << id << ") END AFTER " << ofToString(now - firstTimeTracking);
+                firstTimeTracking = 0;
             } else if(isReady()){
                 setGlobalPosition(startingPointNode.getGlobalPosition());
+                firstTimeTracking = 0;
             }
         }
         
@@ -146,7 +158,7 @@ public:
     }
     
     void set( float radius, int resolution){
-        kalman.init(1/20000000000., 1/10000000.); // inverse of (smoothness, rapidness);
+        kalman.init(1/10000000000., 1/10000000.); // inverse of (smoothness, rapidness);
         radiusSet = radius;
         ofIcoSpherePrimitive::set(radius, resolution);
         radiusSquared = radius*radius;
@@ -188,8 +200,10 @@ public:
         this->maxHeads = maxHeads;
         heads.resize(maxHeads);
         
+        int id = 0;
         for( auto & head : heads){
             head.set(headRadius,1);
+            head.id = ++id;
             head.setParent(this->camera);
             auto p = this->startingPoint.getGlobalPosition();
             head.setGlobalPosition(p);

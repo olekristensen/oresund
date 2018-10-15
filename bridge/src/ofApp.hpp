@@ -69,6 +69,9 @@ enum class state {
 };
 
 class ofApp : public ofBaseApp {
+    
+    const string timestampFormat = "%Y-%m-%d %H:%M:%S.%i";
+
 public:
     
     void setup();
@@ -107,7 +110,7 @@ public:
     
     ofTrueTypeFont fontHeader;
     ofTrueTypeFont fontBody;
-
+    
     // PARAMETERS
     
     ofParameter<float> pPbrGamma{ "Gamma", 2.2f, 0.0f, 5.0f };
@@ -287,6 +290,8 @@ public:
         
     ofCamera trackingCamera;
     
+    ofxCv::KalmanPosition trackingKalman;
+
     MeshTracker tracker;
     ofBoxPrimitive triggerBox;
 
