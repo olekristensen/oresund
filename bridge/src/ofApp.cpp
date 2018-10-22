@@ -532,7 +532,7 @@ void ofApp::update() {
     auto formerState = appState;
     auto & oldestTracker = tracker.heads.front();
     
-    if(oldestTracker.isTracking() || oldestTracker.isLost()) {
+    if(oldestTracker.isTrackingOrLost()) {
         if(formerState == state::WAITING){
             appState = state::TRACKING;
         } else if( formerState == state::TRACKING ) {

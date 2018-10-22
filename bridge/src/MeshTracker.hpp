@@ -57,6 +57,10 @@ public:
         return state == TRACKING_STATE::LOST;
     }
     
+    bool isTrackingOrLost(){
+        return isTracking() || isLost();
+    }
+    
     bool isWitinHead(glm::vec3 & v){
         return (distanceToHead2(v) < radiusSquared);
     }
@@ -242,7 +246,7 @@ public:
         });
 
         std::sort(heads.begin(), heads.end(), [](head a, head b) {
-            return a.state == head::TRACKING_STATE::TRACKING && b.state != head::TRACKING_STATE::TRACKING;
+            return a.isTrackingOrLost() && !b.isTrackingOrLost();
         });
 
     }
