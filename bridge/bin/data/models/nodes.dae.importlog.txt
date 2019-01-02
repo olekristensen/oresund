@@ -1,7 +1,7 @@
-Info,  T0: Load /Users/ole/Development/openFrameworks/apps/oresund/bridge/bin/data/models/nodes.dae
-Debug, T0: Assimp 4.0.144438630 amd64 gcc shared singlethreaded
+Info,  T0: Load /Users/ole/CloudStation/Development/openFrameworks/0.10.0/git/stable/apps/oresund/bridge/bin/data/models/nodes.dae
+Debug, T0: Assimp 4.0.216127495 amd64 gcc shared singlethreaded
 Info,  T0: Found a matching importer for this file format: Collada Importer.
-Info,  T0: Import root directory is '/Users/ole/Development/openFrameworks/apps/oresund/bridge/bin/data/models/'
+Info,  T0: Import root directory is '/Users/ole/CloudStation/Development/openFrameworks/0.10.0/git/stable/apps/oresund/bridge/bin/data/models/'
 Debug, T0: Collada schema version is 1.4.n
 Warn,  T0: Collada: Orthographic cameras are not supported.
 Skipping one or more lines with the same contents
